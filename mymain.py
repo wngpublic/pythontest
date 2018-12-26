@@ -1,7 +1,8 @@
 #!/usr/local/bin/python3
 
 import testcases
-import signal
+import sys
+import time
 
 def p(s):
     print(s)
@@ -9,11 +10,17 @@ def p(s):
 class Main:
     def __init__(self):
         pass
-    def main(self):
-        t = testcases.Tests()
+    def main(self, argv):
         try:
-            t.test()
+            nsbeg = time.time_ns()
+            testcases.Tests().test(argv)
+        except KeyboardInterrupt:
+            p('KeyboardInterrupt detected! Killing!')
         except Exception as e:
             p('ERROR: ' + e.args[0])
+        finally:
+            nsend = time.time_ns()
+            diff_ms = (nsend - nsbeg)/1_000_000
+            p('finally block. clean up here. time elapsed: {} ms'.format(diff_ms))
 
-Main().main()
+Main().main(sys.argv[1:])
