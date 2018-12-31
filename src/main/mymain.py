@@ -1,6 +1,6 @@
 #!/usr/local/bin/python3
 
-import testcases
+from src.main import testcases
 import sys
 import time
 
@@ -21,6 +21,6 @@ class Main:
         finally:
             nsend = time.time_ns()
             diff_ms = (nsend - nsbeg)/1_000_000
-            p('finally block. clean up here. time elapsed: {} ms'.format(diff_ms))
+            p('finished. time elapsed: {} ms'.format(diff_ms))
 
 Main().main(sys.argv[1:])

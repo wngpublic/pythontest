@@ -1,11 +1,9 @@
 #!/usr/local/bin/python3
 
 import sys
-import getopt
 import os
 import os.path
 import getopt
-import argparse
 import fileinput
 import subprocess
 import re
@@ -18,21 +16,24 @@ import collections
 from collections import OrderedDict
 import urllib.request as url
 import pathlib
-import myclasses
+from src.main import myclasses
+#import src.main.myclasses
+from src.algos import algos
 import json
 import unittest
 import argparse
-import gossip
+from src.main import gossip
+#import gossip
 import abc
 import gzip
 import multiprocessing
-import asynciotests
+from src.main import asynciotests
+#import asynciotests
 from enum import Enum
 from enum import auto
 import inspect
 import asyncio
 import time
-import concurrent.futures
 from concurrent import futures
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import ProcessPoolExecutor
@@ -861,7 +862,7 @@ class Tests:
 
     def test_async_concepts(self):
 
-        def test_asynciotests(self):
+        def test_asynciotests():
             asynciotests.AsyncIOTests().test()
 
         async def test_echo_async(v):
@@ -971,9 +972,10 @@ class Tests:
             while not q.empty():
                 p(q.get())
 
+
         def test_loop_sleep_sync_separate_executor():
             q = queue.SimpleQueue()
-            executor = futures.ThreadPoolExecutor()
+            executor = ThreadPoolExecutor()
             loop = asyncio.get_event_loop()
             fs = [test_wrapper_sync_sleep_exec(i, 100, q, executor, loop) for i in range(10)] # wrapper makes no difference
             #fs = [loop.run_in_executor(executor, test_wrapper_sync_sleep, i, 100, q) for i in range(10)] # wrapper makes no difference
@@ -988,7 +990,8 @@ class Tests:
                 worker_loop.run_forever()
 
             async def test_wrapper_sync_sleep_worker(id, ms, q, loop, loop_worker):
-                asyncio.run_coroutine_threadsafe(test_sync_sleep(id, ms, q), loop_worker)
+                future = asyncio.run_coroutine_threadsafe(test_sync_sleep(id, ms, q), loop_worker)
+                future.result()
 
             q = queue.SimpleQueue()
             loop = asyncio.get_event_loop()
@@ -1000,6 +1003,13 @@ class Tests:
 
             while not q.empty():
                 p(q.get())
+            for task in asyncio.Task.all_tasks():
+                task.cancel()
+
+            loop.stop()
+            loop.close()
+            loop_worker.stop()
+            loop_worker.close()
 
 
         def test_loop_sleep_async():
@@ -1043,7 +1053,8 @@ class Tests:
             #test_syntax_async_array()
             #test_loop_sleep_async()
             #test_loop_sleep_sync_separate_executor()
-            test_loop_sleep_sync_separate_worker_loop()
+            #test_loop_sleep_sync_separate_worker_loop()
+            test_asynciotests()
             #test_loop_sleep_sync()
 
         inner_main()
@@ -1718,6 +1729,12 @@ class Tests:
                     p('a:{}'.format(a))
 
             def fookwargs(**kwargs):    # for keyword decoding
+                if kwargs is None:
+                    p('fookwargs is None')
+                    return
+                if len(kwargs) == 0:
+                    p('fookwargs is empty')
+                    return
                 p('fookwargs:    {}'.format(kwargs))
                 p('fookwargs:  * {}'.format([*kwargs]))
                 #p('fookwargs: ** {}'.format([**kwargs])) # invalid!
@@ -1744,6 +1761,7 @@ class Tests:
                 fooargskwargs(True, l1, *kv) # invalid because *l1,*kv is tuple: ([1,2,3,4,5],'k1','k2','k3'})
                 p('call foo part 4')
                 fooargskwargs(False, l1, k1='v1',k2='v2',k3='v3') # invalid because *l1,*kv is tuple: ([1,2,3,4,5],'k1','k2','k3'})
+                fookwargs()
 
             def foolist():
                 l1 = [1,2,3,4,5]
@@ -2211,6 +2229,24 @@ class Tests:
             assert v2 == 30
             p('test passed')
 
+        def test_gen_arrays():
+            # 3 x 4 matrix of 1
+            a1 = [[1] * 3 for i in range(4)]
+            # 3 x 4 matrix of 0,1,2
+            a2 = [[i for i in range(3)] for j in range(4)]
+            # 3 x 4 matrix of 0-11
+            a3 = [[3*j+i for i in range(3)] for j in range(4)]
+            # array of 3 of 1
+            a4 = [1] * 3
+            # array of 3 of 0,1,2
+            a5 = [i for i in range(3)]
+
+            assert len(a1) == 4 and len(a1[0]) == 3
+            assert len(a2) == 4 and len(a2[0]) == 3
+            assert len(a3) == 4 and len(a3[0]) == 3
+            assert len(a4) == 3
+            assert len(a5) == 3
+
         def inner_main():
             '''
             test_random_choices()
@@ -2225,8 +2261,9 @@ class Tests:
             test_queue_list_deque_array()
             test_isinstance()
             testReturnTuple()
-            '''
             test_function_args()
+            '''
+            test_gen_arrays()
 
         inner_main()
         p('passed test_syntax')
@@ -2301,19 +2338,25 @@ class Tests:
                 p(line.strip())
         pass
 
+    def test_algos(self):
+        algos.algos().test()
+
     def test(self, argv):
-        #self.test_parse_args(argv)
-        #Tests.testCmdLoop1()
-        #self.testMyClass2()
-        #self.testGossip()
-        #self.testDependencyStructure()
-        #self.test_missing_value()
-        #self.test_utils_module()
-        #self.testRegex()
-        #self.testSHA256()
-        #self.test_files_and_json()
-        #self.test_syntax()
-        #self.test_multithread_concepts()
+        '''
+        self.test_parse_args(argv)
+        Tests.testCmdLoop1()
+        self.testMyClass2()
+        self.testGossip()
+        self.testDependencyStructure()
+        self.test_missing_value()
+        self.test_utils_module()
+        self.testRegex()
+        self.testSHA256()
+        self.test_files_and_json()
+        self.test_multithread_concepts()
         self.test_logging()
-        #self.test_async_concepts()
+        self.test_async_concepts()
+        self.test_algos()
+        '''
+        self.test_syntax()
         pass
