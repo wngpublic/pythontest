@@ -408,11 +408,6 @@ class Tests:
         l = sorted(ld, key=lambda x: x['k0'])
         p(l)
 
-    def testSHA256(self):
-        s = 'the cat in the hat'
-        h = myclasses.Myutils.hashSHA256(s)
-        p(s)
-        p(h)
 
     def testRegex(self):
         data =  'the cat in the hat\n' + \
@@ -606,76 +601,15 @@ class Tests:
 
 
 
-    def test_missing_value(self):
-        # ascii to int
-        def a2i(v):
-            vi = 0
-            for i in range(0,len(v)):
-                c = v[i]
-                ci = ord(c)
-                ci = ci & 0xff
-                vi = vi << 8 | ci
-            return vi
-
-        def i2a(v):
-            vs = ''
-            while v != 0:
-                vb = v & 0xff
-                vc = chr(vb)
-                vs = vc + vs
-                v = v >> 8
-            return vs
-
-        a = [
-            'Bob joe',
-            'bobby Jim',
-            'willy Wonka',
-            'Willy Wonka II',
-            'will turner',
-            'jack Sparrow',
-            'captain Jack Sparrow',
-            'frodo baggins',
-            'big brother',
-            'winston smith'
-        ]
-
-        aint = []
-        for v in a:
-            aint.append(a2i(v))
-
-        atxt = []
-        for v in aint:
-            atxt.append(i2a(v))
-
-        vxor = 0
-        for v in aint:
-            vxor ^= v
-        vxoro = vxor
-
-        #p('{}'.format(vxor))
-
-        l = [
-            'Bob joe',
-            'bobby Jim',
-            'willy Wonka',
-            'Willy Wonka II',
-            'will turner',
-            'captain Jack Sparrow',
-            'frodo baggins',
-            'big brother',
-            'winston smith'
-        ]
-
-        for v in l:
-            vi = a2i(v)
-            vxor ^= vi
-        v = i2a(vxor)
-        assert v == 'jack Sparrow'
-        p('{}'.format(v))
-        p('this only works for 1 missing value')
-
-
     def test_utils_module(self):
+
+        def testSHA256():
+            s = 'the cat in the hat'
+            h = myclasses.Myutils.hashSHA256(s)
+            p(s)
+            p(h)
+
+
         def test_random_out():
             relate_types = ['friend','friend','friend','friend','relative','colleague','colleague','enemy']
 
@@ -862,21 +796,405 @@ class Tests:
 
     def test_async_concepts(self):
 
+        def getopt_kwargs(k, default, **kwargs):
+            if k in kwargs:
+                return kwargs[k]
+            return default
+
+        def get_kwargs(k, **kwargs):
+            return getopt_kwargs(k, None, **kwargs)
+
+        async def test_async(id, **kwargs):
+            ms          = get_kwargs('ms', **kwargs)
+            debug       = getopt_kwargs('debug', False, **kwargs)
+            q           = get_kwargs('q', **kwargs)
+            is_return   = getopt_kwargs('is_return', False, **kwargs)
+
+            if(debug):
+                p('test_async beg id:{} ms:{}'.format(id, ms))
+            if q is not None:
+                q.put('test_async beg id:{} ms:{}'.format(id, ms))
+            if ms is not None:
+                ts = ms / 1000
+                await asyncio.sleep(ts)
+            if(debug):
+                p('test_async end id:{} ms:{}'.format(id, ms))
+            if q is not None:
+                q.put('test_async end id:{} ms:{}'.format(id, ms))
+            if(is_return):
+                return id
+
+        async def test_sync(id, **kwargs):
+            ms          = get_kwargs('ms', **kwargs)
+            debug       = getopt_kwargs('debug', False, **kwargs)
+            q           = get_kwargs('q', **kwargs)
+            is_return   = getopt_kwargs('is_return', False, **kwargs)
+
+            if(debug):
+                p('test_sync beg id:{} ms:{}'.format(id, ms))
+            if q is not None:
+                q.put('test_async beg id:{} ms:{}'.format(id, ms))
+            if ms is not None:
+                ts = ms / 1000
+                time.sleep(ts)
+            if(debug):
+                p('test_sync end id:{} ms:{}'.format(id, ms))
+            if q is not None:
+                q.put('test_async end id:{} ms:{}'.format(id, ms))
+            if(is_return):
+                return id
+
+        async def wrapper_async(id, **kwargs):
+            return await test_async(id, **kwargs)
+
+        def wrapper_sync(id, **kwargs):
+            return test_sync(id, **kwargs)
+
+        def test_task():
+            q = queue.SimpleQueue()
+
+            def resetq():
+                while not q.empty():
+                    q.get()
+
+            def checker(expected_val):
+                ctr = 0
+                while not q.empty():
+                    v = q.get()
+                    ctr += 1
+                assert ctr == expected_val
+
+            async def test_task_return_1():
+                t = asyncio.create_task(test_sync(10, debug=True, is_return=False))
+                result = await t
+                p('test_task_return_1: {}'.format(result))
+            def test_1():
+                #t = test_task_return_1
+                loop = asyncio.get_event_loop()
+                loop.run_until_complete(test_task_return_1())
+            def test_1_0():
+                loop = asyncio.get_event_loop()
+                loop.run_until_complete(test_sync(10, debug=True, is_return=False))
+
+
+            async def test_task_return_2():
+                t = asyncio.create_task(test_async(10, debug=True, q=q, is_return=False))
+                result = await t
+                p('test_task_return_2: {}'.format(result))
+            def test_2():
+                #t = test_task_return_1
+                p('here')
+                loop = asyncio.get_event_loop()
+                loop.run_until_complete(test_task_return_2())
+
+
+            async def test_task_return_3():
+                return asyncio.create_task(test_async(10, debug=False, q=q, is_return=False))
+
+            def test_3():
+                t = test_task_return_3
+                loop = asyncio.get_event_loop()
+                loop.run_until_complete(t())
+                checker(2)
+
+            def callback_get_result(future):
+                result = future.result()
+                p('callback_get_result:{}'.format(result))
+                return result
+
+            async def test_task_return_4_0():
+                # returns task with result() 10
+                return asyncio.create_task(test_async(10, debug=False, q=q, is_return=True))
+            async def test_task_return_4_1():
+                # returns value id
+                return await asyncio.create_task(test_async(10, debug=False, q=q, is_return=True))
+            async def test_task_return_4_2():
+                # returns value None
+                return await asyncio.create_task(test_async(10, debug=False, q=q, is_return=False))
+            async def test_task_return_4_3():
+                # returns task with result() None
+                return asyncio.create_task(test_async(10, debug=False, q=q, is_return=False))
+            async def test_task_return_4_4():
+                # returns task with result() 10 wait 500, MUST BE EXTERNALLY AWAITED!
+                return asyncio.create_task(test_async(10, ms=500, debug=False, q=q, is_return=True))
+            async def test_task_return_4_5():
+                # returns value id wait 500
+                return await asyncio.create_task(test_async(10, ms=500, debug=False, q=q, is_return=True))
+            async def test_task_return_4_6():
+                # returns value None wait 500
+                return await asyncio.create_task(test_async(10, ms=500, debug=False, q=q, is_return=False))
+            async def test_task_return_4_7():
+                # returns task with result() None wait 500, MUST BE EXTERNALLY AWAITED!
+                return asyncio.create_task(test_async(10, ms=500, debug=False, q=q, is_return=False))
+            async def test_task_return_5_0(loop):
+                # returns task with result() 10
+                return loop.run_in_executor(test_sync(10, debug=False, q=q, is_return=True))
+            async def test_task_return_5_1(loop):
+                # returns value id
+                return await loop.run_in_executor(test_sync(10, debug=False, q=q, is_return=True))
+            async def test_task_return_5_2(loop):
+                # returns value None
+                return await loop.run_in_executor(test_sync(10, debug=False, q=q, is_return=False))
+            async def test_task_return_5_3(loop):
+                # returns task with result() None
+                return loop.run_in_executor(test_sync(10, debug=False, q=q, is_return=False))
+            async def test_task_return_5_4(loop):
+                # returns task with result() 10 wait 500, MUST BE EXTERNALLY AWAITED!
+                return loop.run_in_executor(test_sync(10, ms=500, debug=False, q=q, is_return=True))
+            async def test_task_return_5_5(loop):
+                # returns value id wait 500
+                return await loop.run_in_executor(test_sync(10, ms=500, debug=False, q=q, is_return=True))
+            async def test_task_return_5_6(loop):
+                # returns value None wait 500
+                return await loop.run_in_executor(test_sync(10, ms=500, debug=False, q=q, is_return=False))
+            async def test_task_return_5_7(loop):
+                # returns task with result() None wait 500, MUST BE EXTERNALLY AWAITED!
+                return loop.run_in_executor(test_sync(10, ms=500, debug=False, q=q, is_return=False))
+            async def test_task_return_6_0(loop):
+                # returns task with result() 10
+                return asyncio.run_coroutine_threadsafe(test_sync(10, debug=False, q=q, is_return=True), loop)
+            async def test_task_return_6_1(loop):
+                # returns value id
+                return await asyncio.run_coroutine_threadsafe(test_sync(10, debug=False, q=q, is_return=True), loop)
+            async def test_task_return_6_2(loop):
+                # returns value None
+                return await asyncio.run_coroutine_threadsafe(test_sync(10, debug=False, q=q, is_return=False), loop)
+            async def test_task_return_6_3(loop):
+                # returns task with result() None
+                return asyncio.run_coroutine_threadsafe(test_sync(10, debug=False, q=q, is_return=False), loop)
+            async def test_task_return_6_4(loop):
+                # returns task with result() 10 wait 500, MUST BE EXTERNALLY AWAITED!
+                return asyncio.run_coroutine_threadsafe(test_sync(10, ms=500, debug=False, q=q, is_return=True), loop)
+            async def test_task_return_6_5(loop):
+                # returns value id wait 500
+                return await asyncio.run_coroutine_threadsafe(test_sync(10, ms=500, debug=False, q=q, is_return=True), loop)
+            async def test_task_return_6_6(loop):
+                # returns value None wait 500
+                return await asyncio.run_coroutine_threadsafe(test_sync(10, ms=500, debug=False, q=q, is_return=False), loop)
+            async def test_task_return_6_7(loop):
+                # returns task with result() None wait 500, MUST BE EXTERNALLY AWAITED!
+                return asyncio.run_coroutine_threadsafe(test_sync(10, ms=500, debug=False, q=q, is_return=False), loop)
+
+            def test_4_0():
+                loop = asyncio.get_event_loop()
+                future = loop.run_until_complete(test_task_return_4_0())
+                assert future.result() == 10
+                checker(2)
+
+            def test_4_1():
+                loop = asyncio.get_event_loop()
+                result = loop.run_until_complete(test_task_return_4_1())
+                assert result == 10
+                checker(2)
+
+            def test_4_2():
+                loop = asyncio.get_event_loop()
+                result = loop.run_until_complete(test_task_return_4_2())
+                assert result == None
+                checker(2)
+
+            def test_4_3():
+                loop = asyncio.get_event_loop()
+                future = loop.run_until_complete(test_task_return_4_3())
+                assert future.result() == None
+                checker(2)
+
+            def test_4_4():
+                loop = asyncio.get_event_loop()
+                future = loop.run_until_complete(test_task_return_4_4())
+                flag = False
+                try:
+                    assert future.result() == 10  # result is not set because no wait
+                except Exception as e:
+                    flag = True
+                assert flag
+                checker(1)
+
+            def test_4_4_1():
+                async def inner_wait():
+                    return await test_task_return_4_4()
+                loop = asyncio.get_event_loop()
+                task = loop.run_until_complete(inner_wait())
+                result = loop.run_until_complete(task)
+                assert result == 10
+                checker(2)
+
+            def test_4_4_2():
+
+                async def inner_wait():
+                    return await asyncio.create_task(test_task_return_4_4())
+
+                async def inner_wait_2():
+                    task = asyncio.create_task(test_task_return_4_4())
+                    task.add_done_callback(callback_get_result)
+                    return await task
+
+                loop = asyncio.get_event_loop()
+                task = loop.run_until_complete(inner_wait())
+                result = loop.run_until_complete(task)
+                assert result == 10
+                checker(2)
+
+                resetq()
+                task = loop.run_until_complete(inner_wait_2())
+                result = loop.run_until_complete(task)
+                assert result == 10
+                checker(2)
+
+            def test_4_5():
+                loop = asyncio.get_event_loop()
+                result = loop.run_until_complete(test_task_return_4_5())
+                assert result == 10
+                checker(2)
+
+            def test_4_6():
+                loop = asyncio.get_event_loop()
+                result = loop.run_until_complete(test_task_return_4_6())
+                assert result == None
+                checker(2)
+
+            def test_4_7():
+                loop = asyncio.get_event_loop()
+                future = loop.run_until_complete(test_task_return_4_7())
+                try:
+                    assert future.result() == None  # result is not set because no wait
+                except Exception as e:
+                    flag = True
+                assert flag
+                checker(1)
+
+
+            def test_5():
+                loop = asyncio.get_event_loop()
+                loop.run_until_complete(asyncio.create_task(test_async(10, debug=False, q=q, is_return=True)))
+                checker(2)
+
+            def test_6():
+                t = asyncio.create_task(test_async(10, debug=False, q=q, is_return=True))
+                loop = asyncio.get_event_loop()
+                loop.run_until_complete(t)
+                checker(2)
+
+            '''
+            this seems to run forever. how to stop?
+            '''
+            def test_7():
+                def start_worker(loop):
+                    asyncio.set_event_loop(loop)
+                    loop.run_forever()
+
+                loop = asyncio.get_event_loop()
+                loop_worker = asyncio.new_event_loop()
+                t = threading.Thread(target=start_worker, args=(loop_worker,))
+                t.start()
+                loop_worker.stop()
+                t.join()
+
+            def test_8():
+                def start_worker(loop):
+                    asyncio.set_event_loop(loop)
+                    loop.run_forever()
+
+                resetq()
+                loop = asyncio.get_event_loop()
+                loop_worker = asyncio.new_event_loop()
+                t = threading.Thread(target=start_worker, args=(loop_worker,))
+                t.start()
+                loop_worker.stop()
+                t.join()
+
+            def inner_main():
+                '''
+                test_task_return_1() # error! never awaited!
+                test_task_return_2() # error! never awaited!
+                test_1_0()
+                test_2()
+                test_3()
+                test_5()    # error! test_async never awaited
+                test_6()    # error! test_async never awaited
+                test_4_0()  # ok
+                resetq()
+                test_4_1()  # ok
+                resetq()
+                test_4_2()  # ok
+                resetq()
+                test_4_3()  # ok
+                resetq()
+                test_4_4()  # ok
+                resetq()
+                test_4_5()  # ok
+                resetq()
+                test_4_6()  # ok
+                resetq()
+                test_4_7()  # ok
+                test_4_4_1()
+                test_4_4_1()
+                test_4_4_2()
+                '''
+
+                test_7()
+
+            inner_main()
+
+        def inner_main():
+            test_task()
+            p('test_task inner_main done')
+
+        inner_main()
+
+
+    def test_async_concepts_old(self):
+
         def test_asynciotests():
             asynciotests.AsyncIOTests().test()
 
-        async def test_echo_async(v):
-            sleep_ms = random.randint(10,100)/1000
+        async def test_async_sleep(id, ms=None, debug=False, is_return=False, q=None):
+            if(debug):
+                p('test_async_sleep beg id:{} ms:{}'.format(id, ms))
+            if q is not None:
+                q.put('test_async_sleep beg id:{} ms:{}'.format(id, ms))
+            if ms is not None:
+                ts = ms / 1000
+                await asyncio.sleep(ts)
+            if(debug):
+                p('test_async_sleep end id:{} ms:{}'.format(id, ms))
+            if q is not None:
+                q.put('test_async_sleep end id:{} ms:{}'.format(id, ms))
+            if(is_return):
+                return id
 
-            await asyncio.sleep(sleep_ms)
-            p('test_echo_async {} slept for {} ms'.format(v, sleep_ms))
-            return v
+        def test_sync_sleep(id, ms=None, debug=False, is_return=False, q=None):
+            if(debug):
+                p('test_sync_sleep beg id:{} ms:{}'.format(id, ms))
+            if q is not None:
+                q.put('test_async_sleep beg id:{} ms:{}'.format(id, ms))
+            if ms is not None:
+                ts = ms / 1000
+                time.sleep(ts)
+            if(debug):
+                p('test_sync_sleep end id:{} ms:{}'.format(id, ms))
+            if q is not None:
+                q.put('test_async_sleep end id:{} ms:{}'.format(id, ms))
+            if(is_return):
+                return id
+
+        def test_task():
+            async def test_task_return_1():
+                t = asyncio.create_task(test_sync_sleep(10, 0, True, False, None))
+                await t
+            async def test_task_return_2():
+                t = asyncio.create_task(test_async_sleep(10, 0, True, False, None))
+                await t
+                return t.result()
+            def inner_main():
+                pass
+            inner_main()
 
         def test_syntax_async_array():
 
             def test_forever_loop():
                 p('test_forever_loop')
-                fs = [test_echo_async(i) for i in range(5)]
+                fs = [test_async_sleep(i) for i in range(5)]
                 assert len(fs) == 5
                 loop = asyncio.get_event_loop()
                 taskl = [loop.create_task(f) for f in fs]
@@ -893,7 +1211,7 @@ class Tests:
 
             def test_run_until_complete_futures():
                 p('test_run_until_complete_futures')
-                fs = [test_echo_async(i) for i in range(5)]
+                fs = [test_async_sleep(i) for i in range(5)]
                 assert len(fs) == 5
                 loop = asyncio.get_event_loop()
                 for f in fs:
@@ -901,14 +1219,14 @@ class Tests:
 
             def test_run_until_complete_gather_futures():
                 p('test_run_until_complete_gather_futures')
-                fs = [test_echo_async(i) for i in range(5)]
+                fs = [test_async_sleep(i) for i in range(5)]
                 assert len(fs) == 5
                 loop = asyncio.get_event_loop()
                 loop.run_until_complete(asyncio.gather(*fs))
 
             def test_run_until_complete_task():
                 p('test_run_until_complete_task')
-                fs = [test_echo_async(i) for i in range(5)]
+                fs = [test_async_sleep(i) for i in range(5)]
                 assert len(fs) == 5
                 loop = asyncio.get_event_loop()
                 taskl = [loop.create_task(f) for f in fs]
@@ -917,7 +1235,7 @@ class Tests:
 
             def test_run_until_first_complete_futures():
                 p('test_run_until_first_complete_futures')
-                fs = [test_echo_async(i) for i in range(5)]
+                fs = [test_async_sleep(i) for i in range(5)]
                 assert len(fs) == 5
                 loop = asyncio.get_event_loop()
                 res = loop.run_until_complete(asyncio.wait(fs, return_when=asyncio.FIRST_COMPLETED))
@@ -974,6 +1292,8 @@ class Tests:
 
 
         def test_loop_sleep_sync_separate_executor():
+            '''
+            '''
             q = queue.SimpleQueue()
             executor = ThreadPoolExecutor()
             loop = asyncio.get_event_loop()
@@ -983,34 +1303,111 @@ class Tests:
             while not q.empty():
                 p(q.get())
 
-        def test_loop_sleep_sync_separate_worker_loop():
+        def test_loop_async_loop_separate_blocking_loop():
+            '''
+            async loop using separate worker loop to call blocking function
+            '''
+
+
+            def test_sync_sleep(id, ms, q):
+                ts = ms / 1000
+                p('beg test_sync_sleep id {} sleep {} ms'.format(id, ms))
+                time.sleep(ts)
+                p('end test_sync_sleep id {} sleep {} ms'.format(id, ms))
+                return id
+
+            async def test_sync_sleep_async_wrapper(id, ms, q):
+                return test_sync_sleep(id, ms, q)
 
             def start_worker(worker_loop):
                 asyncio.set_event_loop(worker_loop)
                 worker_loop.run_forever()
 
-            async def test_wrapper_sync_sleep_worker(id, ms, q, loop, loop_worker):
+            async def test_wrapper_sync_sleep_worker_future(id, ms, q, loop, loop_worker):
+                ts = ms / 1000
+                future = asyncio.run_coroutine_threadsafe(test_sync_sleep_async_wrapper(id, ms, q), loop_worker)
+                await asyncio.sleep(ts)
+                # must fetch future, else get pending task error
+                #future.result()
+                return future
+
+            def test_inner_main():
+                q = queue.SimpleQueue()
+                loop = asyncio.get_event_loop()
+                loop_worker = asyncio.new_event_loop()
+                threading.Thread(target=start_worker, args=(loop_worker,)).start()
+                fs = []
+                for i in range(10):
+                    f = test_wrapper_sync_sleep_worker_future(i, 500, q, loop, loop_worker)
+                    fs.append(f)
+                #fs = [test_wrapper_sync_sleep_worker_future(i, 500, q, loop, loop_worker) for i in range(10)]
+                loop.run_until_complete(asyncio.wait(fs)) # wait, gather makes no difference in time elapsed
+                #loop_worker.run_until_complete(asyncio.wait(fs)) # wait, gather makes no difference in time elapsed
+                for f in fs:
+                    f.get()
+                    #f.result()
+                loop_worker.stop()
+                loop.stop()
+                #loop_worker.call_soon_threadsafe(loop_worker.stop)
+            try:
+                test_inner_main()
+                p('passed test_loop_async_loop_separate_blocking_loop')
+            except Exception as e:
+                p(e)
+            finally:
+                p('finally test_loop_async_loop_separate_blocking_loop')
+
+        def test_loop_sleep_sync_separate_worker_loop():
+            '''
+            async loop using separate worker loop to call blocking function
+            '''
+
+            async def test_sync_sleep(id, ms, q):
+                ts = ms / 1000
+                q.put('beg test_sync_sleep id {} sleep {} ms'.format(id, ms))
+                time.sleep(ts)
+                q.put('end test_sync_sleep id {} sleep {} ms'.format(id, ms))
+                return id
+
+            def start_worker(worker_loop):
+                asyncio.set_event_loop(worker_loop)
+                worker_loop.run_forever()
+
+            async def test_wrapper_sync_sleep_worker_future(id, ms, q, loop, loop_worker):
                 future = asyncio.run_coroutine_threadsafe(test_sync_sleep(id, ms, q), loop_worker)
                 future.result()
 
+            async def test_wrapper_sync_sleep_worker_no_future_async(id, ms, q, loop, loop_worker):
+                # cannot do return await because Future can;t be used in await expression
+                #return await asyncio.run_coroutine_threadsafe(test_sync_sleep(id, ms, q), loop_worker)
+                return asyncio.run_coroutine_threadsafe(test_sync_sleep(id, ms, q), loop_worker)
+
+            def test_wrapper_sync_sleep_worker_no_future_sync(id, ms, q, loop, loop_worker):
+                return asyncio.run_coroutine_threadsafe(test_sync_sleep(id, ms, q), loop_worker)
+
+            p('beg test_loop_sleep_sync_separate_worker_loop')
+
             q = queue.SimpleQueue()
+
             loop = asyncio.get_event_loop()
             loop_worker = asyncio.new_event_loop()
             threading.Thread(target=start_worker, args=(loop_worker,)).start()
-            fs = [test_wrapper_sync_sleep_worker(i, 100, q, loop, loop_worker) for i in range(10)]
+            # with sync call, it is error: asyncio.Future, coroutine, or awaitable is required
+            #fs = [test_wrapper_sync_sleep_worker_no_future_sync(i, 1000, q, loop, loop_worker) for i in range(10)]
+            fs = [test_wrapper_sync_sleep_worker_no_future_async(i, 1000, q, loop, loop_worker) for i in range(10)]
 
             loop.run_until_complete(asyncio.wait(fs)) # wait, gather makes no difference in time elapsed
 
-            while not q.empty():
-                p(q.get())
-            for task in asyncio.Task.all_tasks():
-                task.cancel()
+            #while not q.empty():
+            #    p(q.get())
+            #for task in asyncio.Task.all_tasks():
+            #    task.cancel()
 
-            loop.stop()
-            loop.close()
-            loop_worker.stop()
-            loop_worker.close()
-
+            #loop.stop()
+            #loop.close()
+            #loop_worker.stop()
+            #loop_worker.close()
+            p('done test_loop_sleep_sync_separate_worker_loop')
 
         def test_loop_sleep_async():
             q = queue.SimpleQueue()
@@ -1049,13 +1446,15 @@ class Tests:
         def inner_main():
             '''
             test_asyncio_semaphore_many_futures()
-            '''
-            #test_syntax_async_array()
-            #test_loop_sleep_async()
-            #test_loop_sleep_sync_separate_executor()
-            #test_loop_sleep_sync_separate_worker_loop()
+            test_syntax_async_array()
+            test_loop_sleep_async()
+            test_loop_sleep_sync_separate_executor()
             test_asynciotests()
-            #test_loop_sleep_sync()
+            test_loop_sleep_sync()
+            test_loop_async_loop_separate_blocking_loop()
+            test_loop_sleep_sync_separate_worker_loop()
+            '''
+            test_loop_async_loop_separate_blocking_loop()
 
         inner_main()
         p('passed test_async_loops')
@@ -1182,7 +1581,7 @@ class Tests:
             for CPU intensive activity, but OK for IO intensive activity. Use multiproc for
             CPU intensive activity.
             '''
-            local_max = 5_000_000
+            local_max = 1_000_000
             num_thread = 16
             q = queue.SimpleQueue()
             locallist = []
@@ -1220,6 +1619,12 @@ class Tests:
                         count(i, local_max)
                     return True
 
+                def thread_executor_pool_cpu():
+                    executor = futures.ThreadPoolExecutor(max_workers=4)
+                    lfutures = [executor.submit(count, i, local_max) for i in range(num_thread)]
+                    futures.wait(lfutures)
+                    return True
+
                 def processes_cpu():
                     listp = [multiprocessing.Process(target=count,args=(i,local_max,)) for i in range(num_thread)]
                     [p.start() for p in listp]
@@ -1246,7 +1651,7 @@ class Tests:
                     return True
 
                 p('start testGILSpeed CPU {} threads count {}'.format(num_thread, local_max))
-                l = [thread_multi_cpu, no_thread_cpu, processes_cpu, proc_pool_cpu]
+                l = [thread_multi_cpu, no_thread_cpu, thread_executor_pool_cpu, processes_cpu, proc_pool_cpu]
                 for f in l:
                     tb = int(time.time_ns()/1_000_000)
                     f()
@@ -1271,6 +1676,14 @@ class Tests:
                         sleep_ms(i, 1000)
                     return True
 
+                def thread_executor_pool_io():
+                    executor = futures.ThreadPoolExecutor() # this is fastest
+                    #executor = futures.ThreadPoolExecutor(max_workers=4)   # this is slowest
+                    #executor = futures.ThreadPoolExecutor(max_workers=8)   # medium
+                    lfutures = [executor.submit(sleep_ms, i, 1000) for i in range(num_thread)]
+                    futures.wait(lfutures)
+                    return True
+
                 def processes_io():
                     listp = [multiprocessing.Process(target=sleep_ms,args=(i,1000,)) for i in range(num_thread)]
                     [p.start() for p in listp]
@@ -1287,7 +1700,7 @@ class Tests:
                     return True
 
                 p('start testGILSpeed IO {} threads count {}'.format(num_thread, local_max))
-                l = [thread_multi_io, no_thread_io, processes_io, proc_pool_io]
+                l = [thread_multi_io, no_thread_io, thread_executor_pool_io, processes_io, proc_pool_io]
                 for f in l:
                     tb = int(time.time_ns()/1_000_000)
                     f()
@@ -1783,12 +2196,45 @@ class Tests:
                 p(' *kv:{}'.format([*kv]))                                  # {'k1','k2','k3'}
                 #p('**kv:{}'.format([**kv])) # invalid
 
+
+
+            def test_specific_kwargs():
+                def foo_kwargs0(**kwargs):
+                    ctr = 0
+                    args = ['arg1','arg2','arg3']
+                    for arg in args:
+                        if(arg in kwargs):
+                            p('{} detected:{}'.format(arg, kwargs[arg]))
+                            ctr += 1
+                    return ctr
+                def foo_kwargs1(v, **kwargs):
+                    ctr = 0
+                    args = ['arg1','arg2','arg3']
+                    for arg in args:
+                        if(arg in kwargs):
+                            p('{} detected:{}'.format(arg, kwargs[arg]))
+                            ctr += 1
+                    return ctr
+                def call_foo_kwargs():
+                    assert foo_kwargs0() == 0
+                    assert foo_kwargs0(arg1=2) == 1
+                    assert foo_kwargs0(argx=2) == 0
+                    assert foo_kwargs0(arg1=1,arg2=2,arg3=3) == 3
+                    assert foo_kwargs1(1) == 0
+                    assert foo_kwargs1(1,arg1=2) == 1
+                    assert foo_kwargs1(1,argx=2) == 0
+                    assert foo_kwargs1(1,arg1=1,arg2=2,arg3=3) == 3
+
+                call_foo_kwargs()
+
             def test():
                 p('test position args')
                 '''
-                '''
                 foolist()
                 test_args()
+                '''
+                test_specific_kwargs()
+                p('test syntax passed')
 
             test()
 
@@ -1902,6 +2348,77 @@ class Tests:
             l1.reverse()
             p(l)
             p(l1)
+
+
+        def test_missing_value():
+            # ascii to int
+            def a2i(v):
+                vi = 0
+                for i in range(0,len(v)):
+                    c = v[i]
+                    ci = ord(c)
+                    ci = ci & 0xff
+                    vi = vi << 8 | ci
+                return vi
+
+            def i2a(v):
+                vs = ''
+                while v != 0:
+                    vb = v & 0xff
+                    vc = chr(vb)
+                    vs = vc + vs
+                    v = v >> 8
+                return vs
+
+            a = [
+                'Bob joe',
+                'bobby Jim',
+                'willy Wonka',
+                'Willy Wonka II',
+                'will turner',
+                'jack Sparrow',
+                'captain Jack Sparrow',
+                'frodo baggins',
+                'big brother',
+                'winston smith'
+            ]
+
+            aint = []
+            for v in a:
+                aint.append(a2i(v))
+
+            atxt = []
+            for v in aint:
+                atxt.append(i2a(v))
+
+            vxor = 0
+            for v in aint:
+                vxor ^= v
+            vxoro = vxor
+
+            #p('{}'.format(vxor))
+
+            l = [
+                'Bob joe',
+                'bobby Jim',
+                'willy Wonka',
+                'Willy Wonka II',
+                'will turner',
+                'captain Jack Sparrow',
+                'frodo baggins',
+                'big brother',
+                'winston smith'
+            ]
+
+            for v in l:
+                vi = a2i(v)
+                vxor ^= vi
+            v = i2a(vxor)
+            assert v == 'jack Sparrow'
+            p('{}'.format(v))
+            p('this only works for 1 missing value')
+
+
 
         def test_syntax_array():
             l = [test_echo(i) for i in range(5)]
@@ -2261,9 +2778,9 @@ class Tests:
             test_queue_list_deque_array()
             test_isinstance()
             testReturnTuple()
-            test_function_args()
-            '''
             test_gen_arrays()
+            '''
+            test_function_args()
 
         inner_main()
         p('passed test_syntax')
@@ -2348,15 +2865,14 @@ class Tests:
         self.testMyClass2()
         self.testGossip()
         self.testDependencyStructure()
-        self.test_missing_value()
         self.test_utils_module()
         self.testRegex()
-        self.testSHA256()
         self.test_files_and_json()
         self.test_multithread_concepts()
         self.test_logging()
-        self.test_async_concepts()
         self.test_algos()
-        '''
         self.test_syntax()
+        self.test_async_concepts()
+        '''
+        self.test_multithread_concepts()
         pass
