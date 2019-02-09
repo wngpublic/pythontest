@@ -1,3 +1,4 @@
+git push https://<username>@github.com/<username>/<project>.git
 
 http://flask.pocoo.org/docs/1.0/quickstart/
 https://www.flaskapi.org/api-guide/status-codes/

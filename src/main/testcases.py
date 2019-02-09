@@ -1677,9 +1677,9 @@ class Tests:
                     return True
 
                 def thread_executor_pool_io():
-                    executor = futures.ThreadPoolExecutor() # this is fastest
                     #executor = futures.ThreadPoolExecutor(max_workers=4)   # this is slowest
                     #executor = futures.ThreadPoolExecutor(max_workers=8)   # medium
+                    executor = futures.ThreadPoolExecutor()                 # this is fastest
                     lfutures = [executor.submit(sleep_ms, i, 1000) for i in range(num_thread)]
                     futures.wait(lfutures)
                     return True
@@ -1748,9 +1748,6 @@ class Tests:
             p('len of dic {}'.format(len(a)))
 
         def diffJsonSubtree(json):
-            pass
-
-        def testRegex(self):
             pass
 
         def testDifflib(self):
@@ -2420,10 +2417,6 @@ class Tests:
 
 
 
-        def test_syntax_array():
-            l = [test_echo(i) for i in range(5)]
-            assert len(l) == 5
-
         def test_queue_list_deque_array():
             #p('start test_queue_list_deque_array')
             size = 10
@@ -2643,6 +2636,7 @@ class Tests:
                 p(chr(ord(k)))
                 p('--------')
 
+
         def test_time(self):
             s = time.time()
             ms = s * 1000
@@ -2764,6 +2758,10 @@ class Tests:
             assert len(a4) == 3
             assert len(a5) == 3
 
+            l = [test_echo(i) for i in range(5)]
+            assert len(l) == 5
+
+
         def inner_main():
             '''
             test_random_choices()
@@ -2858,6 +2856,512 @@ class Tests:
     def test_algos(self):
         algos.algos().test()
 
+    def test_convert_int(self):
+        vd = 100.1
+        vi = 100
+        vsi = str(vi)
+        vsd = str(vd)
+        assert '100.1' == vsd
+        assert '100' == vsi
+        vc = int(vsi)
+        assert vc == vi
+        vc = float(vsd)
+        assert vc == vd
+        p('pass test_convert_int')
+
+    def test_round_number(self):
+        '''
+        given a number, round it up to multiple of 5
+        '''
+        def round_int_to_multiple(v, multiple):
+            if(v % multiple != 0):
+                remainder = v % multiple
+                result = v + (multiple - remainder)
+                assert result % multiple == 0
+
+        def test_round_int():
+            multiple = 5
+            round_int_to_multiple(0, multiple)
+            round_int_to_multiple(2, multiple)
+            round_int_to_multiple(5, multiple)
+            round_int_to_multiple(7, multiple)
+            round_int_to_multiple(8, multiple)
+            round_int_to_multiple(10, multiple)
+
+        def round_double_to_multiple(v, multiple):
+            assert v <= 1.0 and v >= 0.0 and multiple <= 1.0 and multiple >= 0.0
+            v_times_100 = int(v * 100)
+            multiple_times_100 = int(multiple * 100)
+            if(v_times_100 % multiple_times_100 != 0):
+                remainder = v_times_100 % multiple_times_100
+                result = v_times_100 + (multiple_times_100 - remainder)
+                assert result % multiple_times_100 == 0
+
+        def test_round_double():
+            multiple = 0.05
+
+            flag = True
+            try:
+                round_double_to_multiple(-0.0, multiple)
+            except Exception as e:
+                flag = False
+            assert flag
+
+            flag = False
+            try:
+                round_double_to_multiple(-0.1, multiple)
+            except Exception as e:
+                flag = True
+            assert flag
+
+
+            flag = False
+            try:
+                round_double_to_multiple(10, multiple)
+            except Exception as e:
+                flag = True
+            assert flag
+
+            round_double_to_multiple(0.0, multiple)
+            round_double_to_multiple(0.03, multiple)
+            round_double_to_multiple(0.04, multiple)
+            round_double_to_multiple(0.05, multiple)
+            round_double_to_multiple(0.06, multiple)
+            round_double_to_multiple(0.10, multiple)
+            round_double_to_multiple(0.12, multiple)
+            round_double_to_multiple(0.15, multiple)
+            round_double_to_multiple(0.19, multiple)
+            round_double_to_multiple(0.20, multiple)
+
+        test_round_int()
+        test_round_double()
+        p('passed test_round_number')
+
+    def test_tuple_list_ops(self):
+        a1 = [1,2,3]
+        a2 = [1,2,3]
+        a3 = [2,3,4]
+        a4 = [4,3,2]
+        a5 = [4,3,2]
+        for v1,v2 in zip(a1,a2):        # loop over 2 or more sequences, use zip
+            assert v1 == v2
+
+        assert a1 == a2
+        assert a1 != a3
+        assert a3 != a4
+        assert a4 == a5
+
+        a1 = [(1,2,3),(4,5,6),(7,8,9)]
+        a2 = [(1,2,3),(4,5,6),(7,8,9)]
+        for v1,v2 in zip(a1,a2):        # loop over 2 or more sequences, use zip
+            assert v1 == v2
+
+        a1 = [(4,5,6),(7,8,9),(1,2,3)]
+        a2 = [(1,2,3),(4,5,6),(7,8,9)]
+        a3 = [(4,5,6),(7,8,9),(1,2,3)]
+        for v1,v2,v3 in zip(a1,a2,a3):  # loop over 2 or more sequences, use zip
+            assert v1 != v2
+            assert v1 == v3
+
+        p('passed test_tuple_list_ops')
+
+    def test_set_operations(self):
+        set1 = set([1,2,3,4,5])
+        set2 = set([4,5,6,7])
+        set3 = set([2,3,4])
+        set4 = set()
+        set4.update(set1)
+        set4.update(set2)
+        set5 = set1.difference(set2)    # 1,2,3,4,5 - 4,5,6,7 = 1,2,3
+        set6 = set2.difference(set1)    # 4,5,6,7 - 1,2,3,4,5 = 6,7
+        set7 = set1.intersection(set2)  # 1,2,3,4,5 & 4,5,6,7 = 4,5
+        set8 = set()
+        for v in range(1,8):
+            set8.add(v)
+        list1 = [1,2,3,4,5]
+        set9 = set(list1)
+        assert len(set4) == 7
+        assert len(set5) == 3 and 1 in set5 and 2 in set5 and 3 in set5
+        assert len(set6) == 2 and 6 in set6 and 7 in set6
+        assert len(set7) == 2 and 4 in set7 and 5 in set7
+        assert len(set8) == 7
+        assert len(set9) == 5
+
+        set10 = set1.copy()
+        assert len(set10.difference(set1)) == 0
+        set1 = set([(1,2),(3,4),(5,5),(1,4),(6,7)]) # these are sets of tuples!
+        set2 = set([(1,2),(3,4),(5,5),(1,4),(6,7)])
+        set3 = set([(2,1),(3,4),(5,5),(4,1),(7,6)])
+        count = 0
+        for t1 in set1:
+            v1,v2 = t1
+            for t2 in set2:
+                v3,v4 = t2
+                if v1 == v3 and v2 == v4:
+                    count += 1
+                    break
+        assert count == len(set1)
+
+        # tuple comparison
+        lt1 = [(1,2),(2,3),(4,5)]
+        lt2 = [(1,2),(2,3),(4,5)]
+        lt3 = [(1,2),(2,3),(6,7)]
+        lt4 = [(2,2),(3,3),(7,7)]
+        lt5 = [(0,2),(1,3),(5,7)]
+        assert lt1 == lt2
+        assert lt2 != lt3
+        assert lt4 > lt3
+        assert lt5 < lt4        # compares in order of tuples
+        p('passed test_set_operations')
+
+    def test_listops(self):
+        l = []
+        l.append('1,2,3')
+        l.append('4,5,6')
+
+    def test_regex(self):
+        s1 = 'k: {1,2,3}.  b: {2,3,4} c: {4,5,6} d: {7,8,9}'
+        s2 = 'k: {1,2,3} b:  {2,3,4}   c: {4,5,6} d: {7,8,9}'
+        s3 = 'k: {1,2,3} b: {2,3,4}'
+        s4 = 'this is date1: 02/01/18 this is date2: 02/02/19 this is date3: 02/03/20, this is not date 020304. this is zip code 95000,95001 95002 this is not zip 95 912345 '
+
+        def get_dict1(s):
+            d = {}
+            a = re.split(r'\s+', s)
+            i = 0
+            while i < len(a):
+                v = a[i].strip()
+                if(re.match(r'^\w+:$', v)):
+                    key = v.strip(':')
+                    dat = a[i+1]
+                    dat = dat.replace('{', '')
+                    dat = dat.replace('}', '')
+                    ad  = re.split(r',', dat)
+                    set1 = set(ad)
+                    d[key] = set1
+                    i += 2
+                else:
+                    i += 1
+            return d
+        def test_grouping(s):
+            #p(s)
+            m1 = re.findall('\w+:\s+\{.*\}',s2)
+            m2 = re.search(r'\s+(\w+)\:\s+{(.*)}', s2)
+            m3 = re.findall('\w+:\s+\{[\d+\,]+}',s2)        # this seems to be the right one
+            m4 = re.findall('\w+:\s+\{[\d+\,]}',s2)
+            m5 = re.findall('\w+:\s+{[\d+\,]+}',s2)         # this seems to be same as m3
+            m6 = re.findall('\w+:\s+{[\d,]+}',s2)           # this seems to be same as m3
+            v0 = m2.group()
+            v1 = m2.group(0)
+            v2 = m2.group(1)
+            v3 = m2.group(2)
+            v4 = m2.groups()
+            flag = False
+            try:
+                v4 = m2.group(3)
+            except Exception as e:
+                flag = True
+            assert flag
+            m7 = re.search(r'\s+(\w+)\:\s+{[\d\w,]+}', s2)
+            v5 = m7.group()
+            v6 = m7.groups()
+            v7 = m7.group(0)
+            v8 = m7.group(1)
+            pass
+
+        def test_parse1():
+            s = 'this is date1: 02/01/18 this is date2: 02/02/19 this is date3: 02/03/20, ' + \
+                'this is date 02/03/2100 this is not date w02/02/02 this is not date 020304. ' + \
+                'this is zip code 95000,95001 95002,95003. 03/01/20. this is not zip ' + \
+                '95 912345 919292 188111,717117,81234567' + \
+                'this is not a date 01/02/123 this is a date 01/02/2013. '
+
+            a = re.findall('\s(\d{2}/\d{2}/\d{2})[\s,\.]', s)   # group the date (01/02/03)
+            set2 = set(a)
+            assert len(a) == 4
+            set1 = set(['02/01/18','02/02/19','02/03/20','03/01/20'])
+            setd = set1.difference(set2)
+            assert len(setd) == 0
+
+            a = re.findall('\s\d{2}/\d{2}/\d{2}[\s,\.]', s)   # do not group the date (01/02/03), so includes all the misc symbols
+            set2 = set(a)
+            assert len(a) == 4
+            set1 = set([' 02/01/18 ',' 02/02/19 ',' 02/03/20,',' 03/01/20.'])
+            setd = set1.difference(set2)
+            assert len(setd) == 0
+
+            a = re.findall('\d{2}/\d{2}/\d{2}', s)   # not accounting for lhs and rhs symbols
+            set2 = set(a)
+            assert len(a) == 8
+            set1 = set(['02/01/18','02/02/19','02/03/20','02/03/21','02/02/02','03/01/20','01/02/12','01/02/20'])
+            setd = set1.difference(set2)
+            assert len(setd) == 0
+
+            # either 2 digit year or 4 digit year but not 3, use NON CAPTURE ?: WITH CAPTURE. contrast with no NON CAPTURE
+            a = re.findall(' (\d{2}/\d{2}/(?:\d{2}|\d{4}))[\s,\.]', s)
+            set2 = set(a)
+            assert len(a) == 6
+            set1 = set(['02/01/18','02/02/19','02/03/20','02/03/2100','03/01/20','01/02/2013'])
+            setd = set1.difference(set2)
+            assert len(setd) == 0
+
+            # bad regex, same as above, but with CAPTURE groups
+            # either 2 digit year or 4 digit year but not 3, use NON CAPTURE ?: WITH CAPTURE. contrast with no NON CAPTURE
+            # this ONLY returns what is grouped, with is ONLY (\d{2}|\d{4})
+            a = re.findall(' \d{2}/\d{2}/(\d{2}|\d{4})[\s,\.]', s)
+            set2 = set(a)
+            assert len(a) == 6
+            assert len(set2) == 5       # because of duplicates
+            setd = set1.difference(set2)
+            set1 = set(['18','19','20','2100','2013'])
+            setd = set1.difference(set2)
+            assert len(setd) == 0
+
+            # nested capture groups return tuples as answers
+            a = re.findall(' (\d{2}/\d{2}/(\d{2}|\d{4}))[\s,\.]', s)
+            set2 = set(a)
+            assert len(a) == 6
+            assert len(set2) == 6
+            setd = set1.difference(set2)
+            set1 = set([('02/01/18','18'),('02/02/19','19'),('02/03/20','20'),('02/03/2100','2100'),('03/01/20','20'),('01/02/2013','2013')])
+            setd = set1.difference(set2)
+
+            # get all zip codes, which are 5 digits
+            # this regex is wrong because it looks for ,zip, ,zip,
+            # so result is less than expected
+            a = re.findall('[ ,\.;](\d{5})[ ,\.;]',s)
+            assert len(a) == 2
+            set1 = set(['95000','95002'])
+            set2 = set(a)
+            assert len(set1.difference(set2)) == 0
+
+            # get all zip codes, which are 5 digits, but this matcher is also wrong
+            a = re.findall('[ ,\.;]?(\d{5})[ ,\.;]?',s)
+            assert len(a) != 4
+
+            # get all zip codes, which are 5 digits
+            a = re.findall(r'\b\d{5}\b',s)
+            assert len(a) == 4
+            set1 = set(['95000','95001','95002','95003'])
+            set2 = set(a)
+            assert len(set1.difference(set2)) == 0
+
+            # get all zip codes, which are 5 digits
+            a = re.findall(r'\b(\d{5})\b',s)
+            assert len(a) == 4
+            set1 = set(['95000','95001','95002','95003'])
+            set2 = set(a)
+            assert len(set1.difference(set2)) == 0
+
+            # not as regex, it returns 0!
+            a = re.findall('\b\d{5}\b',s)
+            assert len(a) == 0
+
+            # takes all numbers
+            a = re.findall('\d{5}',s)
+            set1 = set(['02030','95000','95001','95002','95003','91234','91929','18811','71711','81234'])
+            assert len(a) == len(set1)
+
+            s = '1234567'
+
+            # how to get 1234 2345 3456 4567?
+            # use lookahead capture
+            # this syntax is wrong, and returns 4 blanks
+            a = re.findall(r'(?=\d{4})',s)
+            assert len(a) == 4
+            for v in a: assert v == ''
+
+            # how to get 1234 2345 3456 4567?
+            # use lookahead capture
+            a = re.findall(r'(?=(\d{4}))',s)
+            assert len(a) == 4
+            set1 = set(['1234','2345','3456','4567'])
+            set2 = set(a)
+            assert len(set1.difference(set2)) == 0
+
+            pass
+
+        def test_grouping_keyset():
+            s = 'k: {1,2,3} b:  {2,3,4}   c: {4,5,6} d: {7,8,9}'
+
+            a = re.findall('[^\s]((\w):\s+{([\w,]+)})',s)               # empty!
+            assert len(a) == 0
+
+            a = re.findall('[^\s]((\w+):\s+{([\d,]+)})',s)              # empty!
+            assert len(a) == 0
+
+            a = re.findall('\w+:\s+{[\d,]+}',s)                         # better!
+            assert len(a) == 4
+            set1 = set(a)
+            set2 = set(['k: {1,2,3}','b:  {2,3,4}','c: {4,5,6}','d: {7,8,9}'])
+            setd = set1.difference(set2)
+            assert len(setd) == 0
+
+            a = re.findall('(\w+):\s+{([\d,]+)}',s)                     # this returns tuple
+            assert len(a) == 4
+            a_cmp = [('k','1,2,3'),('b','2,3,4'),('c','4,5,6'),('d','7,8,9')]
+            for i in range(len(a)): assert a[i] == a_cmp[i]
+
+            # loop over 2 or more sequences, use zip
+            for v1,v2 in zip(a,a_cmp): assert v1 == v2
+
+        def t1():
+            '''
+            split into groups as a key:set
+            '''
+            d = get_dict1(s1)
+            assert len(d) == 4
+            d = get_dict1(s2)
+            assert len(d) == 4
+            d = get_dict1(s3)
+            assert len(d) == 2
+
+        def t2():
+            #test_grouping(s1)
+            test_grouping(s2)
+            #test_grouping(s3)
+
+        def test_basic_regex():
+            s = '     this     is   trimming.'
+            a = ['this','is','trimming.']
+
+            v = re.sub(r'\s+',' ', s)
+            assert v == ' this is trimming.'
+            v = v.strip()
+            assert v == 'this is trimming.'
+
+            s1 = s.strip()
+            assert s1 == 'this     is   trimming.'
+
+            a1 = s1.split()
+            assert len(a1) == 3 and a1 == ['this','is','trimming.']
+
+            a1 = s.split()
+            assert len(a1) == 3 and a1 == ['this','is','trimming.']
+
+            a1 = s1.split(' ')
+            assert a1 == ['this','','','','','is','','','trimming.']
+
+            a1 = re.split(r'\s+',s1)
+            assert a1 == ['this','is','trimming.']
+
+            a1 = re.split(r'\s+',s)
+            assert a1 == ['','this','is','trimming.']
+
+            # this does nothing
+            s1 = s.replace(r'\s+',' ')
+            assert s1 == s
+
+            s1 = re.sub(r'\s+',' ',s)
+            assert s1 == ' this is trimming.'
+            s1 = s1.strip()
+            assert s1 == 'this is trimming.'
+
+            s1 = ';;;this;;;;is;;;trimming.;;'.strip(';')
+            assert s1 == 'this;;;;is;;;trimming.'
+
+            s1 = re.sub(r';+',' ','this;;;;is;;;trimming.')
+            assert s1 == 'this is trimming.'
+
+            a1 = re.split(r';+',';;;this;;;;is;;;trimming.;;')
+            assert a1 == ['','this','is','trimming.','']
+
+            s1 = ';;;this;;;;is;;;trimming.;;'.strip(';')
+            a1 = re.split(r';+',s1)
+            assert a1 == ['this','is','trimming.']
+
+            # split every third position
+            s = 'actbatcatratsathat'
+            a = ['act','bat','cat','rat','sat','hat']
+            a1 = []
+            for i in range(0, len(s), 3):
+                a1.append(s[i:i+3])
+            a2 = [s[i:i+3] for i in range(0, len(s), 3)]
+            assert a1 == a2
+            s = 'actbatcatratsathats'
+            a2 = [s[i:i+3] for i in range(0, len(s), 3)]
+            assert a2 == ['act','bat','cat','rat','sat','hat','s']
+
+            s1 = '  hey, what   are you doing   there?   i am here, ,  not   there.'
+            a2 = ['hey','what','are','you','doing','there','i','am','here','not','there']
+            a1 = re.findall(r'\w+', s1)
+            assert a1 == a2
+
+            # multiple substitutions
+            s = ' {1,2,3}, {{2,3,4},{5,6,7}}.'
+            v = re.sub(r'[\s{}\.]','',s)
+            assert v == '1,2,3,2,3,4,5,6,7'
+
+            # braces matching
+            s = ' {1,2,3}, {{2,3,4},{5,6,7}}.'
+            a = re.findall(r'\{[\d,\s]+\}',s)
+            assert len(a) == 3
+            assert a[0] == '{1,2,3}'
+            assert a[1] == '{2,3,4}'
+            assert a[2] == '{5,6,7}'
+
+
+            # greedy vs lazy
+            # greedy matches til last } seen
+            a = re.findall(r'{.*}',s)
+            assert len(a) == 1
+            assert a[0] == '{1,2,3}, {{2,3,4},{5,6,7}}'
+
+            # lazy matches til first } seen
+            a = re.findall(r'{.*?}',s)
+            assert len(a) == 3
+            assert a[0] == '{1,2,3}'
+            assert a[1] == '{{2,3,4}'
+            assert a[2] == '{5,6,7}'
+
+            s = 'word:cat word:!@# word:dog'
+            v = re.search(r'word:\w+',s)
+            assert v
+            v = re.search(r'whatever:\w+',s)
+            assert not v
+
+            # group matching
+            # (()()) -> group|group(1) == (()()), group(2) = () first, group(3) = () second
+            s = 'date:[01/01/02:12345,01/01/02:12346,01/01/02:12347,01/02/02:1111]'
+            m = re.search(r'((\d{2}/\d{2}/\d{2}):(\d+))',s)
+            v = m.group()
+            assert v == '01/01/02:12345'
+            v = m.group(1)
+            assert v == '01/01/02:12345'
+            v = m.group(2)
+            assert v == '01/01/02'
+            v = m.group(3)
+            assert v == '12345'
+            a = re.findall(r'((\d{2}/\d{2}/\d{2}):(\d+))',s)
+            assert len(a) == 4
+            assert a[0] == ('01/01/02:12345','01/01/02','12345')
+            assert a[1] == ('01/01/02:12346','01/01/02','12346')
+            assert a[2] == ('01/01/02:12347','01/01/02','12347')
+            assert a[3] == ('01/02/02:1111','01/02/02','1111')
+            pass
+
+        def test_conditional_text_validation():
+            '''
+            validate that lines of text fit certain rules.
+            eg if detect word1, then subsequent has to follow certain order, else etc.
+            '''
+            pass
+
+        def test_all():
+            try:
+                #t1()
+                #t2()
+                test_parse1()
+                test_grouping_keyset()
+                test_basic_regex()
+                test_conditional_text_validation()
+                p('passed test_regex')
+            except Exception as e:
+                p(e)
+                raise e
+
+        test_all()
+
     def test(self, argv):
         '''
         self.test_parse_args(argv)
@@ -2866,13 +3370,24 @@ class Tests:
         self.testGossip()
         self.testDependencyStructure()
         self.test_utils_module()
-        self.testRegex()
         self.test_files_and_json()
         self.test_multithread_concepts()
         self.test_logging()
         self.test_algos()
         self.test_syntax()
         self.test_async_concepts()
-        '''
         self.test_multithread_concepts()
+        self.test_convert_int()
+        self.test_round_number()
+        self.test_set_operations()
+        '''
+        self.test_tuple_list_ops()
+        self.test_set_operations()
+        self.test_regex()
         pass
+
+def maintestcases():
+    t = Tests()
+    t.test(None)
+
+maintestcases()
