@@ -13,6 +13,7 @@ import math
 import calendar
 import cmd
 import collections
+from collections import deque
 from collections import OrderedDict
 import urllib.request as url
 import pathlib
@@ -44,10 +45,17 @@ import aiohttp
 import uuid
 import logging
 
-
+global_output_to_file_ = False
+global_fh_ = None
 
 def p(s):
+    global global_output_to_file_
+    global global_fh_
     print(s)
+    if(global_output_to_file_):
+        if(global_fh_ is None):
+            global_fh_ = open('output_debug.log','w')
+        global_fh_.write(s + '\n')
 
 class ENUMTEST1(auto):
     CAT = auto()
@@ -2024,28 +2032,49 @@ class Tests:
 
             p('testMiscCalls passed')
 
-        def testSyscall():
-            p('system ls | wc')
-            v = os.system('ls .. | wc')
-            p(v)
-            p(os.system('ls | wc'))
+        def test_sys_call():
+            
+            flag = False
+            
+            if flag:
+                # this has no redirect output, so pwd is printed to stdout
+                # adding false flag to not run this so no output to console, but it works
+                v = os.system('pwd')
+                assert v == 0
+                v = os.popen('ls .. | wc').read()
+                v = os.system('ls | wc')
 
-            p('system pwd')
-            v = os.system('pwd')
-            p(v)
-
-            p('\nnow try subprocess way')
+            # output is redirected to v in this case
+            v = os.popen('pwd').read()
+            assert re.search(r'/python/src/main',v)
 
             task = subprocess.Popen(['ls','..'], stdout=subprocess.PIPE)
             v = task.stdout.read()
-            p(v.decode('utf-8'))
 
-            p('now try pipe command ls | wc')
             t1 = subprocess.Popen(['ls'], stdout=subprocess.PIPE)
             t2 = subprocess.Popen(['wc'], stdin=t1.stdout, stdout=subprocess.PIPE)
             t1.stdout.close()
             out,err = t2.communicate()
-            p(out.decode('utf-8'))
+            v = out.decode('utf-8')
+
+            t = subprocess.run(['ps','aux'], stdout=subprocess.PIPE)
+            t = t.stdout.decode('utf-8')
+            assert re.search(r'python', t)
+
+            t = subprocess.run('ps aux | grep python', shell=True, stdout=subprocess.PIPE)
+            t = t.stdout.decode('utf-8')
+            assert re.search(r'grep python', t)
+
+            flag = False
+            if flag:
+                # this runs and directs output to stdout, so no output redirect
+                t = subprocess.run('ps aux | grep python', shell=True)
+                assert t.stdout == None
+                # call is equivalent to run(...).returncode, so no output
+                t = subprocess.call('ps aux | grep python', shell=True)
+                assert t == 0
+
+            pass
 
         def testFileRead(fname = 'input/filetest1.txt'):
             if os.path.isfile(fname):
@@ -2224,13 +2253,36 @@ class Tests:
 
                 call_foo_kwargs()
 
+            def test_range_for_loop():
+                a = []
+                for i in range(1,5):
+                    a.append(i)
+                assert a == [1,2,3,4]
+                a = []
+                for i in range(1,6,2):
+                    a.append(i)
+                assert a == [1,3,5]
+                a = []
+                for i in range(5,0,-1):
+                    a.append(i)
+                assert a == [5,4,3,2,1]
+
+                s = 'abcde'
+                a = []
+                for i in range(len(s)):
+                    a.append(s[i:i+2])  # this goes out of bounds, but python knows, so no exception
+                assert a == ['ab','bc','cd','de','e']
+
+                p('test_range_loop passed')
+
             def test():
-                p('test position args')
                 '''
                 foolist()
                 test_args()
-                '''
                 test_specific_kwargs()
+                '''
+                test_range_for_loop()
+                test_sys_call()
                 p('test syntax passed')
 
             test()
@@ -3012,7 +3064,58 @@ class Tests:
         assert lt2 != lt3
         assert lt4 > lt3
         assert lt5 < lt4        # compares in order of tuples
+
+        set1 = set()
+        set2 = None
+        set3 = set()
+        set4 = set([1,2,3])
+        flag = False
+        try:
+            set1.update(set2)
+        except Exception as e:
+            flag = True
+        assert flag
+        set1.update(set3)
+        set1.update(set4)
+        assert len(set1.difference(set4)) == 0
         p('passed test_set_operations')
+
+    def test_dict_operations(self):
+        d = {}
+        d['k1'] = set([1,2,3])
+        assert 'k2' not in d
+        assert 'k1' in d
+        flag = False
+        try:
+            set1 = d['k2']
+        except Exception as e:
+            flag = True
+        assert flag
+
+        for k,v in d.items():
+            assert k == 'k1'
+            assert k != 'bogus'
+
+        d['k2'] = set([2,3,4])
+        assert 'k2' in d
+        d.pop('k2',None)                    # asserts if None not provided
+        assert 'k2' not in d
+        flag = False
+        try:
+            d.pop('k3')
+            assert 'should have asserted k3'
+        except Exception as e:
+            flag = True
+        assert flag
+        d['k2'] = set([2,3,4])
+        assert 'k2' in d
+        del d['k2']
+        assert 'k2' not in d
+        p('passed test_dict_operations')
+        pass
+
+
+    pass
 
     def test_listops(self):
         l = []
@@ -3097,6 +3200,8 @@ class Tests:
             setd = set1.difference(set2)
             assert len(setd) == 0
 
+            # noncapture non capture non-capture
+            # non capture is when you want to group expression, but do not want to save it as matched portion
             # either 2 digit year or 4 digit year but not 3, use NON CAPTURE ?: WITH CAPTURE. contrast with no NON CAPTURE
             a = re.findall(' (\d{2}/\d{2}/(?:\d{2}|\d{4}))[\s,\.]', s)
             set2 = set(a)
@@ -3324,14 +3429,10 @@ class Tests:
             # (()()) -> group|group(1) == (()()), group(2) = () first, group(3) = () second
             s = 'date:[01/01/02:12345,01/01/02:12346,01/01/02:12347,01/02/02:1111]'
             m = re.search(r'((\d{2}/\d{2}/\d{2}):(\d+))',s)
-            v = m.group()
-            assert v == '01/01/02:12345'
-            v = m.group(1)
-            assert v == '01/01/02:12345'
-            v = m.group(2)
-            assert v == '01/01/02'
-            v = m.group(3)
-            assert v == '12345'
+            assert m.group() == '01/01/02:12345'
+            assert m.group(1) == '01/01/02:12345'
+            assert m.group(2) == '01/01/02'
+            assert m.group(3) == '12345'
             a = re.findall(r'((\d{2}/\d{2}/\d{2}):(\d+))',s)
             assert len(a) == 4
             assert a[0] == ('01/01/02:12345','01/01/02','12345')
@@ -3347,6 +3448,216 @@ class Tests:
             '''
             pass
 
+        def test_multiline_1():
+            a1 = '''
+            this is line 1
+            this is line 2
+            this is line 3
+            '''
+            a2 = a1.splitlines()
+            assert a2[0] == ''
+            assert a2[1] == '            this is line 1'
+            a3 = [l.lstrip() for l in a2]
+            assert a3[1] == 'this is line 1'
+            s1 = '\n'.join(a3)
+            assert s1 == '\nthis is line 1\nthis is line 2\nthis is line 3\n'
+
+            # what is the starting position of the first letter in line 1 of a2?
+            m = re.search(r'\w',a2[1])
+            v = m.start()
+            assert v == 12
+            pass
+
+        def test_pattern_matching_with_capture_groups():
+            # find all ABBA patterns
+            a = [
+                'aehheb',       # y
+                'abcde',        # n
+                'aehhebc',      # y
+                'ehhe',         # y
+                'agehhegcb'     # y
+            ]
+            a = [
+                'http://abc.com',
+                'https://abc.com',
+                'https://abc.com/123',
+                'https://abc.bbb.com',
+                'http://vvv.net',
+                'http://c-now.b-then.com',
+                'https://c-now.b-then.com',
+                'http://abc.com/here',
+                'https://abc.com/here/you',
+                'http://abc.com/123/222',
+                'https://123.234.432.111',
+                'https://123.234.432;111',
+                'https://123.234.432-111',
+                'https://123.234.432.111/here',
+                'http://123.234.432.111/here',
+                'ftp://123.234.432.111',
+                'https://123.234.432.111/abc?k1=v1&k2=v2',
+                'https://bird.box/abc?k1=v1&k2=v2',
+                'https://bird.box/abc?k111=v1&k2=v2',
+                'https://bird.box/?k111=v1&k2=v2',
+                'https://bird.box/k111=v1&k2=v2',
+                'https://bird.box/abc?k121=v1&k2=v2',
+                'https://bird.box/abc?k1=v1&k2=v2&k3=v3'
+            ]
+            r = []
+            for v in a:
+                if(re.search(r'^https?://abc.com', v)): r.append(v)
+            assert len(r) == 6
+            c = [
+                'http://abc.com',
+                'https://abc.com',
+                'https://abc.com/123',
+                'http://abc.com/here',
+                'https://abc.com/here/you',
+                'http://abc.com/123/222'
+            ]
+            assert r == c
+
+            r = []
+            for v in a:
+                if(re.search(r'^https?://\d{3}\.\d{3}\.\d{3}\.\d{3}/?', v)): r.append(v)
+            c = [
+                'https://123.234.432.111',
+                'https://123.234.432.111/here',
+                'http://123.234.432.111/here',
+                'https://123.234.432.111/abc?k1=v1&k2=v2'
+            ]
+            assert r == c
+
+            r = []
+            for v in a:
+                if(re.search(r'^https?://[\w\.]+/\w+\?(\w+)=(\w+)',v)): r.append(v)
+            c = [
+                'https://123.234.432.111/abc?k1=v1&k2=v2',
+                'https://bird.box/abc?k1=v1&k2=v2',
+                'https://bird.box/abc?k111=v1&k2=v2',
+                'https://bird.box/abc?k121=v1&k2=v2',
+                'https://bird.box/abc?k1=v1&k2=v2&k3=v3'
+            ]
+            assert r == c
+
+            g = re.search(r'^https?://[\w\.]+/\w+\?(\w+)=(\w+)','https://bird.box/abc?k1=v1&k2=v2&k3=v3')
+            assert g.group(1) == 'k1' and g.group(2) == 'v1'
+
+            v = re.search(r'^https?://[\w\.]+/\w+\?(.*)','https://bird.box/abc?k1=v1&k2=v2&k3=v3')
+            a = re.findall(r'((\w+)=(\w+))',v.group(1))
+            assert v.groups() == ('k1=v1&k2=v2&k3=v3',)
+            assert v.group(1) == 'k1=v1&k2=v2&k3=v3'
+            assert len(a) == 3
+            c = [
+                ('k1=v1','k1','v1'),
+                ('k2=v2','k2','v2'),
+                ('k3=v3','k3','v3')
+            ]
+            assert a == c
+
+            v = re.search(r'^https?://[\w\.]+/\w+\?(.*)','https://bird.box/abc')
+            assert v == None
+            assert v is None
+
+            s = 'abc key_1_2: {1,2,3,4} key_2_3: {1a,2a,3a} key_3_4: {2,3,4} key_4: {} somethingelse'
+            a = re.findall(r'\b([a-zA-Z0-9_]+):\s+{([\w,]+)}',s)
+            #a = re.findall(r'\b([\w\_]+):\s+{([\w,]+)}',s)
+            assert len(a) == 3
+            assert a[0] == ('key_1_2','1,2,3,4')
+            assert a[1] == ('key_2_3','1a,2a,3a')
+            assert a[2] == ('key_3_4','2,3,4')
+            # no match on key_4: {}
+
+            s = 'abc k1: {kv1,kv2,kv3} blah'
+            t = re.search(r'k1:\s+{(\w+),(\w+),(\w+)}',s)
+            assert len(t.groups()) == 3
+            assert t.group(0) == 'k1: {kv1,kv2,kv3}'
+            assert t.group(1) == 'kv1'
+            assert t.group(2) == 'kv2'
+            assert t.group(3) == 'kv3'
+
+            t = re.search(r'(?:this|that) is a string','this is a string')
+            assert t.groups() == ()
+            assert t.group() == 'this is a string'
+
+            t = re.search(r'(this|that) is a string','this is a string')
+            g = t.groups()
+            assert t.groups() == ('this',)
+            assert t.group() == 'this is a string'
+
+            t = re.search(r'(?:this|that) is a string','that is a string')
+            g = t.group()
+            assert t.group() == 'that is a string'
+
+            # cannot do repeating subgroups with a first match
+            # in this specific case, capture the first group and do separate check on tuple
+            a = re.findall(r'key: {(\w+),(\w+)} (\w+): {([\w\,]+)}','key: {k1,v1} key1: {1,2,3} key2: {2,3,4} key3: {3,4,5}')
+
+            pass
+
+        def test_string_validate():
+            # ip match
+
+            v = re.search(r'^(\d{1,3}\.?){4}$','123.2.22.211')
+            assert v != None
+            assert v.group(1) == '211'
+
+            v = re.search(r'^(\d{1,3}\.){3}(\d{1,3})$','123.2.22')
+            assert v == None
+
+            v = re.search(r'^(\d{1,3}\.){3}(\d{1,3})$','123.2.22.312')
+            assert v != None
+            assert v.groups() == ('22.','312',)
+            assert v.group() == v.group(0)
+            assert v.group(0) == '123.2.22.312'
+            assert v.group(1) == '22.'
+            assert v.group(2) == '312'
+
+            # non capture
+            v = re.search(r'^(?:\d{1,3}\.){3}(\d{1,3})$','123.2.22.312')
+            assert v.groups() == ('312',) and v.group(1) == '312'
+
+            v = re.search(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.(\d{1,3})','123.2.22.312')
+            assert v.group(1) == '312'
+
+            v = re.search(r'^(\d{1,3})\.\d{1,3}\.\d{1,3}\.(\d{1,3})','123.2.22.312')
+            assert v.group(1) == '123'
+            assert v.group(2) == '312'
+
+            v = re.search(r'^((\d{1,3})(?:\.)){3}(\d{1,3})$','123.2.22.312')
+            assert v.groups() == ('22.','22','312')
+
+            v = re.search(r'^(\d{1,3}\.?){4}','123.2.22.312')
+            g = v.group()
+            assert g == '123.2.22.312'
+
+            v = re.search(r'^(\d{1,3}[\.$]){4}','123.2.22')
+            assert v == None
+
+            # this is exact search
+            v = re.search(r'^(\d{1,3}(\.|$)){4}$','123.2.22.234')
+            g = v.group()
+            assert g == '123.2.22.234'
+
+            # this is exact search
+            v = re.search(r'^(\d{1,3}(\.|$)){4}$','123.2.22.234.322')
+            assert v == None
+
+            # this is exact search
+            v = re.search(r'^(\d{1,3}(\.|$)){4}$','123.2.22')
+            assert v == None
+
+            v = re.search(r'^(\d{1,3}\.?){4}$','123.2.22.312.234')
+            assert v == None
+
+            v = re.search(r'^(\d{1,3}\.){4}','123.2.22.312.234')
+            g = v.group()
+            assert g == '123.2.22.312.'
+
+            v = re.search(r'^(\d{1,3}\.){3}(\d{1,3})$','123.2.22.312.2')
+            assert v == None
+
+            pass
+
         def test_all():
             try:
                 #t1()
@@ -3355,6 +3666,9 @@ class Tests:
                 test_grouping_keyset()
                 test_basic_regex()
                 test_conditional_text_validation()
+                test_multiline_1()
+                test_pattern_matching_with_capture_groups()
+                test_string_validate()
                 p('passed test_regex')
             except Exception as e:
                 p(e)
@@ -3362,6 +3676,147 @@ class Tests:
 
         test_all()
 
+    def test_list(self):
+        l1 = [i for i in range(4)]
+        assert l1 == [0,1,2,3]
+
+        l2 = l1.copy()
+        assert l2 == [0,1,2,3]
+
+        v = l2.pop()
+        assert l2 == [0,1,2]
+        assert l1 == [0,1,2,3]
+        assert v == 3
+
+        l2.insert(0,3)
+        assert l2 == [3,0,1,2]
+
+        l2.append(4)
+        assert l2 == [3,0,1,2,4]
+
+        p('pass test_list')
+
+        q = deque()
+
+        q.append(1)
+        q.append(2)
+        q.append(3)
+        q.pop()
+        assert len(q) == 2
+        s0 = 'tyqbac'
+        s1 = sorted(s0)
+        assert s0 == 'tyqbac'
+        assert s1 == ['a','b','c','q','t','y']
+        assert ''.join(s1) == 'abcqty'
+        p('pass test_list')
+
+    def test_string(self):
+        v = 'abc,de,fg,{"hi":"jk","l":["m","n"]},"o":["p q","r s t","uv"]'
+        t = ''
+        for i in range(4,6):
+            t += v[i]
+        assert t == 'de'
+        assert v[4:6] == 'de'
+        assert v[0:3] == 'abc'
+        assert v[11:15] == '"hi"'
+        p('pass test_string')
+        pass
+
+    def json_to_string(self):
+        j = json.loads('[{"a":"1","b":"2"},{"c":"3","d":"4"}]')
+        for v in j:
+            p(json.dumps(v))
+            p(json.dumps(v, sort_keys=True, indent=2))
+        pass
+
+    def test_map_of_lists_and_dicts(self):
+        def gen_dict(depth,size,prefix):
+            def gen_dict_rec(d,depth,size,prefix):
+                for i in range(size):
+                    k = '{}{}'.format(i,depth)
+                    if(depth == 0):
+                        d[k] = '{}{}{}'.format(prefix,depth,i)
+                    else:
+                        d[k] = {}
+                        gen_dict_rec(d[k],depth-1,size,prefix)
+            d = {}
+            gen_dict_rec(d,depth,size,prefix)
+            return d
+        def gen_list(size,prefix):
+            l = []
+            for i in range(size):
+                l.append('{}{}'.format(prefix,i))
+            return l
+        def print(d):
+            pass
+        def run():
+            l = []
+            l.append(gen_list(2,'a'))
+            l.append(gen_list(2,'b'))
+            lextend = []
+            lextend.extend(gen_list(2,'c'))
+            lextend.extend(gen_list(2,'d'))
+            l.append(lextend)
+            d = gen_dict(1,2,'c')
+            l.append(d)
+            for v in l:
+                if(isinstance(v,list)):
+                    p(v)
+                elif(isinstance(v,dict)):
+                    p(json.dumps(v))
+                    p(json.dumps(v, sort_keys=True, indent=2))
+            pass
+        run()
+
+    def test_external_command_capture(self):
+        p('--------------')
+        p('run ls -l')
+        v = subprocess.run(['ls','-l'])     # this runs and output is stdout
+        p('done run ls -l')
+
+        p('--------------')
+        p('run ls -l')
+        # this redirects output to pipe to v
+        v = subprocess.run(['ls','-l'],stdout=subprocess.PIPE)
+        p('this is the output')
+        p('{}'.format(v.stdout.decode('utf-8')))
+        p('done output')
+        p('--------------')
+
+        # no need to run this
+        flag = False
+        if(flag):
+            v = subprocess.run(['ls','-l'],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+            p('{}'.v.stderr.decode('utf-8'))
+
+            # this doesnt capture output and redirects to null
+            v = subprocess.run(['ls','-l'],
+                               stdout=subprocess.DEVNULL,
+                               stderr=subprocess.DEVNULL)
+        p('--------------')
+        p('run os.system')  # this method allows pipe piping, passes to os so pipe as well
+        os.system('ls -l')
+        p('--------------')
+        p('getoutput method')
+        v = subprocess.getoutput('ls -l')
+        p('print output')
+        p('{}'.format(v))
+        p('--------------')
+        p('popen method')
+        v = os.popen('ls -l')
+        p('print output')
+        p('{}'.format(v.read()))
+        p('--------------')
+
+        p('--------------')
+        p('--------------')
+        p('--------------')
+        p('done test')
+
+
+        pass
     def test(self, argv):
         '''
         self.test_parse_args(argv)
@@ -3374,20 +3829,29 @@ class Tests:
         self.test_multithread_concepts()
         self.test_logging()
         self.test_algos()
-        self.test_syntax()
         self.test_async_concepts()
         self.test_multithread_concepts()
         self.test_convert_int()
         self.test_round_number()
-        self.test_set_operations()
-        '''
         self.test_tuple_list_ops()
+        self.test_dict_operations()
         self.test_set_operations()
+        self.test_syntax()
         self.test_regex()
+        self.test_string()
+        self.test_list()
+        self.test_map_of_lists_and_dicts()
+        self.test_dict_operations()
+        self.test_list()
+        '''
+        self.test_external_command_capture()
         pass
 
 def maintestcases():
+    global global_fh_
     t = Tests()
     t.test(None)
+    if(global_fh_ is not None):
+        global_fh_.close()
 
 maintestcases()

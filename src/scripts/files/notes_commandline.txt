@@ -1,0 +1,23 @@
+{
+sed
+
+sed 's/a/b/g' file                # replace a with b
+sed 's/a/b/g; s/c/d/g' file       # multi command
+sed 's/a/b/2'                     # sub a with b on 2nd occurance
+sed 's/a/b/gp' file               # replace a with b and print result for each match
+sed 's!/bin/sh!/bin/bash!g' file  # use ! as string delimiter instead of \/
+sed '1,10s/a/b/' file             # modify only lines 1-10
+sed 'y/123/456/' file             # transform 1 -> 4, 2->5, 3->6
+sed 's!a|A!bb!g' file             # replace a or A with bb
+sed '![0-9]\{3\}!p' file          # print only lines with 3 consecutive digits
+sed 's!.$!!' file                 # replace dos2unix
+sed 's!^[ ^t]*!!' file            # delete all spaces in front of every line
+sed 's![Nn]ick!John!g' file   
+sed ':a; !\$!N; s!\\n!!; ta' file # join 2 lines in the first ends in backslash
+
+
+sed must be separated by semicolon without spaces
+}
+
+{
+}

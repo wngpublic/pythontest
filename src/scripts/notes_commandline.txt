@@ -1,0 +1,615 @@
+{
+sed
+
+sed 's/a/b/g' file                # replace a with b
+sed 's/a/b/g; s/c/d/g' file       # multi command
+sed 's/a/b/2'                     # sub a with b on 2nd occurance
+sed 's/a/b/gp' file               # replace a with b and print result for each match
+sed 's!/bin/sh!/bin/bash!g' file  # use ! as string delimiter instead of \/
+sed '1,10s/a/b/' file             # modify only lines 1-10
+sed 'y/123/456/' file             # transform 1 -> 4, 2->5, 3->6
+sed 's!a|A!bb!g' file             # replace a or A with bb
+sed '![0-9]\{3\}!p' file          # print only lines with 3 consecutive digits
+sed 's!.$!!' file                 # replace dos2unix
+sed 's!^[ ^t]*!!' file            # delete all spaces in front of every line
+sed 's![Nn]ick!John!g' file   
+sed ':a; !\$!N; s!\\n!!; ta' file # join 2 lines in the first ends in backslash
+sed '/err/d' file                 # delete lines that have err
+sed -n '/err/p' file              # get lines matching pattern err
+sed 's!\. !\.\'$'\n!g' file       # newline for macos
+sed 's!\. !\.\n!g' file           # newline for linux
+sed -E 's!^[0-9\.]+ \[[0-9]+ [0-9\.:]+\] !!g' snip.txt > snip.sed.txt
+  eg        ^123.123 [123 123.123:123] blah blah
+
+
+sed must be separated by semicolon without spaces
+}
+{
+bash
+bash -x syntax.sh                 # normally run ./syntax.sh, but this to debug each line
+
+to debug only part of script, in script, add set -x and w
+set -x                            # start debugging here
+w
+script stuff
+set +x                            # stop debugging here
+}
+{
+redirect in linux
+
+cmd 2> txt                        # stderr output written to txt
+cmd 1>&2                          # stderr written to same filedescriptor than stdout
+cmd 2>&1                          # stderr written to same filedescriptor than stdout
+cmd &>/dev/null                   # redirect every output to file (null, in this case)
+
+cmd=`cmd | cmd | cmd`
+$cmd
+
+othercmd="cmd"
+$othercmd $arg $arg
+
+}
+
+{
+bash notes
+
+for i in $(a b $c); do
+  echo "$i"
+done
+
+IFS=$'\n'                           # make newlines the only separator
+set -f                              # disable globbing
+for i in $(cat < "$1"); do
+  echo "$i"
+done
+
+while IFS= read -r line; do
+  echo "$i"
+done <"$1"
+
+while read LINE
+  do CMD
+done <$file
+
+while read LINE; do echo "$LINE" | grep 'x'; done < FILE
+
+a=(1 2 3)
+a+=(4 5)
+echo ${a[@]}
+
+for i in ${a[@]}; do
+  echo $i
+done
+
+printf '%s\n' "${a[@]}"
+
+( IFS=$'\n'; echo "${my_array[*]}" )
+
+for i in (1 2 3 4 5); do
+  echo $i
+done
+
+for i in $(seq 1 10); do      # this is sequence
+  echo $i
+done
+
+for i in ${a[@]}; do
+  echo $i
+done
+
+cat $file | while read line
+do
+  echo $line
+done
+
+echo 'hi' >> appended.file
+
+cmd=a|b arg1 arg2|c
+echo $cmd                     # this is echo
+cmd=$(a|b arg1 arg2|c)        # this is executed and output
+
+var=$(cmd arg1 arg2)          # this is output of cmd
+var=`cmd arg1 arg2`           # this is output of cmd
+
+to debug script
+- #!/bin/bash -x
+- bash -x script.sh
+
+to debug part of script
+set -x                        # turn on print cmd trace
+program
+set +x                        # turn off print cmd trace
+set -f                        # disable file name generation glo
+
+i=0
+while [ $i -lt 10 ]; do
+  (($i++))
+done
+
+
+
+    -b operator : This operator check weather a file is a block special file or not. It returns true, if the file is a block special file otherwise false.
+    -c operator : This operator checks weather a file is a character special file or not. It returns true if it is a character special file otherwise false.
+    -d operator : This operator checks if the given directory exists or not. If it exits then operators returns true otherwise false.
+    -e operator : This operator checks weather the given file exits or not. If it exits this operator returns true otherwise false.
+    -r operator : This operator checks weather the given file has read access or not. If it has read access then it returns true otherwise false.
+    -w operator : This operator check weather the given file has write access or not. If it has write then it returns true otherwise false.
+    -x operator : This operator check weather the given file has execute access or not. If it has execute access then it returns true otherwise false.
+    -s operator : This operator checks the size of the given file. If the size of given file is greater than 0 then it returns true otherwise it false.
+
+if [ -e $filename ]; then
+  echo ...
+else
+  echo ...
+fi
+
+bash characters
+$*      expands to position params, starting from 1
+$@      expands to position params, starting from 1
+$#      number of args
+$?      exit status of most recently executed foreground pipeline
+$-      current optin flags specified on invocation
+$$      process id of shell
+$!      process id of most recently executed background command
+$_      absolute file name of shell or script being executed
+
+echo $_       shows the filename
+echo $$       shows the process id
+echo $v       shows the variable v
+echo \$v      shows $v literal
+echo '$v'     shows $v literal
+echo "$v"     shows variable v
+
+'x'           this is literal, cannot use single quotes within single quote
+"x"           $ and ` and \ are translated/interpreted. double quote can have backslash
+              double quote
+$(command)
+`command`
+echo `date`   prints the output of date command
+
+v++
+v--
+++v
+--v
+<= >=
+>> <<
+== !=
+
+$IFS          delimiter
+
+numbers:
+
+
+
+strings:
+if [ -z $s ]            if $v is length 0
+if [ -n $s ]            if $v is not length 0
+if [ $s1 == $s2 ]       
+if [ $s1 != $s2 ]
+if [ $s1 -eq $s2 ]
+if [ $s1 -ne $s2 ]
+if [ $s1 -lt $s2 ]
+if [ !$expression ]
+if [ $exp1 -a $exp2 ]   if $exp1 and $exp2 are true
+if [ $exp1 -o $exp2 ]   if $exp1 or $exp2 is true
+if [ $? -eq 0 ]         if exit stat of previous cmd is 0
+if [ "$(whoami)" != 'root' ]; then
+if ( ($i1 == $i2) || ($i2 == $i3) ); then
+
+echo -n "enter name and press [ENTER]: "
+read name
+
+for v in `cat list`; do something; done
+
+a=(one two tre)
+echo ${a[*]}            one two tre
+echo ${a[2]}            tre
+a[3]=for
+echo ${a[*]}            one two tre for
+unset a[1]              delete two
+echo ${a[*]}            one tre for
+}
+
+{
+egrep == grep -E                  # so you don't need backspace for special regex characters
+grep "t[wo]o" file                # two | too
+grep "..bt" file                  # xxbt
+grep "[^c]ode" file               # NOT match code but any other char
+grep "^[a-z]" file                # every beginning alphachar
+grep "[[:upper:]]" file           # every beginning uppercase alpha
+grep "([A-Z]*)" file              # match 0 or more times
+
+[:alnum:]
+[:alpha:]
+[:blank:]                         # space or tab
+[:digit:]
+.                                 # any single char
+?                                 # preceding item is optional and matched at most once
+                                  # basically 0 or 1 time
+*                                 # preceding item matched 0 or more
++                                 # 1 or more
+{N}                               # exactly N times
+{N,}                              # N or more times
+{N,M}                             # at least N but not more than M times
+
+grep "[[:digit:]]" file
+grep "[[:digit:]][[:alpha:]]" file    # digit followed by alpha
+grep "[ ]\+hi"                        # multi space followed by hi
+grep "[ ]\?hi"                        # only 0 or 1
+grep "[ ]+"                           # space followed by +
+grep "^[^ ]$" file                      # no space
+grep -E "^[ ]{10}$" file
+grep "^[ ]\+$" file
+grep "^[0-9]\+$" file                 # only numbers
+grep "[ ][0-9]\{2\}$" tmp.txt         # space and exactly 2 numbers
+grep ".[0-9]\{2\}$" tmp.txt           # any char and exactly 2 numbers
+grep -E ".[0-9]{2}$" tmp.txt          # any char and exactly 2 numbers. -E removes the backslash
+grep "\<anchor" file                  # anchor to beginning of word
+grep "anchor\>" file                  # anchor to back of word
+grep "\<anchor\>" file                # anchor to beginning and back
+grep -E '\breg' file                  # \b is word boundary, if you use -e
+grep -E 'hi|bye' file
+grep -E '^[a-z]+|[0-9]+$' file        # -E seems to do regex without backslash
+grep "$HOME" file                     # grep the variable
+grep '$HOME' file                     # grep literal $HOME
+grep `whoami` file
+grep "^[a-z].*\.$" file               # any characters followed by literal .
+grep -E "(A|B|C)" file                # grep A or B or C
+grep "hi..hi" file                    # grep hi then any 2 char then hi
+grep 'hi..hi' file                    # grep hi then any 2 char then hi
+grep -E "hi..hi" file                 # same
+grep -E 'hi[.a-z]{2}hi' tmp.txt       # period or a-z
+grep 'hi\.\.hi' file                  # grep hi then .. then hi
+grep -E '^[^2]{4}$' tmp.txt           # match any word that is not 2 four times
+egrep "^[0-9]*$" file                 # match only numbers and blank space, * is for 0 or more
+egrep == grep -E                      # just use grep instead of grep -E
+fgrep == grep -F
+
+find <dir> -type f --min +120 | xargs rm -f     # find all files older than 120 min and pass to remove
+}
+{
+vim regex
+/t[o]\{2}                             # t o exactly twice
+/\d\{2}\a\{2}
+/\d\+\a\{2}
+/\d\{1,2}:\d\{2}                      # time match,  12:34
+
+escaped metacharacters
+.
+\s
+\S                                    # non whitespace
+\d
+\D                                    # non digit
+\x
+\w
+\W                                    # non word character
+\a
+\l                                    # lowercase
+\u                                    # uppercase
+
+quantifiers:
+*
+\+
+\=
+\{n,m}
+\{n}                                  # exactly n times
+\{,m}                                 # at most m times
+\{n,}                                 # at least n times 
+\{-}                                  # matches 0 or more of preceding item
+\{-n,m}                               # matches 1 or more of preceding characters
+\{-n,}                                # matches at least n times
+
+substitute with regex grouping
+\0                                    # whole matched pattern
+\1                                    # matched pattern in first pair
+s:\(\w\+\)\(\s\+\)\(\w\+\):\3\2\1:
+
+
+
+}
+
+{
+tcpdump
+
+  tcpdump -i eth0
+  tcpdump -A -i eth0                  // get eth0 and print in ascii
+  tcpdump -XX -i eth0                 // get eth0 and print in hex and ascii
+  tcpdump -w file.pcap                // capture and save to pcap
+  tcpdump -r file.pcap                // read from pcap
+  tcpdump -tttt -r file.pcap          // read from pcap very verbose
+  tcpdump -n                          // include ip addresses (default is dns)
+  tcpdump -c 1000 tcp                 // capture only 1000 tcp packets
+  tcpdump tcp                         // include only tcp packets
+  tcpdump port 8000                   // capture from only port 8000
+  tcpdump src ipaddr                  // capture only from src == ipaddr
+  tcpdump dst ipaddr                  // capture only from dst == ipaddr
+  tcpdump dst ipaddr and port 8000    // capture only from dst -> port 8000
+  tcpdump -D                          // show available interfaces
+netstat -a          // active tcp
+netstat -r          // routing table
+netstat -i
+netstat -o          // display PID for each connection
+netstat -n          // do not display hostname
+netstat -f          // address family
+netstat -c          // monitor continuously
+netstat -s          // stats
+netstat -t          // show TCP
+netstat -v          // increase verbosity
+netstat -x          // show listeners
+netstat -e          // extra info, stats
+netstat -p          // display pid of prgram using socket
+netstat -l          // listening connections only
+netstat -W          // do not truncate hostnames on mac, sometimes it's -T on linux
+        -T          // linux equivalent, eg netstat -aT
+netstat -ant | grep 8080 | grep EST | wc -l
+
+netstat -atvl | grep EST
+
+netstat -atvlW | grep EST
+
+curl -x               proxy, seems like same as default
+-v                    verbose
+-u                    username
+--trace <file>        full trace dump
+--trace-ascii <file>
+-p                    proxy tunnel
+-L                    follow redirect, eg curl -vL http://www.yahoo.com
+
+}
+{
+jar tvf jarfile
+jstack -l <pid>
+jmap -dump:format=b,file=heapdump.hprof <pid>
+jmc                                   // java mission control collects and analyzes
+                                      // it is gui to record stuff
+jcmd                                  // wrapper for jstack, jmap, etc
+
+
+}
+{
+git
+
+commonly used git
+  git config --list
+  git config --local user.name "abc"
+  git config --local user.email "abc"
+  git push --force branchname
+  git add -i
+  git branch --list
+  git branch --delete <oldbranch>
+  git branch <newbranch>
+  git branch -m <oldname> <newname>
+  git branch -m <newname>       // if on branch to change
+  git push origin --delete feature/branch  // delete remote branch
+  git branch -d feature/branch             // delete local branch
+  git push origin --d branchname           // if in the current package
+  git checkout <branch|remote-branch>
+  git checkout -b newbranch     // create branch and checkout
+  git push origin branchname
+  git push --set-upstream origin <local-branchname>
+  git push origin --delete <remote-branchname>
+  git fetch origin pull/ID/head:BRANCHNAME
+  git checkout BRANCHNAME
+  git fetch origin              // not applied, only fetched
+  git pull
+  git commit -m "message"
+  git commit --amend -m "newmessage"
+  git commit --amend            // change the message of git log
+    // goes to commit file, write update message and quit
+  git commit --amend --no-edit
+  git diff > <patch>
+  git apply <patch>
+  git cherry-pick <sha1_of_commit_from_git_log>
+  git checkout -b <newbranch> <sha1_of_mainline>
+  git format-patch -1 <sha1_of_commit>
+    patch -p1 < file.patch      // not git patch, just patch
+  git log origin\master
+  git log --grep='commit message'
+  git log --author=authorname
+    git show <commitid>           // use git log to get commitid
+  git log HEAD
+  git log -n 3                  // show last 3 logs
+  git log --oneline
+  git log --name-only -n 3      // filenames of last 3 commits
+  git log --name-only           // file-name file-only
+  git log -p -n 3               // show patches of last 3
+  git log -- filename           // show log of filename for past 3
+  git log -n 3 -- filename      // show log of filename for past 3,
+                                // -n 3 must be before
+  git show <commitid>           // use git log to get commitid
+  git show hashid:/path/file
+  git rebase
+  git rebase --continue
+  git rebase -i HEAD~1          // change the git commit message
+                                // :r for reword > goes to next page
+                                // change summary and save
+                                // push it to whereever
+  git remote add origin https://github.com/blah   // add remote as origin
+  git push -u origin master                       // push to origin
+  git reset --hard
+  git reset --soft hashid
+  git stash list
+  git stash show stash@{2}
+  git stash show -p stash@{2}   // full details
+  git stash show -p stash@{2} > patchfile     // patch file
+  git apply --stat patchfile
+  git apply --check patchfile
+  git apply patchfile
+  git format-patch -<n> <SHA1> --stdout > patchfile
+  git format-patch -1 SHA1 --stdout > patchfile   // -stdout is REQUIRED
+  git format-patch -10 SHA1 --stdout > patchfile
+  git stash apply stash@{1}
+  git stash save "message" -u   // stash including untracked
+  git stash drop stash@{2}
+  git stash clear
+  git show hashid:/path/file
+  git show hashid               // shows all files of that hashid
+  git checkout hashid -- path/file      // revert file to that hashid
+  git reset hashid path/file
+  git branch -m new_brancname   // rename branchname of current branch
+  git branch -m oldname newname // rename oldbranch to newbranch if on different branch
+  git branch -a                 // list existing branches from remote
+  git checkout <remotebranch>   // checkout remote branch, DO NOT DO git checkout -b <remotebranch>
+  git push origin :oldname newname    // delete oldname remote branch and push the newname local branch
+  git push origin -u newname          // reset upstream branch for newname localbranch
+  git branch                          // list branches
+  git subtree
+  git tag -l
+  git checkout tags/v2.0.5
+  git checkout tags/v1.9.3 -b version-1.9.3
+  git merge --squash branchname
+  git merge --squash branchname     // merge branchname commits into master and squash all commit messages into one commit
+    git checkout master
+    git merge --squash branchname
+    git commit
+                                    // alternative to --squash is git rebase -i and rewrite commit msg
+    equivalent to:
+      git checkout branchname
+      git diff master > feature.patch
+      git checkout master
+      patch -p1 < feature.patch
+      git add .
+cd repository
+git log --pretty=email --patch-with-stat --reverse --full-index --binary -- path/to/file_or_folder > patch
+cd ../another_repository
+git am < ../repository/patch        // git apply with commit. use this to preserve the git history. then use git mv.
+git apply < ../repository/patch     // git apply without commit. if using this, the git history gets lost
+
+git details
+  add           add files
+    git add -u                  // stage modified and deleted files
+  branch        list, create, delete branches
+    git branch --delete         // deletes, unless it has unmerged changes
+      git branch --delete <branchname>
+    git branch --delete --force // delete even if it has unmerged changes
+      git branch --delete --force <branchname>
+    git branch --list
+    git branch <branchname>     // create new branch, does not checkout
+      git checkout <branchname>
+    git branch -m <oldname> <newname>   // rename branch
+    git branch -m <newname>     // rename current branch
+  checkout      switch branches or restore working trees
+    git checkout -- <filen>     // clear modified copy of file
+    git checkout <branchname>   // switch branch, used with git branch
+      git branch --list         // returns list of branches
+      git checkout <branchname> // switch to one of those branches
+      git checkout -b <branchname>  // create and switch to branchname
+      git checkout -b <newbranch> <existingbranch>
+        // create newbranch from existingbranch and switch
+      git checkout <remotebranch>
+        git fetch --all         // fetch remote branch first
+        git checkout <remotebranch>
+  cherry-pick
+    git cherry-pick hash
+    git checkout -b newbranch               // checkout newbranch from parent branch
+    git checkout -b newbranch hashid        // checkout newbranch with hashid as last commit from parent branch
+    git rebase --onto master hashid
+    git revert hashid                       // brings up edit page to say a hash id was reverted
+    git revert reverted_hashid              // this reverts a reverted hashid. do this or merge or cherry pick
+  clean         remove files from directory without saving
+    git clean -n                // dry run of what gets removed
+    git clean -f                // force
+    git clean -f <filename>
+    git clean -d <directory>
+    git clean -df <directory>
+    git clean -di               // interactive
+  clone         clone repository
+  commit        record changes to repository
+    git commit --amend -m "message"
+    git commit --amend --no-edit  // amend without changing commit message
+    git commit -m "message"
+  diff          diff              // git diff is inverse of git apply
+    git diff HEAD ./path/filename
+    git diff                      // unstaged changes
+    git diff --cached ./path/filename
+    git diff --cached             // diff staged changes
+    git diff > patchfile.patch
+      git diff --cached > patchfile
+      git diff > patchfile
+      git apply patchfile
+      git apply --stat patchfile  // stat of apply, preview
+      git apply --check patchfile // dry run
+      git diff HEAD > patchfile   // create patch with new files and modified
+  fetch
+  init          choose empty repository, new repository
+    git init
+  log           show commit logs
+    git log --oneline             // condensed view
+    git log -n 3                  // show last 3 commits
+    git show <commitid>           // show the details of commit
+    git log --author="ngwayne|someoneelse"
+    git log --author="ngwayne"
+    git log --grep="AAX-1234"     // grep logs for AAX-1234
+    git log -- filename1 filename2  // git log of filename
+    git log --name-only           // git of filenames but not details
+    git log -n 3 --name-only      // filenames of last 3 commits
+    git log -n 3 -p               // show patches of last 3
+    git log -- filename           // show log of filename for past 3
+    git log -n 3 -- filename      // show log of filename for past 3,
+                                  // -n 3 must be before
+    git log --follow -p -- <file> // same as file log, but follows if renamed
+  merge         join two or more histories
+  mv            move file, directory
+  pull          fetch and integrate with another repo or local branch
+  push          update remote refs
+  rebase        reapply commits on top of another base tip
+    git rebase master
+    git rebase master topic
+    git rebase --continue
+    git rebase --skip
+    git rebase --abort
+  reset
+    --soft
+    --mixed
+    --hard
+  revert
+  rm
+  show          show various objects
+    git show <commitid>         // use git log to get commitid
+    git show HEAD:/path/file    // show HEAD version of file
+    git show <commit>:/path/file  // show version of file
+  stash
+    git stash list              // show stashes
+    git stash show <stash>      // show files of a stash
+      git stash show -p         // show full diff of a stash
+      git stash show -p stash@{1} | git apply -R
+        // unapplying stash
+      git stash show -p | git apply -R
+        // unapplying stash
+    git stash drop <stash>
+      git stash drop stash@{1}  // stash delete stash
+    git stash pop <stash>
+      git stash pop             // pop top of stash
+      git stash pop stash@{2}   // pop stash @{2}
+    git stash apply <stash>
+      git stash apply stash@{1}
+    git stash push --patch      // default stashes modified and tracked
+                                // not include untracked and ignored
+                                // to add new files, do git add <filename>
+                                // then call git stash
+    git stash                   // push changes to top of stash, tracked only
+    git stash push              // push changes to top of stash
+    git stash --keep-index      // stash, but also leave in index
+    git stash -u                // stash untracked files and tracked files
+    git stash --all             // stash all, including ignored
+    git stash save "message"    // annotate the stash
+    git stash -p                // interactive patch stash, iterates each
+                                // file and prompts if stash
+    git diff stash@{0}          // diff against stash
+    git diff -p stash@{0} -p stash@{1}  // diff against 2 stashes
+    git stash branch <newbranch> stash@{3}
+                                // create branch from a stash
+    git stash create <message>
+    git diff [--options] <commit> <commit> [--] [<path>...]
+
+    git diff <revision_1>:<file_1> <revision_2>:<file_2>
+    For instance, to see the difference for a file "main.c" between now and two commits back, here are three equivalent commands:
+
+    git diff HEAD^^ HEAD main.c
+    git diff HEAD^^..HEAD -- main.c
+    git diff HEAD~2 HEAD -- main.c
+
+
+  status        working tree status
+
+}
