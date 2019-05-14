@@ -44,6 +44,8 @@ import queue
 import aiohttp
 import uuid
 import logging
+import hashlib
+import zlib
 
 global_output_to_file_ = False
 global_fh_ = None
@@ -69,6 +71,16 @@ class ENUMTEST2(Enum):
     MOUSE = 3
     TREE = 4
 
+'''
+0           000:359                                         0 moved
+0,1         000:179,180:359                                 180 moved
+0,1,2       000:119,120:239,240:359                         
+0,1,2,3     000:089,090:179,180:269,270:359                 
+0,1,2,3,4   000:071,072:143,144:215,216:287,288:359         
+'''
+class HashRing:
+    def __init__(self):
+        pass
 
 class MyAsyncBasicTest:
     def __init__(self):
@@ -3710,6 +3722,13 @@ class Tests:
         assert ''.join(s1) == 'abcqty'
         p('pass test_list')
 
+    def test_arg(self, arg1, arg2):
+        p('test pass test_arg {} {}'.format(arg1, arg2))
+
+    @staticmethod
+    def test_static_arg(arg1, arg2):
+        p('test pass test_static_arg {} {}'.format(arg1, arg2))
+
     def test_string(self):
         v = 'abc,de,fg,{"hi":"jk","l":["m","n"]},"o":["p q","r s t","uv"]'
         t = ''
@@ -3817,6 +3836,141 @@ class Tests:
 
 
         pass
+
+    class test_hashlib:
+        '''
+        https://docs.python.org/3/library/hashlib.html
+        '''
+        def list_hashlib(self):
+            setv = hashlib.algorithms_available
+            for v in setv:
+                p(v)
+
+        def test_hash(self):
+            sha256 = hashlib.sha256()
+            sha256.update(b'hello here')
+            sha256.update(b'bye bye')
+            v = sha256.hexdigest()
+            p('{}'.format(v))
+
+            md5 = hashlib.md5()
+            md5.update(b'hello here')
+            md5.update(b'bye bye')
+            v = md5.hexdigest()
+            p('{}'.format(v))
+
+
+        def is_callable_user_defined(self, s):
+            if not callable(getattr(self, s)):
+                return False
+            if re.search(r'^__', s):
+                return False
+            return True
+
+        def run_function_map():
+            l_functions = [ m for m in dir(self) if self.is_callable_user_defined(m)]
+            h = {}
+            for i in range(len(l_functions)):
+                h[i] = l_functions[i]
+            return h
+
+        def list_methods(self):
+            l = [m for m in dir(self) if self.is_callable_user_defined(m)]
+            p(l)
+
+        def run(self, i):
+            if i in h:
+                getattr(self, h[i])()
+
+        def __init__(self):
+            self.h = self.run_function_map()
+
+    def test_call_testhashlib_list(self):
+        t = Tests.test_hashlib()
+        t.list_methods()
+
+    def test_call_testhashlib(self, i):
+        t = Tests.test_hashlib()
+        t.run(i)
+
+    def is_callable_user_defined(self, s):
+        if not callable(getattr(self, s)):
+            return False
+        if re.search(r'^__', s):
+            return False
+        return True
+
+    def cmd_line_input(self, argv):
+        def parse_cmd_line_input(s, h):
+            def print_methods(h):
+                for k,v in h.items():
+                    p('{:2} {}'.format(k,v))
+            if(s is None or len(s) == 0):
+                print_methods(h)
+            elif(s == 'q' or s == 'quit'):
+                return False
+            elif(s == '?'):
+                print_methods(h)
+            else:
+                a = re.s.split(r'\s+',s)
+                if len(a) == 1:
+                    if(a[0].isdigit()):
+                        i = int(s)
+                        if(i in h):
+                            p('exec {}'.format(h[i]))
+                            getattr(self, h[i])()
+                else:
+                    pass
+            return True
+        def get_function_map():
+            l_functions = [ m for m in dir(self) if self.is_callable_user_defined(m)]
+            h = {}
+            for i in range(len(l_functions)):
+                h[i] = l_functions[i]
+            return h
+        h = get_function_map()
+        for i in range(0,1000):
+            s = input('prompt> ')
+            if not parse_cmd_line_input(s, h):
+                break
+        p('quitting cmd_line_input')
+
+    def list_methods(self):
+        l = dir(self)
+        n = len(l)
+        l1 = []
+        l_exclude = []
+        for m in l:
+            if callable(getattr(self, m)):
+                l1.append(m)
+            else:
+                l_exclude.append(m)
+        n1 = len(l1)
+        p('len n:{} n1:{}'.format(n, n1))
+        p('non callable: {}'.format(l_exclude))
+        l2 = [m for m in dir(self) if callable(getattr(self, m))]
+        p(l2)
+        p('static methods not in this list')
+        p('methods user defined')
+        l3 = [ m for m in dir(self) if self.is_callable_user_defined(m)]
+        p(l3)
+        #locals()["test_string"]()
+        #globals()["test_string"]()
+        getattr(self, 'test_string')()      # reflection way to call methods
+        getattr(self, 'test_arg')(1,2)      # this calls methods with args
+        getattr(Tests, 'test_static_arg')(3,4)
+        getattr(self, 'test_static_arg')(4,5)
+
+        # having map of methods
+        h = {
+            'test_arg': self.test_arg,
+            'test_static_arg': Tests.test_static_arg
+        }
+        h['test_arg'](2,3)
+        h['test_static_arg'](1,3)
+
+        p('done')
+
     def test(self, argv):
         '''
         self.test_parse_args(argv)
@@ -3843,8 +3997,12 @@ class Tests:
         self.test_map_of_lists_and_dicts()
         self.test_dict_operations()
         self.test_list()
-        '''
         self.test_external_command_capture()
+        self.list_methods()
+        #self.testCmdLoop1()
+        self.list_methods()
+        '''
+        self.cmd_line_input(None)
         pass
 
 def maintestcases():

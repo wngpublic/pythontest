@@ -1,0 +1,9 @@
+k01 ip01 mval 
+k02 ip02 mval 
+k03 ip03 mval 
+k04 ip04 mval 
+k08 ip08 sval k01
+k09 ip09 sval k02
+k10 ip10 sval k03
+k11 ip11 sval k04
+
