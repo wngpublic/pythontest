@@ -472,10 +472,113 @@ f_string_manip() {
     echo done f_string_manip
 }
 
+test_read_file() {
+    filei=data.in.4.txt
+    #k01 ip01 mval
+    #k02 ip02 mval
+    #k03 ip03 mval
+
+    if [ -f $filei ]; then
+        v=$(cat $filei)
+        ctr=0
+        for l in ${v[@]}; do
+            (( ctr++ ))
+            #echo $l
+        done
+        if [ $ctr != 9 ]; then
+            echo test_read_file 1 mismatch $ctr
+        fi
+        ctr=0
+        for l in ${v}; do
+            (( ctr++ ))
+            #echo $l
+        done
+        if [ $ctr != 9 ]; then
+            echo test_read_file 2 mismatch $ctr
+        fi
+        ctr=0
+        for l in $v; do
+            (( ctr++ ))
+            #echo $l
+        done
+        if [ $ctr != 9 ]; then
+            echo test_read_file 3 mismatch $ctr
+        fi
+
+        if [ ${#v} != 41 ]; then
+            echo test_read_file 4 string length mismatch ${#v}
+        fi
+
+        #k01 ip01 mval
+        #k02 ip02 mval
+        #k03 ip03 mval
+
+        if [ ${v:4:1} != i ]; then
+            echo test_read_file expected letter i
+        fi
+        if [ ${v:5:1} != p ]; then
+            echo test_read_file expected letter p
+        fi
+        if [ ${v:6:2} != 01 ]; then
+            echo test_read_file expected substring 01
+        fi
+        if [ ${v:9:4} != mval ]; then
+            echo test_read_file expected substring mval
+        fi
+        # syntax error if single bracket for compound if statement
+        if [[ ${v:14:3} != "k02" || ${v:14:3} != k02 ]]; then
+            echo test_read_file expected substring k02
+        fi
+
+        # cannot figure how to split by newline. below is non working
+        # use IFS internal field separator to split by newline
+        #IFS='\n' read -ra array <<< "$v"
+        #for token in "${array[@]}"; do
+        #    echo $token
+        #done
+        #IFS='\n';array=($v);unset IFS;
+
+        ##array=(${v//\n/})
+        #for token in "${array}"; do
+        #    echo 1 $token
+        #done
+
+        # prints each line
+        #echo "$v"
+
+        #echo -e 1 '\n'"${v[*]}"     # prints the newline and all the data
+        #echo 1 '\n'"${v[*]}"        # prints \n and all the data
+        #echo -e 2 '\n'"${#v[*]}"    # not sure what this is
+        #echo -e 3 '\n'"${v[0]}"     # prints all the data
+        #echo -e 4 '\n'"${v[1]}"     # prints nothing
+
+    fi
+    echo done test_read_file
+}
+
+print_cmdline_args() {
+    #in=$@
+    #echo in: $in
+    #echo numargs $# : $@
+    #echo numargs $BASH_ARGC : $BASH_ARGV
+    if [ $# != 0 ]; then
+        echo args != 0: $0: $@
+    elif [ $# == 0 ]; then
+        echo args == 0: $0: $@
+    fi
+}
+
+test_print_cmdline_args() {
+    print_cmdline_args $@
+    print_cmdline_args
+}
+
 function mainfunction {
+    #test_print_cmdline_args $@
     #f_function_args
-    f_string_manip
+    #f_string_manip
+    test_read_file
     #f_command_captures
 }
 
-mainfunction
+mainfunction $@

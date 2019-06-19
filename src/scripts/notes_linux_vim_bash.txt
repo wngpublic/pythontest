@@ -10,6 +10,16 @@
 * toc_end
 --------------------------------------------------------------------------------
 * toc_cmdline
+- toc_cmdline_tcpdump
+- toc_cmdline_ssh
+- toc_cmdline_java
+- toc_cmdline_memcache
+- toc_cmdline_vim
+- toc_cmdline_curl
+- toc_cmdline_linux
+- toc_cmdline_jq
+- toc_cmdline_awk
+- toc_cmdline_bash
 * toc_cmdline_end
 
 
@@ -29,6 +39,191 @@
   tcpdump dst ipaddr and port 8000    // capture only from dst -> port 8000
   tcpdump -D                          // show available interfaces
 
+  options
+    -A                                print each packet in ASCII
+    -c <N>                            after receiving N packets, exit
+    -C <N>                            N file size, then open new file, need file output
+    -d                                dump human readable
+    -e                                print link level header on each dump line
+    -F <file>                         input file as filter expression
+    -i <ifc>                          listen on interface
+    -l                                lower case l, stdout line buffered
+    -n                                do not convert IP address to name
+    -nn                               do not convert IP and PORT
+    -N                                do not print domain name qualification of host names
+    -r <file>                         input file read packets from file
+    -s <N>                            snaplength/capture size of packet, default is 68 bytes, then throw away
+    -s 0                              save all contents of packet, do not discard
+    -t                                do not print timestamp on each dump line
+    -tttt                             print timestamp as h:m:s:fraction of second
+    -v,-vv,-vvv                       verbose
+    -w <file>                         write to file
+    -x                                print data of each packet in hex
+    -X,-XX                            print data of each packet in hex and ASCII
+    -D                                view which interface available for capture, eg tcpdump -D
+
+  filters
+    src <ip>
+    dst <ip>
+    port <port>
+    host <ip>                         filter traffic to AND from specific host, host can be src or dst
+    icmp                              icmp packets only
+    udp                               udp packets only
+    tcp                               tcp packets only
+    <=                                less than,equal packet size, eg tcpdump <= 128
+    less|greater                      tcpdump less 128, tcpdump greater 128   packet size
+
+  packet metadata filter
+    or,and,not,(...),=,!=,||,&&,!
+
+  output explanation
+    Flags
+      S                               SYN connection
+      F                               FIN connection
+      P                               PUSH data
+      R                               RST connection
+      .                               ACK
+
+    <timestamp hr:min:s:milli> IP <src_ip.port>   > <dst_ip.port>:     Flags[SFPR.], seq <byte_start:byte_end>  <ack_num>   <window_size>   <tcp_options>       <packet_length_in_bytes>
+    xx:xx:xx.xxxxx             IP xx.xx.xx.xx.xxx > xx.xx.xx.xx.xxx    [P.]          seq 123:456                ack 1       win 222,        options [...],      length 555
+
+
+    <timestamp hr:min:s:milli>        timestamp
+    IP                                type of packet,can also by ARP
+    <src_ip.port>                     src ip and port
+    >                                 direction
+    <dst_ip.port>:                    dst ip and port
+    Flags[SFPR.],                     flags [SFPR.]
+    cksum                             checksum hex
+    seq <byte_start:byte_end>         byte_end-byte_start == packet_length in bytes
+    <ack_num>
+    <window_size>                     src host TCP window
+    <tcp_options>                     check TCP field definitions
+      TOS                             type of service
+      proto                           TCP
+    <packet_length_in_bytes>
+
+
+
+
+  examples:
+    tcpdump -i eth0 -l -c 1000        always try to do buffered -l
+    tcpdump -i eth0
+    tcpdump -i eth0 -c 100
+                                      100 packets
+    tcpdump -i eth0 -c100 -nn
+                                      100 packets, do not convert IP address and port
+    tcpdump -i eth0 -c5 icmp          5 packets of ICMP packets
+    tcpdump -i eth0 -c5 -nn host 123.123.123.123
+                                      5 packets to host 123.123.123.123, do not convert IP or port
+    tcpdump -i eth0 -c5 -nn port 80
+                                      5 packets to and from port 80
+    tcpdump -i eth0 -c10 -nn src 1.1.1.1
+                                      10 packets from host 1.1.1.1
+    tcpdump -i eth0 -c10 -nn dst 2.2.2.2
+                                      10 packets to host 2.2.2.2
+    tcpdump -i eth0 -c10 -nn src 1.1.1.1 dst 2.2.2.2
+                                      10 packets from host 1.1.1.1 to host 2.2.2.2
+    tcpdump -i eth0 -c10 -nn src 1.1.1.1 and port 80
+                                      10 packets from host 1.1.1.1 to port 80
+    tcpdump -i eth0 -c10 -nn "(src 1.1.1.1 and port 123)" "(dst 2.2.2.2 and port 80)"
+                                      10 packets from host 1.1.1.1:123 to host 2.2.2.2:80
+    tcpdump -i eth0 -c10 -nn "(src 1.1.1.1 and dst 2.2.2.2 and port 80)"
+    tcpdump -i eth0 -c10 -nn -w filename port 80
+    tcpdump -nn -r filename
+    tcpdump -nn -r filename src 1.1.1.1
+                                      read from filename with src 1.1.1.1
+    tcpdump -i eth0 -c10 -nn host 1.1.1.1
+                                      10 packets to and from host 1.1.1.1 (src == host || dst == host)
+    tcpdump -i eth0 -c10 -nn src host 1.1.1.1
+                                      10 packets to and from host src 1.1.1.1
+    tcpdump -i eth0 -c10 port 80 && port 90
+                                      10 packets with ports 80 AND 90 (doesn't matter if src or dst)
+    tcpdump -i eth0 -c10 'port 80 && port 90'
+                                      10 packets with ports 80 AND 90 (doesn't matter if src or dst)
+    tcpdump -i eth0 -c10 'port 80 || port 90'
+                                      10 packets with ports 80 OR 90 (doesn't matter if src or dst)
+    tcpdump -i eth0 '(port 80 or port 90) and host 1.1.1.1'
+    tcpdump -i eth0 not port 80
+    tcpdump -nnvvS                    very verbose
+    tcpdump -nnvvXSs 10000            snaplength
+    tcpdump 'tcp[13] & 16 != 0'       show all ACK packets
+    tcpdump 'tcp[13] & 32 != 0'       show all URG packets
+    tcpdump 'tcp[13] & 2 != 0'        show all SYN packets
+    tcpdump 'tcp[tcpflags] & (tcp-syn|tcp-ack) == (tcp-syn|tcp-ack)'
+                                      show TCP SYN/ACK
+    tcpdump -i eth0 -s0               snap length 0, needed for pulling binaries/files
+                                      if no -s0, then snap length is 68 bytes!
+    tcpdump -nn -A -s1500 -l | grep "User-Agent:"
+                                      snap length 1500 and line buffered ASCII, so can grep
+    tcpdump -s 0 -A -vv 'tcp[((tcp[12:1] & 0xf0) >> 2):4] = 0x47455420'
+                                      capture only HTTP get and POST packets
+                                      tcp[((tcp[12:1]&0xf0)>>2):4] first determines location
+                                      of bytes and then selects the 4 bytes to match against
+    tcpdump -nn -A -s 0 -l | egrep -i 'Set-Cookie|Host:|Cookie:'
+                                      capture cookies from server from client
+    tcpdump ssh                       check all packets used on ssh
+    tcpdump net 192.168.1.0/24        get packets for entire subnet
+    tcpdump portrange 22-25
+    tcpdump -i eth0 src port not 22
+    tcpdump -c 2000 -s 0 -nn -l -w tmp.tcpdump.1.pcap
+
+
+  ssldump -k /path/key_file.key -i eth0 -c10 port 80 src 1.1.1.1
+
+  ssldump can only decrypt SSL/TLS packet if RSA keys are used. if DHE or RSA ephemera
+  cipher suite used, RSA keys used only to secure DH or RSA exchange, but not encrypt.
+
+- toc_cmdline_ssh
+    - options
+        -N      do not open shell or execute program on remote side
+        -D      dynamic port forwarding/proxy using SOCKS
+        -L      local port forwarding
+        -R      remote port forwarding
+        -f      causes SSH to go to background before executing
+        -v      debug info
+        -C      compression enable
+    /etc/ssh/sshd_config
+
+    - dynamic port forwarding/proxy
+    ssh -D local_host:local_port user@ssh_server
+    ssh -D local_port user@ssh_server
+
+    ANYWHERE <-> SSH_SERVER <-> LOCAL_HOST:LOCAL_PORT <->
+
+    - remote port forwarding
+    ssh -R remote_port:target_host:target_port user@ssh_server
+    connect to target_host:target_port on local host A, and remote_host:remote_port accesses its own
+    127.0.0.1:remote_port, which then connects to local host A to connect to target_host:target_port
+    remote_host types 127.0.0.1:REMOTE_PORT
+
+    TARGET_HOST:TARGET_PORT <-> LOCAL_HOST <-> SSH_SERVER:22 <-> SSH_SERVER:REMOTE_PORT
+
+    ssh -R remote_port:local_host:local_port user@ssh_server
+    TARGET_HOST:TARGET_PORT <-> LOCAL_HOST <-> SSH_SERVER:22 <-> SSH_SERVER:REMOTE_PORT
+
+
+    - local port forwarding
+    ssh -L local_port:target_host:target_port user@ssh_server
+    connect to target_host:target_port on local_host:local_port. so on local_host, access
+    127.0.0.1:local_port, which then connects to target_host:target_port
+    local_host types 127.0.0.1:LOCAL_PORT
+
+    TARGET_HOST:TARGET_PORT <-> SSH_SERVER:22 <-> LOCAL_HOST:LOCAL_PORT
+
+    - local port forwarding where target_host is ssh_server
+    ssh -L local_port:localhost:target_port user@ssh_server
+    ssh -L local_port:127.0.0.1:target_port user@ssh_server
+    LOCAL_HOST:TARGET_PORT <-> SSH_SERVER:22 <-> LOCAL_HOST:LOCAL_PORT
+
+
+    - examples
+    ssh remote_host 'tcpdump -c 100 -A' | wireshark
+        capture tcpdump from remote host and pass to local wireshark
+    tar -cvf /folder_local | ssh remote_host 'tar -xvf /folder_remote'
+        compress local folder and send to remote_host to uncompress to folder_remote
+    ssh remote_host 'tar -cvf - /folder' > local.tar.gz
+        copy remote folder to local archive
 
 - toc_cmdline_java
 -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005
@@ -50,7 +245,7 @@ select * from "com.google.common.cache.*"
 
 
 
-* toc_cmdline_memcache
+- toc_cmdline_memcache
 
 memcache operations
   start
@@ -121,37 +316,6 @@ MEMCHOST=localhost; printf "stats items\n" | nc $MEMCHOST 11211 | \
 mvn package
 mvn install
 mvn clean
-
-* toc_cmdline_systems
-
-netstat -a          // active tcp
-netstat -r          // routing table
-netstat -i
-netstat -o          // display PID for each connection
-netstat -n          // do not display hostname
-netstat -f          // address family
-netstat -c          // monitor continuously
-netstat -s          // stats
-netstat -t          // show TCP
-netstat -v          // increase verbosity
-netstat -x          // show listeners
-netstat -e          // extra info, stats
-netstat -p          // display pid of prgram using socket
-netstat -l          // listening connections only
-netstat -W          // do not truncate hostnames on mac, sometimes it's -T on linux
-        -T          // linux equivalent, eg netstat -aT     no trim, longform
-netstat -ant | grep 8080 | grep EST | wc -l
-
-netstat -atvl | grep EST
-
-netstat -atvlW | grep EST
-
-netstat -atvlT | grep EST
-
-
-ifconfig
-
-- toc_cmdline_
 
 - toc_cmdline_vim
 
@@ -238,12 +402,69 @@ curl -x               proxy, seems like same as default
 -p                    proxy tunnel
 -L                    follow redirect, eg curl -vL URL
 
+curl -o file_local url/filename
+    download file with rename file
+curl -O url/filename
+    download file
+curl -OC - url/filename
+    download file continue
+wget url/filename
+    same as curl -O url/filename
+wget url/filename1 url/filename2
+    download multiple files
+wget -c url/filename
+    resume download
+curl -L url
+    follow redirects
+curl url | python -m json.tool
+curl url | jq '.'
+curl -v -H '<header>' -H '<header>' -d '{json}' '<url>'    # -X POST is implicit with -d
+curl -v -H '<header>' -H '<header>' -d @filejson '<url>'
+curl -k '<https_insecure_url_to_disable_certificate_checks>'
+curl -F [email]
+
 python3 -m json.tool tmp.json
 cat xmlfile | xmllint --format - > prettyxml.txt
 xmllint --format inputxml.txt
 pretty: python3 -m json.tool tmp.json
 
 - toc_cmdline_linux
+
+netstat -a          // active tcp
+netstat -r          // routing table
+netstat -i
+netstat -o          // display PID for each connection
+netstat -n          // do not display hostname
+netstat -f          // address family
+netstat -c          // monitor continuously
+netstat -s          // stats
+netstat -t          // show TCP
+netstat -v          // increase verbosity
+netstat -x          // show listeners
+netstat -e          // extra info, stats
+netstat -p          // display pid of prgram using socket
+netstat -l          // listening connections only
+netstat -W          // do not truncate hostnames on mac, sometimes it's -T on linux
+        -T          // linux equivalent, eg netstat -aT     no trim, longform
+netstat -ant | grep 8080 | grep EST | wc -l
+
+netstat -atvl | grep EST
+
+netstat -atvlW | grep EST
+
+netstat -atvlT | grep EST
+
+
+ifconfig
+
+find . -name "tmp*" | xargs rm -rf
+find . -name "*.tmp" | xargs rm
+find . -name "*.tmp" -exec rm {} \;   is equivalent to above
+find . -name "*.tmp" | xargs -p rm          # prompt each xargs cmd
+find . -name "*.tmp" | xargs -t rm          # print out cmd executed
+find . -name "*.tmp" | xargs -0 rm          # deal with space in filenames
+ls "file*" | xargs wc                       # ls files and pass to wc for each file
+
 
 sed -E 's/[0-9]+ AbC [0-9]+ [0-9:,]+ \[STRING\]  \(thread-[0-9]+\) a.b.c.classname: //g' xak > xak.sedout
 sed -E 's!^[0-9\.]+ \[[0-9]+ [0-9\.:]+\] !!g' snip.txt > snip.sed.txt
@@ -376,6 +597,21 @@ exec >> log.txt
 exec 2&1
 
 }
+
+- toc_cmdline_bash
+
+internal variables
+$0                              name of shell script
+$!                              process ID of job most recently asynchronously executed
+$$                              process ID
+$*                              position params. joined $1c$2c... where c is first char of value of IFS var
+$@                              position params. space delimited $1 $2 ...
+$BASH_ARGC                      $#
+$BASH_ARGV                      ${!#}
+$BASH_COMMAND
+$BASH_EXECUTION_STRING
+$BASH_LINENO
+$BASH_SOURCE
 
 {
 the read command is provided by the shell for reading text from standard input into a shell variable
