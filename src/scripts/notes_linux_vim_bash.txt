@@ -224,6 +224,8 @@
         compress local folder and send to remote_host to uncompress to folder_remote
     ssh remote_host 'tar -cvf - /folder' > local.tar.gz
         copy remote folder to local archive
+    ssh user@remote_host command
+        run command on remote_host
 
 - toc_cmdline_java
 -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005
@@ -335,6 +337,22 @@ range arg:
 vim regex group substitution
 %s!slave \(\w\+\) 0 \(\d\+\) \(\d\+\) connected!slave \1 0 \3 connected!gc
 
+%s!\(\w\+\)!\1!g                # (abc)   -> abc    \( is grouping
+%s!([a-zA-Z0-9]\+)!()!g         # (abc)   -> ()     ( is literal
+%s!([a-zA-Z0-9./_]\+)!()!g      # (a/b._c)   -> ()     ( is literal
+%s!(\[[a-zA-Z0-9./_]\]\+)!()!g
+    # ([a/b._c])   -> ()     ( is literal
+%s!"\([a-zA-Z]\+\)":\[["0-9,]\+\]!"\1":\[\]!gc
+    # "someword":["123","234"]   -> "someword":[]
+%s! \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3} ! IP !g
+    # wrong
+%s! \d\{1,3\}\.\d\{1,3\}\.\d\{1,3\}\.\d\{1,3\} ! IP !g
+    # right!
+%s!["0-9,]\+!\[\]!g
+    # "123","234" -> []    no literal bracket
+%s!\[["0-9,]\+\]!\[\]!g
+    # ["123","234"] -> []  has literal bracket
+
 regex
   \s \S
   \d \D
@@ -401,6 +419,7 @@ curl -x               proxy, seems like same as default
 --trace-ascii <file>
 -p                    proxy tunnel
 -L                    follow redirect, eg curl -vL URL
+--anyauth             automatically use most safe method, so do unauth first and switch to auth if needed
 
 curl -o file_local url/filename
     download file with rename file
@@ -422,6 +441,19 @@ curl -v -H '<header>' -H '<header>' -d '{json}' '<url>'    # -X POST is implicit
 curl -v -H '<header>' -H '<header>' -d @filejson '<url>'
 curl -k '<https_insecure_url_to_disable_certificate_checks>'
 curl -F [email]
+curl -K <configfile> <url>
+curl -u <name>:<password> <url>
+curl -u <name> <url>            # with password prompt
+curl -L -b non-existing <url>   # cookie but empty internal cookie to start off with
+curl -L -b <cookiefile>         # read from cookie, no updates in response
+curl -L -b <cookiefile> -c <cookiefile> # read and write cookie, update from response
+curl -j -b <cookiefile> -c <cookiefile> <url>   # new cookie session
+curl -d '{json}' -H 'content-type: application/json' <url>
+curl -d @jsonfile -H 'content-type: application/json' <url>
+curl -d 'k1=v1&k2=v2' <url>
+curl -data-binary @filename <url>
+
+
 
 python3 -m json.tool tmp.json
 cat xmlfile | xmllint --format - > prettyxml.txt
@@ -446,6 +478,7 @@ netstat -p          // display pid of prgram using socket
 netstat -l          // listening connections only
 netstat -W          // do not truncate hostnames on mac, sometimes it's -T on linux
         -T          // linux equivalent, eg netstat -aT     no trim, longform
+netstat -aT
 netstat -ant | grep 8080 | grep EST | wc -l
 
 netstat -atvl | grep EST
@@ -470,6 +503,25 @@ sed -E 's/[0-9]+ AbC [0-9]+ [0-9:,]+ \[STRING\]  \(thread-[0-9]+\) a.b.c.classna
 sed -E 's!^[0-9\.]+ \[[0-9]+ [0-9\.:]+\] !!g' snip.txt > snip.sed.txt
   eg        ^123.123 [123 123.123:123] blah blah
             ^blah blah
+
+rsync is secure, with ssh allowable
+rsync options src dst
+rsync -zvr srcdir dstdir
+    z                                       compression
+    r                                       recursive
+    v                                       verbose
+    a                                       archive
+    u                                       update, skip files newer on dst
+    l                                       copy symlinks
+    b                                       make backup
+    n                                       dry run
+    -e ssh                                  use ssh
+rsync -avz -e ssh srcdir user@host:dstdir
+    rsync to remote
+rsync -avz -e ssh user@host:srcdir dstdir
+    rsync to local
+
+
 
 sort <file> | uniq -c | sort
 uniq -c <file> | sort           # file has to be sorted first, based on experiment. the sort is for count

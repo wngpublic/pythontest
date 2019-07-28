@@ -17,19 +17,21 @@ from collections import deque
 from collections import OrderedDict
 import urllib.request as url
 import pathlib
-from src.main import myclasses
+#from src.main import myclasses
+import myclasses
 #import src.main.myclasses
-from src.algos import algos
+#from src.algos import algos
+#import algos
 import json
 import unittest
 import argparse
-from src.main import gossip
-#import gossip
+#from src.main import gossip
+import gossip
 import abc
 import gzip
 import multiprocessing
-from src.main import asynciotests
-#import asynciotests
+#from src.main import asynciotests
+import asynciotests
 from enum import Enum
 from enum import auto
 import inspect
@@ -277,22 +279,22 @@ class Tests:
             else:
                 p('id not exists')
 
-            if 'breakid' in vjson['imp'][10]['video']['ext']:
-                p('breakid exists = {0}'.format(vjson['imp'][10]['video']['ext']['breakid']))
+            if 'id' in vjson['iii'][10]['v']['ext']:
+                p('id exists = {0}'.format(vjson['iii'][10]['v']['ext']['id']))
             else:
-                p('breakid not exists')
+                p('id not exists')
 
-            if 'breakfast' in vjson['imp'][10]['video']['ext']:
-                p('breakfast exists = {0}'.format(vjson['imp'][10]['video']['ext']['breakfast']))
+            if 'breakfast' in vjson['iii'][10]['v']['ext']:
+                p('breakfast exists = {0}'.format(vjson['iii'][10]['v']['ext']['breakfast']))
             else:
                 p('breakfast not exists')
 
-            p('length of imp is {0}'.format(len(vjson['imp'])))
+            p('length of is {0}'.format(len(vjson['iii'])))
 
-            vjson['imp'][10]['video']['ext']['breakid'] = vjson['imp'][10]['video']['ext']['breakid'] + 1
-            vjson['imp'][10]['video']['ext']['breakid'] += 1
+            vjson['iii'][10]['v']['ext']['id'] = vjson['iii'][10]['v']['ext']['id'] + 1
+            vjson['iii'][10]['v']['ext']['id'] += 1
 
-            p('breakid exists = {0}'.format(vjson['imp'][10]['video']['ext']['breakid']))
+            p('id exists = {0}'.format(vjson['iii'][10]['v']['ext']['id']))
 
         def t4():
             # randomization testing
@@ -3134,6 +3136,13 @@ class Tests:
         l.append('1,2,3')
         l.append('4,5,6')
 
+    def test_regex_2(self):
+        # substitute and groups
+        # abc 1 2 3 aaa/3.3 (bbb 1.2) ccc/222.0 (ddd, eee) ffff/1.2.3.4.5 ggg/0.1 def hij
+        # abc 1 2 3 aaa/3.3 (bbb 1.2) ccc/222.0 (ddd, eee) ffff/1.2.3.4.5 ggg/0.1 def hij
+        pass
+
+
     def test_regex(self):
         s1 = 'k: {1,2,3}.  b: {2,3,4} c: {4,5,6} d: {7,8,9}'
         s2 = 'k: {1,2,3} b:  {2,3,4}   c: {4,5,6} d: {7,8,9}'
@@ -3729,6 +3738,106 @@ class Tests:
     def test_static_arg(arg1, arg2):
         p('test pass test_static_arg {} {}'.format(arg1, arg2))
 
+    def next_match(self, strval, idx_s, chars):
+        l = len(strval)
+        if l == 0 or l <= idx_s:
+            return None
+        for i in range(idx_s, l):
+            c = strval[i]
+            if c == chars:
+                return i
+        return None
+
+    # returns the index of
+    def match_brace(self, strval, idx_s):
+        l = len(strval)
+        if l == 0 or l <= idx_s:
+            return None
+
+        lifo = []
+        last_pushed = strval[idx_s]
+        lifo.append(last_pushed)
+        last_char = None
+
+        discarded = ''
+
+        for i in range(idx_s+1, l):
+            chars = strval[i]
+            if chars == '{' or chars == '[' or chars == '(':
+                last_pushed = chars
+                lifo.append(last_pushed)
+            elif chars == '}' and last_pushed != '{' or \
+                 chars == ']' and last_pushed != '[' or \
+                 chars == ')' and last_pushed != '(':
+                break
+            elif chars == '}' or chars == ']' or chars == ')':
+                lifo.pop()
+                if len(lifo) == 0:
+                    return i
+                last_pushed = lifo[len(lifo)-1]
+            elif chars == '/' and last_char == '/':
+                return len(lifo) == 0
+            else:
+                discarded += chars
+            last_char = chars
+
+        return None
+
+
+    def test_match_braces(self):
+        #    0 0 0 0 0 1 1 1 1 1 2
+        #    0 2 4 6 8 0 2 4 6 8 0
+        s = '{a{b{{}}c}}'
+        assert len(s) == 11
+        res = self.match_brace(s, 0)
+        assert res == 10
+        res = self.match_brace(s, 1)
+        assert res == None
+        res = self.match_brace(s, 2)
+        assert res == 9
+
+        #    0 0 0 0 0 1 1 1 1 1 2
+        #    0 2 4 6 8 0 2 4 6 8 0
+        s = '{a{b{{}}c}} '
+        assert len(s) == 12
+        res = self.match_brace(s, 0)
+        assert res == 10
+        res = self.match_brace(s, 1)
+        assert res == None
+        res = self.match_brace(s, 2)
+        assert res == 9
+
+        #    0 0 0 0 0 1 1 1 1 1 2
+        #    0 2 4 6 8 0 2 4 6 8 0
+        s = '{ a { b { { } } c } }'
+        assert len(s) == 21
+        res = self.match_brace(s, 0)
+        assert res == 20
+        res = self.match_brace(s, 1)
+        assert res == None
+        res = self.match_brace(s, 2)
+        assert res == None
+        res = self.match_brace(s, 4)
+        assert res == 18
+        res = self.match_brace(s, 8)
+        assert res == 14
+
+
+        #    0 0 0 0 0 1 1 1 1 1 2
+        #    0 2 4 6 8 0 2 4 6 8 0
+        s = '{a{b{{}c}}'
+        assert len(s) == 10
+        res = self.match_brace(s, 0)
+        assert res == None
+        res = self.match_brace(s, 1)
+        assert res == None
+        res = self.match_brace(s, 2)
+        assert res == 9
+        res = self.match_brace(s, 5)
+        assert res == 6
+
+        p('pass test_match_braces')
+
     def test_string(self):
         v = 'abc,de,fg,{"hi":"jk","l":["m","n"]},"o":["p q","r s t","uv"]'
         t = ''
@@ -3738,6 +3847,74 @@ class Tests:
         assert v[4:6] == 'de'
         assert v[0:3] == 'abc'
         assert v[11:15] == '"hi"'
+
+        v1 = 'abcdefg hijk lmnop'
+        assert 'efg' in v1
+        assert 'dfg' not in v1
+        assert 'abcdefg hijk lmnop' == v1
+        assert 'abcdefg hij' in v1
+        assert not 'efg'.isdigit()
+        assert '123'.isdigit()
+        assert 'abc' < 'efg' and 'efg' > 'abc'
+
+        v1 = '2019-01-20'
+        assert re.match(r'^\d{4}-\d{2}-\d{2}$', v1)
+        v1 = '2019-01-201'
+        assert not re.match(r'^\d{4}-\d{2}-\d{2}$', v1)
+
+        # loop string characters
+        s = 'this is a string'
+        l = len(s)
+        assert l == 16
+        cnt = 0
+        result = ""
+        for i in range(l):
+            result += s[i:i+1]
+            cnt += 1
+
+        assert result == 'this is a string'
+        assert cnt == 16 and len(result) == 16
+
+        s_list = [c for c in s]
+        assert len(s_list) == len(s)
+
+        # substrings
+        v = s[0:1]
+        assert v == 't'
+        assert not isinstance(v,list)
+        v = s[0]
+        assert v == 't'
+        assert not isinstance(v,list)
+
+        # this is now an array
+        v = s_list[0:1]
+        assert v != 't'
+        assert v[0] == 't'
+        assert isinstance(v,list)
+
+        v = s[1]
+        assert v == 'h'
+        assert not isinstance(v,list)
+        v = s[1:2]
+        assert v == 'h'
+        assert not isinstance(v,list)
+
+        assert s[0:2] == 'th'
+        assert s[5:13] == 'is a str'
+        assert len(s[5:13]) == 8
+
+        a = ['abc','def','gi','hj']
+        assert len(a) == 4
+        v = ''.join(a)
+        assert len(v) == 10
+        v = ','.join(a)
+        assert len(v) == 13
+        a1 = v.split(',')
+        assert len(a1) == 4
+        v = 'abc  def   gi     hj    lmn'
+        a1 = re.split(r'\s+',v)
+        assert len(a1) == 5
+
         p('pass test_string')
         pass
 
@@ -3893,6 +4070,125 @@ class Tests:
         t = Tests.test_hashlib()
         t.run(i)
 
+    def test_list_of_list(self):
+        ll = []
+        sum_exp = 0
+        sum_act = 0
+        for i in range(0,3):
+            vi = i * 10
+            l = []
+            ll.append(l)
+            for j in range(0,5):
+                vj = vi + j
+                sum_exp += vj
+                l.append(vj)
+        cnt_row = 0
+        for l in ll:
+            cnt_col = 0
+            for v in l:
+                sum_act += v
+                cnt_col += 1
+            cnt_row += 1
+            assert cnt_col == 5
+            #p(l)
+        assert cnt_row == 3
+        assert sum_exp == sum_act
+        p('done test_list_of_list')
+
+
+    @staticmethod
+    def parse_token(s, idx_s, max, delimiter):
+        def next_non_char(s, idx_s, max, c):
+            i = idx_s
+            while i < max:
+                if s[i] != c:
+                    return i
+                i += 1
+            return None
+
+
+        lifo = []
+        lifoq = []
+        cp = None
+        last_pushed = None
+
+        idx_s = next_non_char(s, idx_s, max, ' ')
+        i = idx_s
+        if i is None:
+            return (None,None)
+
+        if s[i] == '"':
+            lifoq.append(s[i])
+            i += 1
+
+        while i < max:
+            cc = s[i]
+            if cc == '\\':
+                i += 2
+                if i >= max:
+                    return (None,None)
+                cc = s[i]
+
+            if cc == '{' or cc == '[' or cc == '(':
+                last_pushed = cc
+                lifo.append(cc)
+            elif \
+                    cc == '}' and last_pushed != '{' or \
+                            cc == ']' and last_pushed != '[' or \
+                            cc == ')' and last_pushed != '(':
+                return (None,None)
+            elif cc == '}' or cc == ']' or cc == ')':
+                lifo.pop()
+                last_pushed = None if len(lifo) == 0 else lifo[len(lifo)-1] # if else, a = b ? 1 : 2
+            elif cc == '"':
+                if(len(lifo) == 0):
+                    lifoq.append(cc)
+            elif cc == ',':
+                if(len(lifo) == 0 and len(lifoq) % 2 == 0):
+                    token = s[idx_s:i]
+                    return (token, i)
+            cp = cc
+            i += 1
+
+        if(i == max):
+            if(len(lifo) == 0 and len(lifoq) % 2 == 0):
+                token = s[idx_s:i]
+                return (token, i)
+        return (None, None)
+
+    @staticmethod
+    def parse_tokens(s):
+        max = len(s)
+        a = []
+        i = 0
+        while True:
+            (token,i) = Tests.parse_token(s, i, max, ',')
+            if token is not None:
+                a.append(token)
+            if i is None or token is None:
+                break
+            if i < max and s[i] == ',':
+                i += 1
+        return a
+
+    def test_parse_tokens(self):
+        s = '"abc", "hello"'
+        a = Tests.parse_tokens(s)
+        p(a)
+        s = "\"abc\", \"hello\""
+        a = Tests.parse_tokens(s)
+        p(a)
+        s = "\"\"\"abc\", \"hello\""
+        a = Tests.parse_tokens(s)
+        p(a)
+        s = '"abc", {"k1":"v1", "k2":"v2"}'
+        a = Tests.parse_tokens(s)
+        p(a)
+        s = '"abc", {"k1":"v1", "k2":"v2","k3":["v3a", "v3b"]}, {"k11":"v11", "k12":"v12","k13":{"k13k1":"k13v1","k13k2":"k13v2"}}'
+        a = Tests.parse_tokens(s)
+        p(a)
+        p('pass test_parse_tokens')
+
     def is_callable_user_defined(self, s):
         if not callable(getattr(self, s)):
             return False
@@ -3901,24 +4197,25 @@ class Tests:
         return True
 
     def cmd_line_input(self, argv):
-        def parse_cmd_line_input(s, h):
-            def print_methods(h):
-                for k,v in h.items():
+        def parse_cmd_line_input(s, map_functions):
+            def print_methods(map_functions):
+                for k,v in map_functions.items():
                     p('{:2} {}'.format(k,v))
+                p('type function number to execute')
             if(s is None or len(s) == 0):
-                print_methods(h)
+                print_methods(map_functions)
             elif(s == 'q' or s == 'quit'):
                 return False
-            elif(s == '?'):
-                print_methods(h)
+            elif(s == '?' or s == 'h'):
+                print_methods(map_functions)
             else:
-                a = re.s.split(r'\s+',s)
+                a = re.split(r'\s+',s)
                 if len(a) == 1:
                     if(a[0].isdigit()):
                         i = int(s)
-                        if(i in h):
-                            p('exec {}'.format(h[i]))
-                            getattr(self, h[i])()
+                        if(i in map_functions):
+                            p('exec {}'.format(map_functions[i]))
+                            getattr(self, map_functions[i])()
                 else:
                     pass
             return True
@@ -3928,10 +4225,10 @@ class Tests:
             for i in range(len(l_functions)):
                 h[i] = l_functions[i]
             return h
-        h = get_function_map()
+        map_functions = get_function_map()
         for i in range(0,1000):
             s = input('prompt> ')
-            if not parse_cmd_line_input(s, h):
+            if not parse_cmd_line_input(s, map_functions):
                 break
         p('quitting cmd_line_input')
 
@@ -4005,7 +4302,19 @@ class Tests:
         self.cmd_line_input(None)
         pass
 
+def check_args(args):
+    if(len(args) <= 1):
+        return
+    for arg in args:
+        print(arg)
+    print(len(args))
+
 def maintestcases():
+    if(sys.version_info[0] < 3):
+        print("version is {},{}".format(sys.version_info[0],sys.version_info[1]))
+    #assert sys.version_info[0] == 3 and sys.version_info[1] >= 4 # OK
+    assert sys.version_info >= (3,4) # OK
+    check_args(sys.argv)
     global global_fh_
     t = Tests()
     t.test(None)
@@ -4013,3 +4322,15 @@ def maintestcases():
         global_fh_.close()
 
 maintestcases()
+
+
+#
+#        #if(not re.match(r'^\d{4}-\d{2}-\d{2}$', v)):
+#    return False
+#try:
+#    pattern = '%Y-%m-%d'
+#    seconds = time.mktime(time.strptime(v,pattern))
+#    return seconds
+#except Exception as e:
+#    return 0
+
