@@ -338,6 +338,9 @@ vim regex group substitution
 %s!slave \(\w\+\) 0 \(\d\+\) \(\d\+\) connected!slave \1 0 \3 connected!gc
 
 %s!\(\w\+\)!\1!g                # (abc)   -> abc    \( is grouping
+%s/(fixed word (\([0-9]\+\), \([A-Z\_0-9"]\+\),\([a-zA-Z\_0-9"]\+\)))/ \2 \3/gc
+    // eg i: (blah blah (fixed word 123, "ABC_123","CDE_234")))
+    //    o: (blah blah "ABC_123" "CDE_234")
 %s!([a-zA-Z0-9]\+)!()!g         # (abc)   -> ()     ( is literal
 %s!([a-zA-Z0-9./_]\+)!()!g      # (a/b._c)   -> ()     ( is literal
 %s!(\[[a-zA-Z0-9./_]\]\+)!()!g

@@ -3137,9 +3137,34 @@ class Tests:
         l.append('4,5,6')
 
     def test_regex_2(self):
-        # substitute and groups
-        # abc 1 2 3 aaa/3.3 (bbb 1.2) ccc/222.0 (ddd, eee) ffff/1.2.3.4.5 ggg/0.1 def hij
-        # abc 1 2 3 aaa/3.3 (bbb 1.2) ccc/222.0 (ddd, eee) ffff/1.2.3.4.5 ggg/0.1 def hij
+        # substitute and groups, using variable regex
+
+        s1         = 'abc 1 2 3 fixed1/3.3 (bbb 1.2) ccc/222.0 (ddd, eee) ffff/1.2.3.4.5 fixed2/30.12 def hij'
+        s2 = re.sub(r'fixed1/(.*) fixed2/([\d\.]+)',r'"fixed1/\1 fixed2/\2"', s1)
+        assert s2 == 'abc 1 2 3 "fixed1/3.3 (bbb 1.2) ccc/222.0 (ddd, eee) ffff/1.2.3.4.5 fixed2/30.12" def hij'
+
+        r1 = r'fixed1/(.*) fixed2/([\d\.]+)'
+        r2 = r'"fixed1/\1 fixed2/\2"'
+
+        s1         = 'abc 1 2 3 fixed1/3.3 (bbb 1.2) ccc/222.0 (ddd, eee) ffff/1.2.3.4.5 fixed2/30.12 def hij'
+        s2 = re.sub(r1,r2, s1)
+        assert s2 == 'abc 1 2 3 "fixed1/3.3 (bbb 1.2) ccc/222.0 (ddd, eee) ffff/1.2.3.4.5 fixed2/30.12" def hij'
+
+        s1         = 'abc 1 2 3 fixed1/3.3 (bbb 1.2) ccc/22200 (ddd, eee) ffff/1.2.3.4.5 fixed2/30012 def hij'
+        s2 = re.sub(r'fixed1/(.*) fixed2/([\d\.]+)',r'"fixed1/\1 fixed2/\2"', s1)
+        assert s2 == 'abc 1 2 3 "fixed1/3.3 (bbb 1.2) ccc/22200 (ddd, eee) ffff/1.2.3.4.5 fixed2/30012" def hij'
+
+        s1         = 'abc 1 2 3 fixed1/3.3 (bbb 1.2) ccc/22200 (ddd, eee) ffff/1.2.3.4.5 fixed2/30012  [zz/yy;bb_vv/111.222.3333;] def hij'
+        s2 = re.sub(r'fixed1/(.*) fixed2/([\d\.]+)\s+\[(.*)\]',r'"fixed1/\1 fixed2/\2 [\3]"', s1)
+        assert s2 == 'abc 1 2 3 "fixed1/3.3 (bbb 1.2) ccc/22200 (ddd, eee) ffff/1.2.3.4.5 fixed2/30012 [zz/yy;bb_vv/111.222.3333;]" def hij'
+
+        s1          = 'a.b.c'
+        s2 = re.sub(r'.',r'|',s1)
+        assert s2 == '|||||'
+        s2 = re.sub(r'\.',r'|',s1)
+        assert s2 == 'a|b|c'
+
+        p('pass test_regex2')
         pass
 
 

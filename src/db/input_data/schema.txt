@@ -1,0 +1,14 @@
+create table addresses          ( gid integer primary key autoincrement, id integer, unit integer, addr_num integer, street_id integer, city_id integer, province_id integer, country_id integer, zip text);
+create table cities             ( gid integer primary key autoincrement, id integer, name text, province_id integer, country_id integer);
+create table companies          ( gid integer primary key autoincrement, id integer, govid integer, name text, address_id integer, domainname text, country_id integer);
+create table countries          ( gid integer primary key autoincrement, id integer, name text, abbrev text, prefix integer);
+create table departments        ( gid integer primary key autoincrement, id integer, companyid integer, deptid integer, deptname text, deptcategory text);
+create table employees          ( gid integer primary key autoincrement, govid integer, employee_id integer, company_id integer, email text, dept_id integer, country_id integer, employer_id integer);
+create table entities           ( gid integer primary key autoincrement, govid integer, namefirst text, namelast text, phone text, email text, gender text, address_id integer, country_id integer, datestart integer, dateend integer, entity_type integer);
+create table provinces          ( gid integer primary key autoincrement, id integer, name text, country_id integer);
+create table streets            ( gid integer primary key autoincrement, id integer, name text, city_id integer, province_id integer, country_id integer);
+create table products           ( gid integer primary key autoincrement, sku integer,company_product_id integer,version integer,quality integer,category integer,description text,manufacturer_id integer,country_id integer,price_cost integer,price_sale integer,seller_id integer,seller_country_id integer);
+create table receipts_seller    ( gid integer primary key autoincrement, date integer, id integer,sales_record_id integer,from_country_id integer,from_company_id integer,qty integer,price_per_item integer,price_total integer,to_entity_id integer,to_country_id integer,product_id integer,category_id integer,version integer);
+create table receipts_customer  ( gid integer primary key autoincrement, date integer,id integer,sales_record_id integer,from_country_id integer,from_company_id integer,qty integer,price_per_item integer,price_total integer,to_entity_id integer,to_country_id integer,product_id integer,category_id integer);
+create table relations_small    ( gid integer primary key autoincrement, idsrc integer, iddst integer, relationtype text);
+create table entities_small     ( gid integer primary key autoincrement, namefirst text, namelast text, email text, gender text, country_id integer);
