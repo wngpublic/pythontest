@@ -2044,12 +2044,15 @@ class Tests:
             for k,v in d.items():
                 pass
 
+            d = {'k1':'v1','k2':'v2'}
+            assert len(d.keys()) == 2
+            assert isinstance(d, dict)
             p('testMiscCalls passed')
 
         def test_sys_call():
-            
+
             flag = False
-            
+
             if flag:
                 # this has no redirect output, so pwd is printed to stdout
                 # adding false flag to not run this so no output to console, but it works
@@ -2844,7 +2847,8 @@ class Tests:
             testReturnTuple()
             test_gen_arrays()
             '''
-            test_function_args()
+            #test_function_args()
+            testMiscCalls()
 
         inner_main()
         p('passed test_syntax')

@@ -1,6 +1,6 @@
 basic sqlite commands:
 - load sqlite db with text data
-- .backup 
+- .backup
 - .archive
 - .import
   .mode csv
@@ -9,6 +9,8 @@ basic sqlite commands:
   .output sqlformat.txt             # which has create, insert, etc
   .dump
   .exit
+- .headers on
+- .mode columns
 - .read
   .read sqlformat.txt               # which has insert, create, etc
   .exit
@@ -25,11 +27,14 @@ basic sqlite commands:
   select * from somewhere;          # statement
   .output                           # stop output
   .mode
+- drop
+  drop table;                       # delete table
 - sqlite3 database.db .dump > out.txt
 
 sqlite3 new_database.db
-> .read model_multitable_tiny.txt
-> .exit
+> .read ../input_data/input_tiny_db.txt         # load first set of data
+> .read ../input_data/goods_db.txt              # load second set of data
+> .exit                                         # optional
 sqlite3 old_database.db
 > .output outputsql.txt
 > .dump
@@ -151,14 +156,14 @@ select ProductID, ProductName, concat((UnitsInStock / (select sum(UnitsInStock) 
 
 select ProductID, ProductName, concat((UnitsInStock / 3119)*100, '%') as Percent_of_total_units_in_stock from products order by ProductID;
 
-select CustomerID, CompanyName from customers where CustomerID in 
+select CustomerID, CompanyName from customers where CustomerID in
 ( select CustomerID from orders where orderDate > '1998-05-01');
 
 select a.CustomerID, a.CompanyName from customers as a inner join orders as b on a.CustomerID = b.CustomerID where b.orderDate > '1998-05-01'
 
 select EmployeeID, FirstName, LastName, City, Country from employees where row(City, Country) in (select City, Country from customers);
 
-select distinct a.ProductID, a.UnitPrice as Max_unit_price_sold from order_details as a inner join 
+select distinct a.ProductID, a.UnitPrice as Max_unit_price_sold from order_details as a inner join
 ( select ProductID, max(UnitPrice) as Max_unit_price_sold from order_details group by ProductID) as b
 on a.ProductID=b.ProductID and a.UnitPrice=b.Max_unit_price_sold order by a.ProductID;
 
@@ -166,7 +171,7 @@ select y.CategoryID, y.CategoryName, round(x.actual_unit_price, 2) as "Actual Av
 (
     select avg(a.UnitPrice) as actual_unit_price, c.CategoryID from order_details as a inner join products as b on b.ProductID = a.ProductID inner join categories as c on b.CategoryID = c.CategoryID group by c.CategoryID
 ) as x
-inner join 
+inner join
 (
     select a.CategoryID, b.CategoryName, avg(a.UnitPrice) as planned_unit_price from products as a inner join categories as b on b.CategoryID = a.CategoryID group by a.CategoryID
 ) as y on x.CategoryID = y.CategoryID
@@ -187,17 +192,17 @@ select s_name, score, status, address_city, email_id, accomplishments from stude
 
 SELECT wp_woocommerce_order_items.order_id As No_Commande
 FROM  wp_woocommerce_order_items
-LEFT JOIN 
+LEFT JOIN
     (
         SELECT meta_value As Prenom, post_id  -- <----- this
         FROM wp_postmeta
         WHERE meta_key = '_shipping_first_name'
     ) AS a
 ON wp_woocommerce_order_items.order_id = a.post_id
-WHERE  wp_woocommerce_order_items.order_id =2198 
+WHERE  wp_woocommerce_order_items.order_id =2198
 
 SELECT <fieldlist>  FROM Faculty AS f
-INNER JOIN Division AS d ON d.FacultyID = f.FacultyID 
+INNER JOIN Division AS d ON d.FacultyID = f.FacultyID
 INNER JOIN Country AS c ON c.FacultyID = f.FacultyID
 INNER JOIN Nationality AS n ON n.FacultyID = f.FacultyID
 
@@ -234,23 +239,23 @@ select * from employees where company_id = 1;
 select employees.employee_id,employees.email,employees.company_id,companies.name from employees join companies on employees.company_id = companies.id where companies.id = 1;
 
 get all employees belonging to executive at companyid
-select employees.email,companies.name,departments.deptname 
-  from employees 
-  join companies on employees.company_id = companies.id 
-  join departments on employees.dept_id = departments.deptid and 
-    companies.id = departments.companyid and 
+select employees.email,companies.name,departments.deptname
+  from employees
+  join companies on employees.company_id = companies.id
+  join departments on employees.dept_id = departments.deptid and
+    companies.id = departments.companyid and
     departments.deptname like 'Executive%';
 
-select employees.email,employees.dept_id,departments.deptname 
-  from employees 
-  join departments on departments.deptid = employees.dept_id and 
-    employees.company_id = departments.companyid and 
+select employees.email,employees.dept_id,departments.deptname
+  from employees
+  join departments on departments.deptid = employees.dept_id and
+    employees.company_id = departments.companyid and
     departments.companyid = 1;
 
 select count(*) from employees group by company_id;
 ----------
-8         10        8         18        6         12        9         
-  
+8         10        8         18        6         12        9
+
 
 
 
@@ -278,10 +283,10 @@ select count(*) from entities where entities.country_id = 0 and address_id is no
 select * from entities where entities.address_id = 11 and entities.country_id = 0;
 delete from tablename;
 
-select streets.name,cities.name,countries.name 
-  from streets 
-  join cities on cities.id = streets.id 
-  join countries on countries.id = streets.country_id 
+select streets.name,cities.name,countries.name
+  from streets
+  join cities on cities.id = streets.id
+  join countries on countries.id = streets.country_id
   limit 30;
 
 select count(*) from cities group by country_id;    // correct resulty
@@ -337,42 +342,42 @@ select cities.name as cname,
   cities.country_id,
   countries.id as cid,
   provinces.name as pname,
-  countries.name as ctryname from cities 
-  join countries on countries.id = cities.country_id and 
-    countries.id = provinces.country_id 
+  countries.name as ctryname from cities
+  join countries on countries.id = cities.country_id and
+    countries.id = provinces.country_id
   join provinces on provinces.id = cities.province_id;
 
-select 
+select
     cities.name as cname,
     provinces.name as pname,
-    countries.name as ctryname 
-  from cities 
-    join countries on countries.id = cities.country_id 
-    join provinces on provinces.id = cities.province_id and 
+    countries.name as ctryname
+  from cities
+    join countries on countries.id = cities.country_id
+    join provinces on provinces.id = cities.province_id and
       countries.id = provinces.country_id;
 
-select 
-    streets.name as sname, 
+select
+    streets.name as sname,
     cities.name as cname,
     provinces.name as pname,
-    countries.name as ctryname 
-  from cities 
-    join countries on countries.id = cities.country_id 
-    join provinces on provinces.id = cities.province_id and 
-      countries.id = provinces.country_id 
-    join streets on streets.city_id = cities.id and 
-      streets.province_id = cities.province_id and 
+    countries.name as ctryname
+  from cities
+    join countries on countries.id = cities.country_id
+    join provinces on provinces.id = cities.province_id and
+      countries.id = provinces.country_id
+    join streets on streets.city_id = cities.id and
+      streets.province_id = cities.province_id and
       streets.country_id = cities.country_id;
 
-select 
-    streets.name as sname, 
+select
+    streets.name as sname,
     cities.name as cname,
     provinces.name as pname,
-    countries.name as ctryname 
-  from cities 
-    join countries on countries.id = cities.country_id 
-    join provinces on provinces.id = cities.province_id and countries.id = provinces.country_id 
-    join streets on streets.city_id = cities.id and streets.province_id = cities.province_id and streets.country_id = cities.country_id 
+    countries.name as ctryname
+  from cities
+    join countries on countries.id = cities.country_id
+    join provinces on provinces.id = cities.province_id and countries.id = provinces.country_id
+    join streets on streets.city_id = cities.id and streets.province_id = cities.province_id and streets.country_id = cities.country_id
   where cities.name = 'oso2' or cities.name = 'rnr2';
 
 join country name and provinces?
@@ -381,126 +386,126 @@ select countries.name, provinces.name from provinces join countries on countries
 
 how many provinces for each country in provinces?
 yes:
-  select provinces.country_id, count(*) 
+  select provinces.country_id, count(*)
     from provinces group by provinces.country_id;
 
 join country,province,city names:
 yes:
-  select countries.name,provinces.name,cities.name from cities 
-    join countries on countries.id = cities.country_id 
+  select countries.name,provinces.name,cities.name from cities
+    join countries on countries.id = cities.country_id
     join provinces on provinces.id = cities.province_id and provinces.country_id = cities.country_id;
 
 countryname,number of provinces
-wrong:  
-  select countries.name, count(*) from countries 
+wrong:
+  select countries.name, count(*) from countries
     join provinces on countries.id = provinces.country_id;
   wrong. outputs last country,total count
-yes:    
-  select countries.name, count(*) from provinces 
-    join countries on provinces.country_id = countries.id 
+yes:
+  select countries.name, count(*) from provinces
+    join countries on provinces.country_id = countries.id
     group by provinces.country_id;
 
 country name, province name, number cities each province:
 wrong:
-  select countries.name,provinces.name,count(*) from cities 
-    join countries on countries.id = cities.country_id 
-    join provinces on provinces.id = cities.province_id and provinces.country_id = cities.country_id 
+  select countries.name,provinces.name,count(*) from cities
+    join countries on countries.id = cities.country_id
+    join provinces on provinces.id = cities.province_id and provinces.country_id = cities.country_id
     group by cities.name;
-  select countries.name,provinces.name,count(*) from cities 
-    join countries on countries.id = cities.country_id 
-    join provinces on provinces.id = cities.province_id and provinces.country_id = cities.country_id 
+  select countries.name,provinces.name,count(*) from cities
+    join countries on countries.id = cities.country_id
+    join provinces on provinces.id = cities.province_id and provinces.country_id = cities.country_id
     group by cities.province_id;
 yes:
-  select countries.name,provinces.name,count(*) from cities 
-    join countries on countries.id = cities.country_id 
-    join provinces on provinces.id = cities.province_id and provinces.country_id = cities.country_id 
+  select countries.name,provinces.name,count(*) from cities
+    join countries on countries.id = cities.country_id
+    join provinces on provinces.id = cities.province_id and provinces.country_id = cities.country_id
     group by provinces.name;
 
 how many cities in each country? countryname,numcities
 wrong:
-  select countries.name,count(*) from cities 
-    join countries on countries.id = cities.country_id 
+  select countries.name,count(*) from cities
+    join countries on countries.id = cities.country_id
     group by cities.name;
 yes:
-  select countries.name,count(*) from cities 
-    join countries on countries.id = cities.country_id 
+  select countries.name,count(*) from cities
+    join countries on countries.id = cities.country_id
     group by countries.name;
-  
+
 how many provinces and cities in each country?  country,numProvinces,numCitiesInCountry
 wrong:
   select countries.name,count(*),from cities
-  
+
 select count(*),province_id from addresses where unit != "" group by province_id;
 count(*)    province_id
 ----------  -----------
-2           0          
-10          1          
-5           2        
+2           0
+10          1
+5           2
 
 select count(*),city_id,province_id from addresses where unit != "" group by province_id,city_id;
 count(*)    city_id     province_id
 ----------  ----------  -----------
-2           1           0          
-6           2           1          
-2           3           1          
-2           5           1          
-2           5           2          
-3           7           2          
+2           1           0
+6           2           1
+2           3           1
+2           5           1
+2           5           2
+3           7           2
 
 employees per company:
 select count(*),company_id from employees group by company_id;
 count(*)    company_id
 ----------  ----------
-8           0         
-10          1         
-8           2         
-18          3         
-6           4         
-12          5         
-9           6         
+8           0
+10          1
+8           2
+18          3
+6           4
+12          5
+9           6
 
 
-select count(*),employees.company_id,countries.name 
-  from employees 
-  join entities on entities.govid = employees.govid 
-  join countries on countries.id = entities.country_id 
-  group by countries.name,employees.company_id 
+select count(*),employees.company_id,countries.name
+  from employees
+  join entities on entities.govid = employees.govid
+  join countries on countries.id = entities.country_id
+  group by countries.name,employees.company_id
   order by countries.name,employees.company_id;
 
-count(*)    company_id  name      
+count(*)    company_id  name
 ----------  ----------  ----------
-1           4           Country 0 
-12          5           Country 0 
+1           4           Country 0
+12          5           Country 0
 ...
 
-select employees.email,employees.company_id,countries.name 
-  from employees 
-  join entities on entities.govid = employees.govid 
-  join countries on countries.id = entities.country_id 
-  where countries.name = 'Country 0' 
+select employees.email,employees.company_id,countries.name
+  from employees
+  join entities on entities.govid = employees.govid
+  join countries on countries.id = entities.country_id
+  where countries.name = 'Country 0'
   order by countries.name,employees.company_id;
 
-email                  company_id  name      
+email                  company_id  name
 ---------------------  ----------  ----------
-jyw.mhul.5@company2.2  4           Country 0 
-hpo.tblc.11@company0.  5           Country 0 
-oof.chqn.0@company0.0  5           Country 0 
+jyw.mhul.5@company2.2  4           Country 0
+hpo.tblc.11@company0.  5           Country 0
+oof.chqn.0@company0.0  5           Country 0
 ...
 
 addresses of employees by city
 workemail entityemail cities.name
 join employees,govid with entities.govid and join entities.address_id with addresses.id and join addresses.city_id with cities.id
 
-select employees.email,entities.email,cities.name from employees 
-  join entities on 
+select employees.email,entities.email,cities.name from employees
+  join entities on
     entities.govid = employees.govid and
     entities.country_id = employees.country_id
-  join addresses on 
-    entities.address_id = addresses.id and 
-    entities.country_id = addresses.country_id 
-  join cities on 
-    addresses.city_id = cities.id and 
-    addresses.country_id = cities.country_id and 
+  join addresses on
+    entities.address_id = addresses.id and
+    entities.country_id = addresses.country_id
+  join cities on
+    addresses.city_id = cities.id and
+    addresses.country_id = cities.country_id and
     cities.province_id = addresses.province_id and
     entities.country_id = cities.country_id;
 
@@ -512,26 +517,26 @@ numaddresses  numprovinces  countryname
 6             2             c1              6 addresses in 2 provinces in c1
 
 use subqueries to do multiple counts
-select 
-  count(id) as numaddr, 
+select
+  count(id) as numaddr,
   (
-    select 
-      count(distinct province_id) 
-    from addresses a 
-    where 
-      a.country_id = b.country_id 
+    select
+      count(distinct province_id)
+    from addresses a
+    where
+      a.country_id = b.country_id
     group by country_id
-  ) as numprov, 
-  country_id 
-from addresses b 
+  ) as numprov,
+  country_id
+from addresses b
   group by country_id;
 
 numaddr     numprov     country_id
 ----------  ----------  ----------
-42          4           0         
-30          3           1         
-49          4           2         
-33          3           3         
+42          4           0
+30          3           1
+49          4           2
+33          3           3
 
 
 select count(distinct province_id) from addresses group by country_id;
@@ -546,7 +551,7 @@ find streets that have duplicate names:
 maybe:
   select name, count(name) from streets group by name having count(name) > 1;
 
-find addresses that have 
+find addresses that have
 
 countryname,cityname,numCompanies?
 wrong:
@@ -565,25 +570,25 @@ chooses one row, the last city matching each group of country_id
   select * from cities group by cities.country_id;
 
 
-select entities.govid,entities.namefirst,entities.namelast,entities.email,streets.name,addresses.addr_num 
-  from entities 
-  join streets on streets.country_id = entities.country_id 
-  join addresses on addresses.id = entities.address_id and 
-    addresses.country_id = entities.country_id 
-  where entities.country_id = 0 
+select entities.govid,entities.namefirst,entities.namelast,entities.email,streets.name,addresses.addr_num
+  from entities
+  join streets on streets.country_id = entities.country_id
+  join addresses on addresses.id = entities.address_id and
+    addresses.country_id = entities.country_id
+  where entities.country_id = 0
   limit 10;
 
-select addresses.unit,addresses.addr_num,streets.name,cities.name,provinces.name,countries.name 
-  from addresses 
-  join cities on cities.id = streets.id 
-  join countries on countries.id = streets.country_id 
-  join provinces on provinces.id = addresses.province_id 
-  join streets on streets.id = addresses.street_id 
+select addresses.unit,addresses.addr_num,streets.name,cities.name,provinces.name,countries.name
+  from addresses
+  join cities on cities.id = streets.id
+  join countries on countries.id = streets.country_id
+  join provinces on provinces.id = addresses.province_id
+  join streets on streets.id = addresses.street_id
   limit 10;
 
-select cities.name,provinces.name,countries.name 
-  from cities 
-  inner join provinces on provinces.id = cities.province_id 
+select cities.name,provinces.name,countries.name
+  from cities
+  inner join provinces on provinces.id = cities.province_id
   inner join countries on countries.id = cities.country_id;
 
 select addresses.unit,addresses.addr_num,streets.name,cities.name,provinces.name,countries.name from addresses
@@ -618,67 +623,67 @@ select count(*),category,quality from products group by category,quality order b
 schema for input_tiny_multitable_db.txt
 {
 
-schema summary 
-addresses1/2    ( gid integer, 
-                  id integer, 
-                  unit integer, 
-                  addr_num integer,     
-                  street_id integer, 
-                  city_id integer, 
-                  province_id integer, 
-                  country_id integer, 
+schema summary
+addresses1/2    ( gid integer,
+                  id integer,
+                  unit integer,
+                  addr_num integer,
+                  street_id integer,
+                  city_id integer,
+                  province_id integer,
+                  country_id integer,
                   zip text);
-cities1/2       ( gid integer, 
-                  id integer, 
-                  name text,           
-                  province_id integer,  
+cities1/2       ( gid integer,
+                  id integer,
+                  name text,
+                  province_id integer,
                   country_id integer);
-companies1/2    ( gid integer, 
-                  id integer,     
-                  govid integer,       
-                  name text, 
-                  address_id integer, 
-                  domainname text, 
+companies1/2    ( gid integer,
+                  id integer,
+                  govid integer,
+                  name text,
+                  address_id integer,
+                  domainname text,
                   country_id integer);
-countries1/2    ( gid integer, 
-                  id integer, 
-                  name text, 
-                  abbrev text, 
+countries1/2    ( gid integer,
+                  id integer,
+                  name text,
+                  abbrev text,
                   prefix integer);
-departments1/2  ( gid integer, 
-                  id integer, 
-                  companyid integer,   
-                  deptid integer, 
-                  deptname text, 
+departments1/2  ( gid integer,
+                  id integer,
+                  companyid integer,
+                  deptid integer,
+                  deptname text,
                   deptcategory text);
-employees1/2    ( gid integer,                 
-                  govid integer,  
-                  employee_id integer, 
-                  company_id integer,   
-                  email text, 
-                  dept_id integer, 
-                  country_id integer, 
+employees1/2    ( gid integer,
+                  govid integer,
+                  employee_id integer,
+                  company_id integer,
+                  email text,
+                  dept_id integer,
+                  country_id integer,
                   employer_id integer);
-entities1/2     ( gid integer,                 
-                  govid integer,  
-                  namefirst text, 
-                  namelast text, 
-                  phone text, 
-                  email text, 
-                  address_id integer, 
-                  country_id integer, 
-                  datestart integer, 
-                  dateend integer, 
+entities1/2     ( gid integer,
+                  govid integer,
+                  namefirst text,
+                  namelast text,
+                  phone text,
+                  email text,
+                  address_id integer,
+                  country_id integer,
+                  datestart integer,
+                  dateend integer,
                   entity_type integer);
-provinces1/2    ( gid integer, 
-                  id integer,     
-                  name text,           
+provinces1/2    ( gid integer,
+                  id integer,
+                  name text,
                   country_id integer);
-streets1/2      ( gid integer, 
-                  id integer,     
-                  name text,           
-                  city_id integer,      
-                  province_id integer, 
+streets1/2      ( gid integer,
+                  id integer,
+                  name text,
+                  city_id integer,
+                  province_id integer,
                   country_id integer);
 
 sql queries for this schema: {
@@ -774,8 +779,8 @@ countries1 has 4 entries
 
 select * from countries1 inner join provinces1 on countries1.id = provinces1.country_id;
 
-select countries1.id, countries1.name, provinces1.name, provinces1.country_id 
-  from countries1 inner 
+select countries1.id, countries1.name, provinces1.name, provinces1.country_id
+  from countries1 inner
   join provinces1 on countries1.id = provinces1.country_id;
 
 // produces same thing
@@ -788,83 +793,83 @@ join 3 tables
 
 // note it is not 3 joins, but 2 joins with a compound AND
 // if use 3 joins on 3 tables, you get ambiguous column name
-select 
-  countries1.id cid, countries1.name as cname, 
+select
+  countries1.id cid, countries1.name as cname,
   provinces1.name as pname, provinces1.id as pid, provinces1.country_id as pcid,
   cities1.name as cityname, cities1.province_id as citypid, cities1.country_id as citycid
-from countries1 
+from countries1
   join provinces1 on countries1.id = provinces1.country_id
   join cities1 on countries1.id = cities1.country_id and
     provinces1.id = cities1.province_id;
 
-select 
-  countries1.id cid, countries1.name as cname, 
+select
+  countries1.id cid, countries1.name as cname,
   provinces1.name as pname, provinces1.id as pid, provinces1.country_id as pcid,
   cities1.name as cityname, cities1.province_id as citypid, cities1.country_id as citycid
-from countries1 
+from countries1
   join provinces1 on cid = pcid
   join cities1 on cid = citycid and pid = citypid;
 
 // cities1 has more cities, so do left join
-select 
+select
   cities1.gid as cityid, cities1.name as cityname, cities1.province_id as citypid, cities1.country_id as citycid,
   provinces1.name as pname, provinces1.id as pid, provinces1.country_id as pcid,
-  countries1.id cid, countries1.name as cname 
+  countries1.id cid, countries1.name as cname
 from cities1
   left join provinces1 on citypid = pid and citycid = pcid
   left join countries1 on cid = citycid;
 
 // seems to produce the same answer as above?
-select 
-  countries1.id cid, countries1.name as cname, 
+select
+  countries1.id cid, countries1.name as cname,
   provinces1.name as pname, provinces1.id as pid, provinces1.country_id as pcid,
   cities1.name as cityname, cities1.province_id as citypid, cities1.country_id as citycid
-from countries1, provinces1, cities1  
+from countries1, provinces1, cities1
   where cid = pcid and cid = citycid and pid = citypid;
-  
 
-select 
-  countries1.id cid, countries1.name as cname, 
+
+select
+  countries1.id cid, countries1.name as cname,
   provinces1.name as pname, provinces1.id as pid, provinces1.country_id as pcid,
   cities1.name as cityname, cities1.province_id as citypid, cities1.country_id as citycid
-from countries1 
+from countries1
   join provinces1 on cid = pcid
   join cities1 on cid = citycid and pid = citypid
 where cid = 0;
 
-select 
-  countries1.id cid, countries1.name as cname, 
+select
+  countries1.id cid, countries1.name as cname,
   provinces1.id as pid, provinces1.country_id as pcid,
   cities1.province_id as citypid, cities1.country_id as citycid
-from countries1 
+from countries1
   join provinces1 on cid = pcid
   join cities1 on cid = citycid and pid = citypid
 group by cid;
 
-select 
-  countries1.id cid, countries1.name as cname, 
+select
+  countries1.id cid, countries1.name as cname,
   provinces1.id as pid, provinces1.country_id as pcid,
   cities1.province_id as citypid, cities1.country_id as citycid
-from countries1 
+from countries1
   join provinces1 on cid = pcid
   join cities1 on cid = citycid and pid = citypid
 group by cid, pid;
 
-select 
+select
   count(*),
-  countries1.id cid, countries1.name as cname, 
+  countries1.id cid, countries1.name as cname,
   provinces1.id as pid, provinces1.country_id as pcid,
   cities1.province_id as citypid, cities1.country_id as citycid
-from countries1 
+from countries1
   join provinces1 on cid = pcid
   join cities1 on cid = citycid and pid = citypid
 group by cid, pid;
 
-select 
-  countries1.id cid, countries1.name as cname, 
+select
+  countries1.id cid, countries1.name as cname,
   provinces1.name as pname, provinces1.id as pid, provinces1.country_id as pcid,
   cities1.name as cityname, cities1.province_id as citypid, cities1.country_id as citycid
-from countries1 
+from countries1
   left join provinces1 on cid = pcid
   left join cities1 on cid = citycid and pid = citypid;
 
@@ -880,3 +885,40 @@ join cities1 on addresses1.city_id = cities1.id
 join countries1 on addresses1.country_id = countries1.id and cities1.country_id = countries1.id
 join provinces1 on provinces1.country_id = countries1.id and provinces1.id = addresses1.province_id;
 
+select count(*),* from cities group by province_id order by count(*);
+select count(*),province_id,country_id from cities group by province_id, country_id order by count(*);
+
+select avg(price),* from products_prices where name = 'fruits' order by price;
+select avg(price),count(*),* from products_prices group by name;
+select avg(price),count(*),* from products_prices where name = 'fruits' order by avg(price);
+select avg(price),count(*),name,product_id from products_prices group by name order by avg(price);
+select min(price), * from products_prices group by name order by price;
+select max(price), * from products_prices group by name order by price;
+{
+- characteristics of input_tiny_db.txt
+
+countries: 4
+  id, name, abbrev, prefix
+provinces: 14
+  id, name, country_id
+  select count(*), country_id from provinces group by country_id;
+cities: 34 cities
+  id, name, province_id, country_id
+  select count(*), province_id, country_id from cities group by province_id, country_id;
+streets: 52
+  id, name, city_id, province_id, country_id
+addresses: 154
+  id, unit, addr_num, street_id, city_id, province_id, country_id, zip
+entities: 241
+  govid, namefirst, namelast, phone, email, address_id, country_id,
+  datestart, dateend, entity_type
+companies: 10
+  id, govid, name, address_id, domainname, country_id
+departments: 121
+  id, companyid, deptid, deptname, deptcategory
+employees: 136
+  govid, employee_id, company_id, email, dept_id, country_id, employer_id
+
+
+
+}

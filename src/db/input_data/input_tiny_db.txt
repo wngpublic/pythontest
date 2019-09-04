@@ -1,9 +1,9 @@
-------------------------------------------------
+CREATE TABLE countries ( gid integer primary key autoincrement, id integer, name text, abbrev text, prefix integer);
 insert into countries (id,name,abbrev,prefix) values (0,"Country 0","C00",0);
 insert into countries (id,name,abbrev,prefix) values (1,"Country 1","C01",1);
 insert into countries (id,name,abbrev,prefix) values (2,"Country 2","C02",2);
 insert into countries (id,name,abbrev,prefix) values (3,"Country 3","C03",3);
-------------------------------------------------
+CREATE TABLE provinces ( gid integer primary key autoincrement, id integer, name text, country_id integer);
 insert into provinces (id,name,country_id) values (0,"xolr0",0);
 insert into provinces (id,name,country_id) values (1,"jowp1",0);
 insert into provinces (id,name,country_id) values (2,"bkzx2",0);
@@ -18,7 +18,7 @@ insert into provinces (id,name,country_id) values (3,"bbfx3",2);
 insert into provinces (id,name,country_id) values (0,"xnyk0",3);
 insert into provinces (id,name,country_id) values (1,"gvri1",3);
 insert into provinces (id,name,country_id) values (2,"tuiy2",3);
-------------------------------------------------
+CREATE TABLE cities ( gid integer primary key autoincrement, id integer, name text, province_id integer, country_id integer);
 insert into cities (id,name,province_id,country_id) values (0,"xyk0",0,0);
 insert into cities (id,name,province_id,country_id) values (1,"mad1",0,0);
 insert into cities (id,name,province_id,country_id) values (2,"jki2",0,0);
@@ -53,7 +53,7 @@ insert into cities (id,name,province_id,country_id) values (4,"zvy1",1,3);
 insert into cities (id,name,province_id,country_id) values (5,"ulq0",2,3);
 insert into cities (id,name,province_id,country_id) values (6,"fii1",2,3);
 insert into cities (id,name,province_id,country_id) values (7,"qnk2",2,3);
-------------------------------------------------
+CREATE TABLE streets ( gid integer primary key autoincrement, id integer, name text, city_id integer, province_id integer, country_id integer);
 insert into streets (id,name,city_id,province_id,country_id) values (0,"lqk0",0,0,0);
 insert into streets (id,name,city_id,province_id,country_id) values (1,"alc1",0,0,0);
 insert into streets (id,name,city_id,province_id,country_id) values (2,"cja0",1,0,0);
@@ -106,7 +106,7 @@ insert into streets (id,name,city_id,province_id,country_id) values (6,"wfj0",5,
 insert into streets (id,name,city_id,province_id,country_id) values (7,"tnn1",5,2,3);
 insert into streets (id,name,city_id,province_id,country_id) values (8,"eye0",6,2,3);
 insert into streets (id,name,city_id,province_id,country_id) values (9,"glo0",7,2,3);
-------------------------------------------------
+CREATE TABLE addresses ( gid integer primary key autoincrement, id integer, unit integer, addr_num integer, street_id integer, city_id integer, province_id integer, country_id integer, zip text);
 insert into addresses (id,unit,addr_num,street_id,city_id,province_id,country_id,zip) values (1,null,10,0,0,0,0,"00000001");
 insert into addresses (id,unit,addr_num,street_id,city_id,province_id,country_id,zip) values (2,null,20,0,0,0,0,"00000001");
 insert into addresses (id,unit,addr_num,street_id,city_id,province_id,country_id,zip) values (3,null,30,0,0,0,0,"00000001");
@@ -261,7 +261,7 @@ insert into addresses (id,unit,addr_num,street_id,city_id,province_id,country_id
 insert into addresses (id,unit,addr_num,street_id,city_id,province_id,country_id,zip) values (31,null,10,9,7,2,3,"00000008");
 insert into addresses (id,unit,addr_num,street_id,city_id,province_id,country_id,zip) values (32,null,20,9,7,2,3,"00000008");
 insert into addresses (id,unit,addr_num,street_id,city_id,province_id,country_id,zip) values (33,null,30,9,7,2,3,"00000008");
-------------------------------------------------
+CREATE TABLE entities ( gid integer primary key autoincrement, govid integer, namefirst text, namelast text, phone text, email text, address_id integer, country_id integer, datestart integer, dateend integer, entity_type integer);
 insert into entities (govid,namefirst,namelast,phone,email,address_id,country_id,datestart,dateend,entity_type) values (0,"null","company0","0000100000","company0@C01",1,1,315995317995,null,1);
 insert into entities (govid,namefirst,namelast,phone,email,address_id,country_id,datestart,dateend,entity_type) values (1,"null","company1","0000100001","company1@C01",2,1,315621437103,null,1);
 insert into entities (govid,namefirst,namelast,phone,email,address_id,country_id,datestart,dateend,entity_type) values (2,"lma","wmlc","0000100002","lma.wmlc.0@C01",1,1,316238868373,null,2);
@@ -503,7 +503,7 @@ insert into entities (govid,namefirst,namelast,phone,email,address_id,country_id
 insert into entities (govid,namefirst,namelast,phone,email,address_id,country_id,datestart,dateend,entity_type) values (63,"sde","fpi","null","sde.fpi.61@C00",null,0,315759564530,null,2);
 insert into entities (govid,namefirst,namelast,phone,email,address_id,country_id,datestart,dateend,entity_type) values (64,"wxp","aaw","0000000062","null",null,0,315930402649,null,2);
 insert into entities (govid,namefirst,namelast,phone,email,address_id,country_id,datestart,dateend,entity_type) values (65,"cni","bsi","null","null",null,0,315753817965,null,2);
-------------------------------------------------
+CREATE TABLE companies ( gid integer primary key autoincrement, id integer, govid integer, name text, address_id integer, domainname text, country_id integer);
 insert into companies (id,govid,name,address_id,domainname,country_id) values (0,0,"company0",1,"company0.C01",1);
 insert into companies (id,govid,name,address_id,domainname,country_id) values (1,1,"company1",2,"company1.C01",1);
 insert into companies (id,govid,name,address_id,domainname,country_id) values (2,0,"company0",1,"company0.C02",2);
@@ -514,7 +514,7 @@ insert into companies (id,govid,name,address_id,domainname,country_id) values (6
 insert into companies (id,govid,name,address_id,domainname,country_id) values (7,3,"company3",4,"company3.C03",3);
 insert into companies (id,govid,name,address_id,domainname,country_id) values (8,0,"company0",1,"company0.C00",0);
 insert into companies (id,govid,name,address_id,domainname,country_id) values (9,1,"company1",2,"company1.C00",0);
-------------------------------------------------
+CREATE TABLE departments ( gid integer primary key autoincrement, id integer, companyid integer, deptid integer, deptname text, deptcategory text);
 insert into departments (id,companyid,deptid,deptname,deptcategory) values (0,0,1,"Executive Officials","Executive");
 insert into departments (id,companyid,deptid,deptname,deptcategory) values (1,0,2,"Sales","Finance");
 insert into departments (id,companyid,deptid,deptname,deptcategory) values (2,0,3,"Product","R&D");
@@ -636,7 +636,7 @@ insert into departments (id,companyid,deptid,deptname,deptcategory) values (117,
 insert into departments (id,companyid,deptid,deptname,deptcategory) values (118,9,3,"Product","R&D");
 insert into departments (id,companyid,deptid,deptname,deptcategory) values (119,9,4,"Group0","R&D");
 insert into departments (id,companyid,deptid,deptname,deptcategory) values (120,9,5,"Group1","R&D");
-------------------------------------------------
+CREATE TABLE employees ( gid integer primary key autoincrement, govid integer, employee_id integer, company_id integer, email text, dept_id integer, country_id integer, employer_id integer);
 insert into employees (govid,employee_id,company_id,email,dept_id,country_id,employer_id) values (89,0,0,"hsk.nygd.0@company0.1",1,1,null);
 insert into employees (govid,employee_id,company_id,email,dept_id,country_id,employer_id) values (90,1,0,"yxj.rrth.1@company0.1",1,1,0);
 insert into employees (govid,employee_id,company_id,email,dept_id,country_id,employer_id) values (91,2,0,"lvo.tyyt.2@company0.1",1,1,0);
