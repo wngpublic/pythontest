@@ -48,6 +48,8 @@ import uuid
 import logging
 import hashlib
 import zlib
+import datetime
+import numpy
 
 global_output_to_file_ = False
 global_fh_ = None
@@ -2737,6 +2739,25 @@ class Tests:
             assert len(l) == 8
             p('pass test_loop')
 
+        '''
+        given array of a, we call (i,j) an important reverse pair if i<j and a[i]>a[j]*2
+        return the number of important reverse pairs in given array
+        '''
+        def test_reverse_pairs(self):
+            def reverse_pairsv1(a):
+                sz = len(a)
+                numpairs = 0
+                for j in range(sz):
+                    for i in range(j):
+                        if a[i] > a[j] * 2:
+                            numpairs = numpairs + 1
+                    pass
+            def testcase():
+                a = [1,3,2,3,1]
+                numpairs = reverse_pairsv1(a)
+                assert numpairs == 2
+            testcase()
+
         def get_array_1(num_elements, starting_idx):
             l = []
             for i in range(starting_idx,starting_idx+num_elements):
@@ -4217,6 +4238,106 @@ class Tests:
         a = Tests.parse_tokens(s)
         p(a)
         p('pass test_parse_tokens')
+
+    # using numpy to pregenerate list is about 25x faster than using randint for each loop.
+    # but using numpy to generate a single number in each loop is much slower than randint
+    def test_model_entries_ttl_hit_rate(self):
+        # fps is frames per second
+        # qps is number of requests per second
+        num_entries = 100_000
+        qps = 100
+        fps = 1
+        insert_rate = 50
+        ma_time = 96 * 60 * 60
+        max_range = fps * max_time
+        ctr = 0
+        idx = 0
+        d = {}
+        ttl = 24 * 60 * 60
+        hit = 1
+        miss = 1
+        num_expired = 0
+        l_rand_size = 10_000
+        l_rand = numpy.random.randint(low=0,high=1000,size=l_rand_size)
+        l_rand_idx = 0
+        pass_ttl = True
+        p('num_enrties:{} qps:{} insert_rate:{} max_time:{} test stops at iter:{}'
+            .format(num_entries,qps,insert_rate,max_time,max_range))
+        for i in range(max_range):
+            if(ctr >= 10_000):
+                hit_rate = hit / (hit + miss) * 1.0
+                p('iter {:10} hit_rate: {{:5.4f} num_entries:{:10} num_expired:{:10}'
+                    .format(i, hit_rate, len(d), num_expired))
+                ctr = 0
+            list_to_del = []
+            if not bypass_ttl:
+                for k,v in d.items():
+                    d[k] = d[k] - 1
+                    if d[k] <= 0:
+                        list_to_del.append(k)
+                for k in list_to_del:
+                    del d[k]
+                    num_expired = num_expired + 1
+            for j in range(qps):
+                idx = idx + 1
+                if idx >= num_entries:
+                    idx = 0
+                if idx in d:
+                    hit = hit + 1
+                else:
+                    miss = miss + 1
+                    if(l_rand_idxx >= l_rand_size):
+                        l_rand = numpy.random.randint(low=0,high=1000,size=l_rand_size)
+                        l_rand_idx = 0
+                    randval = l_rand[l_rand_idx]
+                    l_rand_idx = l_rand_idx + 1
+                    if randval <= insert_rate:
+                        d[idx] = ttl
+            ctr = ctr + 1
+        hit_rate = hit / (hit + miss) * 1.0
+        p('hit rate = {}'.format(hit_rate))
+    def test_list(self):
+        l = []
+        l.append('hello 1\nhello 2\n')
+        l.append('hello 1\nhello 2\n')
+        l.append('hello 1\nhello 2\n')
+        assert len(l) == 3
+    def test_datetime(self):
+        t1 = datetime.datetime.now()
+        t2 = datetime.datetime.now()
+        d  = t2 - t1
+    def test_numpy_basic(self):
+        num_iter = 1_000
+        size = 1_000
+        lo = 0
+        hi = 10_000
+        l = []
+        for i in range(num_iter):
+            l = numpy.random.randint(low=lo,high=hi,size=size)
+            assert len(l) == size
+            for v in l:
+                assert v >= lo and v < hi
+        p('test_numpy_basic_pass')
+        return l
+    def test_loop_speed(self):
+        max = 1_000_000
+        ctr = 0
+        maxrange = 10_000
+        for i in range(10):
+            t1 = datetime.datetime.now()
+            for i in range(max):
+                v = numpy.random.randint(0,maxrange)
+                ctr = ctr + 1
+            max = max + max
+            t2 = datetime.datetime.now()
+            diff = t2 - t1
+            p('t1:{} t2:{} time elapsed: {} max:{}'.format(t1,t2,diff,max))
+    def test_hashlib(self):
+        m = hashlib.md5()
+        m.update("string val")
+        m.digest()
+        pass
+
 
     def is_callable_user_defined(self, s):
         if not callable(getattr(self, s)):
