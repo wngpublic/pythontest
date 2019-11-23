@@ -1,6 +1,7 @@
 #!/usr/local/bin/python3
 
 import sys
+sys.path.append('../algos')
 import os
 import os.path
 import getopt
@@ -17,7 +18,8 @@ from collections import deque
 from collections import OrderedDict
 import urllib.request as url
 import pathlib
-#from src.main import myclasses
+import algos
+from src.main import myclasses
 import myclasses
 #import src.main.myclasses
 #from src.algos import algos
@@ -50,6 +52,7 @@ import hashlib
 import zlib
 import datetime
 import numpy
+import requests
 
 global_output_to_file_ = False
 global_fh_ = None
@@ -4094,7 +4097,7 @@ class Tests:
                 return False
             return True
 
-        def run_function_map():
+        def run_function_map(self):
             l_functions = [ m for m in dir(self) if self.is_callable_user_defined(m)]
             h = {}
             for i in range(len(l_functions)):
@@ -4106,8 +4109,9 @@ class Tests:
             p(l)
 
         def run(self, i):
-            if i in h:
-                getattr(self, h[i])()
+            pass
+            #if i in h:
+                #getattr(self, h[i])()
 
         def __init__(self):
             self.h = self.run_function_map()
@@ -4145,6 +4149,9 @@ class Tests:
         assert sum_exp == sum_act
         p('done test_list_of_list')
 
+    def test_requests(self):
+        r = requests.get('https://github.com/wngpublic')
+        r = requests.post('https://github.com/wngpublic/maventest')
 
     @staticmethod
     def parse_token(s, idx_s, max, delimiter):
@@ -4248,7 +4255,7 @@ class Tests:
         qps = 100
         fps = 1
         insert_rate = 50
-        ma_time = 96 * 60 * 60
+        max_time = 96 * 60 * 60
         max_range = fps * max_time
         ctr = 0
         idx = 0
@@ -4260,7 +4267,7 @@ class Tests:
         l_rand_size = 10_000
         l_rand = numpy.random.randint(low=0,high=1000,size=l_rand_size)
         l_rand_idx = 0
-        pass_ttl = True
+        bypass_ttl = True
         p('num_enrties:{} qps:{} insert_rate:{} max_time:{} test stops at iter:{}'
             .format(num_entries,qps,insert_rate,max_time,max_range))
         for i in range(max_range):
@@ -4286,7 +4293,7 @@ class Tests:
                     hit = hit + 1
                 else:
                     miss = miss + 1
-                    if(l_rand_idxx >= l_rand_size):
+                    if(l_rand_idx >= l_rand_size):
                         l_rand = numpy.random.randint(low=0,high=1000,size=l_rand_size)
                         l_rand_idx = 0
                     randval = l_rand[l_rand_idx]
