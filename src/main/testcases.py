@@ -9,6 +9,8 @@ import fileinput
 import subprocess
 import re
 import string
+import datetime
+import numpy
 import copy
 import math
 import calendar
@@ -3782,6 +3784,11 @@ class Tests:
         assert s0 == 'tyqbac'
         assert s1 == ['a','b','c','q','t','y']
         assert ''.join(s1) == 'abcqty'
+        l = []
+        l.append('hello this is a sentence\nand another one\n')
+        l.append('hello this is a sentence\nand another one\n')
+        l.append('hello this is a sentence\nand another one\n')
+        assert len(l) == 3
         p('pass test_list')
 
     def test_arg(self, arg1, arg2):
@@ -4372,7 +4379,11 @@ class Tests:
                         i = int(s)
                         if(i in map_functions):
                             p('exec {}'.format(map_functions[i]))
+                            t1 = datetime.datetime.now()
                             getattr(self, map_functions[i])()
+                            t2 = datetime.datetime.now()
+                            diff = t2 - t1
+                            p('time elapsed: {}'.format(diff))
                 else:
                     pass
             return True
@@ -4424,6 +4435,135 @@ class Tests:
         h['test_static_arg'](1,3)
 
         p('done')
+
+    def test_model_entries_ttl_hit_rate(self):
+        # fps is frames per second
+        # qps is number of requests per second
+        dist_type   = 0                     # distype 0 = uniform, 1 = gaussian
+        num_entries = 100_000
+        qps         = 100
+        fps         = 1
+        insert_rate = 50 # 0.3%
+        hit_rate    = 0
+        max_time    = 96 * 60 * 60
+        max_range   = fps * max_time
+        ctr         = 0
+        idx         = 0
+        d           = {}
+        ttl         = 24 * 60 * 60
+        hit         = 1
+        miss        = 1
+        num_expired = 0
+        l_rand_size = 10_000
+        l_rand      = numpy.random.randint(low=0,high=1000,size=l_rand_size)
+        l_rand_idx  = 0
+        bypass_ttl  = True
+
+        p('num_entries:{} qps:{} insert_rate:{} max_time:{} test stops at iter:{}'
+          .format(num_entries, qps, insert_rate, max_time, max_range))
+        for i in range(max_range):
+            if ctr >= 10_000:
+                hit_rate = hit / (hit + miss) * 1.0
+                p('iter {:10} hit_rate: {:>5.4f} num_entries:{:10} num_expired:{:10}'
+                  .format(i, hit_rate, len(d), num_expired))
+                ctr = 0
+            list_to_del = []
+            if not bypass_ttl:
+                for k,v in d.items():
+                    d[k] = d[k] - 1
+                    if d[k] <= 0:
+                        list_to_del.append(k)
+                for k in list_to_del:
+                    del d[k]
+                    num_expired = num_expired + 1
+            for j in range(qps):
+                idx = (idx + 1)
+                if idx >= num_entries:
+                    idx = 0
+                if idx in d:
+                    hit = hit + 1
+                else:
+                    miss = miss + 1
+                    if(l_rand_idx >= l_rand_size):
+                        l_rand = numpy.random.randint(low=0,high=1000,size=l_rand_size)
+                        l_rand_idx = 0
+                    randval = l_rand[l_rand_idx]
+                    l_rand_idx = l_rand_idx + 1
+                    if(randval <= insert_rate):
+                        d[idx] = ttl
+            ctr = ctr + 1
+        hit_rate = hit / (hit + miss) * 1.0
+        p('hit rate = {}'.format(hit_rate))
+
+
+    def test_numpy_basic(self):
+        num_iter = 1_000
+        size = 1_000
+        lo = 0
+        hi = 10_000
+        l = []
+        for i in range(num_iter):
+            l = numpy.random.randint(low=lo,high=hi,size=size)
+            assert len(l) == size
+            for v in l:
+                assert v >= lo and v < hi
+        p('test_numpy_basic_pass')
+        return l
+
+    '''
+
+    loop has only ctr
+    t1:2019-09-23 22:29:40.415139 t2:2019-09-23 22:29:41.220705 time elapsed: 0:00:00.805566 max:20000000
+    t1:2019-09-23 22:29:41.220793 t2:2019-09-23 22:29:42.637146 time elapsed: 0:00:01.416353 max:40000000
+    t1:2019-09-23 22:29:42.637249 t2:2019-09-23 22:29:45.457262 time elapsed: 0:00:02.820013 max:80000000
+    t1:2019-09-23 22:29:45.457348 t2:2019-09-23 22:29:52.435351 time elapsed: 0:00:06.978003 max:160000000
+    
+    loop has randint
+    t1:2019-09-23 22:32:04.668355 t2:2019-09-23 22:32:27.835413 time elapsed: 0:00:23.167058 max:20000000
+    t1:2019-09-23 22:32:27.835639 t2:2019-09-23 22:33:02.176667 time elapsed: 0:00:34.341028 max:40000000
+    t1:2019-09-23 22:33:02.176729 t2:2019-09-23 22:34:09.553533 time elapsed: 0:01:07.376804 max:80000000
+
+    numpy.random
+    t1:2019-09-23 22:41:28.935097 t2:2019-09-23 22:42:49.433340 time elapsed: 0:01:20.498243 max:20000000
+    t1:2019-09-23 22:42:49.433398 t2:2019-09-23 22:45:29.752893 time elapsed: 0:02:40.319495 max:40000000
+
+    '''
+
+    def test_loop_speed(self):
+        max = 1_000_000
+        ctr = 0
+        for i in range(10):
+            t1 = datetime.datetime.now()
+            for i in range(max):
+                v = numpy.random.randint(0,10_000)
+                ctr = ctr + 1
+            max = max + max
+            t2 = datetime.datetime.now()
+            diff = t2 - t1
+            p('t1:{} t2:{} time elapsed: {} max:{}'.format(t1,t2,diff,max))
+
+    def rand_string(self, charset, len):
+        r = ""
+        for i in range(len):
+            pass
+        return r
+
+    def rand_json_generator(self, charset, d, levels, fanout, maxarray, maxset):
+        this_fanout = random.randint(1,fanout)
+        for i in range(this_fanout):
+            data_type = random.randint(0,3)
+            if data_type == 0:      # data type string
+                pass
+            if data_type == 1:      # data type array
+                pass
+            if data_type == 2:      # data type set
+                pass
+
+    def test_hashlib(self):
+        m = hashlib.md5()
+        m.update("string val")
+        m.digest()
+        pass
 
     def test(self, argv):
         '''

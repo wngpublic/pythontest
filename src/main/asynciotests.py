@@ -10,6 +10,8 @@ import threading
 import queue
 from enum import Enum
 import aiohttp
+import argparse
+import sys
 
 def p(s):
     print(s)
@@ -34,6 +36,8 @@ class AsyncIOTests:
     def __init__(self):
         self.threadPoolExecutor = ThreadPoolExecutor(2)
         self.processPoolExecutor = ProcessPoolExecutor(2)
+        self.tsem = threading.Semaphore(value=4)
+        self.asem = asyncio.Semaphore(value=4)
         pass
 
     async def foo1(self):
@@ -366,3 +370,75 @@ class AsyncIOTests:
         ns2 = time.time_ns()
         diff_ms = (ns2 - ns1)/1_000_000
         print('done AsyncIOTests %d ms' % diff_ms)
+
+    def test_thread_semaphore_function(self, name, maxloops=20):
+        for i in range(0,maxloops):
+            p('{} acquire  loop {}'.format(name, i))
+            self.tsem.acquire()
+            p('{} acquired loop {}'.format(name, i))
+            time.sleep(0.01)
+            self.tsem.release()
+            p('{} release  loop {}'.format(name, i))
+
+    def test_thread_semaphore(self):
+        t1 = threading.Thread(target=self.test_thread_semaphore_function, args=['t0',10])
+        t2 = threading.Thread(target=self.test_thread_semaphore_function, kwargs={'name':'t1','maxloops':10})
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
+
+    async def await_get_msg(self, name, i):
+        return '{} acquired loop {}'.format(name, i)
+
+    async def test_asyncio_semaphore_function(self, name, maxloops=20):
+        for i in range(0,maxloops):
+            p('{} acquire  loop {}'.format(name, i))
+            async with self.asem:
+                await asyncio.sleep(0.01)
+                msg = await self.await_get_msg(name, i)
+                p(msg)
+            p('{} release  loop {}'.format(name, i))
+        return name
+
+    def test_asyncio_semaphore(self):
+        loop = asyncio.get_event_loop()
+        tasks = []
+        for i in range(0,2):
+            task = asyncio.ensure_future(self.test_asyncio_semaphore_function('t{}'.format(i), 10))
+            tasks.append(task)
+        names = loop.run_until_complete(asyncio.wait(tasks))
+
+    def process_test(self, methodname):
+        #self.test_sleep1()
+        #self.test_task_submit_sync()
+        #self.test_task_submit_async()
+        #self.testExecutorPoolsAndFutures1()
+        #self.test_queue()
+        #self.test_tasks_1()
+        '''
+        if(methodname == 'test_sync_vs_async_handoff'):
+            self.test_sync_vs_async_handoff()
+        if(methodname == 'test_thread_semaphore'):
+            self.test_thread_semaphore()
+        if(methodname == 'test_asyncio_semaphore'):
+            self.test_asyncio_semaphore()
+        '''
+
+        result = getattr(self, methodname)()
+
+    def process(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-test', type=str, help='test methodname')
+        args = parser.parse_args()
+        tbeg = time.time_ns()
+        if args.test is not None:
+            self.process_test(args.test)
+        else:
+            sys.exit('./script -test <methodname>')
+        tend = time.time_ns()
+        tdif = (tend - tbeg)/1_000_000
+        p('\ncompleted. time diff {} ms'.format(tdif))
+
+t = AsyncIOTests()
+t.process()
