@@ -9,6 +9,7 @@ import fileinput
 import subprocess
 import re
 import string
+import inspect
 import datetime
 import numpy
 import copy
@@ -21,7 +22,6 @@ from collections import OrderedDict
 import urllib.request as url
 import pathlib
 import algos
-from src.main import myclasses
 import myclasses
 #import src.main.myclasses
 #from src.algos import algos
@@ -34,8 +34,6 @@ import gossip
 import abc
 import gzip
 import multiprocessing
-#from src.main import asynciotests
-import asynciotests
 from enum import Enum
 from enum import auto
 import inspect
@@ -1174,9 +1172,6 @@ class Tests:
 
     def test_async_concepts_old(self):
 
-        def test_asynciotests():
-            asynciotests.AsyncIOTests().test()
-
         async def test_async_sleep(id, ms=None, debug=False, is_return=False, q=None):
             if(debug):
                 p('test_async_sleep beg id:{} ms:{}'.format(id, ms))
@@ -1478,7 +1473,6 @@ class Tests:
             test_syntax_async_array()
             test_loop_sleep_async()
             test_loop_sleep_sync_separate_executor()
-            test_asynciotests()
             test_loop_sleep_sync()
             test_loop_async_loop_separate_blocking_loop()
             test_loop_sleep_sync_separate_worker_loop()
@@ -4565,6 +4559,124 @@ class Tests:
         m.digest()
         pass
 
+
+    def test_longest_common_substring(self, s1, s2):
+        def match_len(i,j,ts1,ts2):
+            sz = 0
+            while i < len(ts1) and j < len(ts2):
+                if(ts1[i] == ts2[j]):
+                    sz += 1
+                else:
+                    break
+                i += 1
+                j += 1
+            return sz
+        def lcs1(s1,s2):
+            idxi = -1
+            idxj = -1
+            size = 0
+            for i in range(0,len(s1)):
+                for j in range(0,len(s2)):
+                    if(s1[i] == s2[j]):
+                        sz = match_len(i,j,s1,s2)
+                        if(sz > size):
+                            idxi = i
+                            idxj = j
+                            size = sz
+            return (idxi,idxj,size)     # return tuple
+        def lcs2(s1,s2):
+            idxi = -1
+            idxj = -1
+            size = 0
+            a = [[0]*len(s2)]*len(s1)
+            assert len(a) == len(s1)
+            for i in range(0,len(s1)):
+                for j in range(0,len(s2)):
+                    if(s1[i] == s2[j]):
+                        if(i == 0 or j == 0):
+                            a[i][j] = 1
+                        else:
+                            a[i][j] = a[i-1][j-1] + 1
+                        tmpsz = a[i][j]
+                        if(tmpsz > size):
+                            idxi = i
+                            idxj = j
+                            size = tmpsz
+            return (idxi,idxj,size)
+        return lcs2(s1,s2)
+
+    def test_tc_longest_common_substring(self):
+        s1 = '234,12345,456'
+        s2 = '12312345678'
+        (i,j,k) = self.test_longest_common_substring(s1,s2)
+        assert i == 4 and j == 3 and k == 5
+        p('pass {}'.format(sys._getframe(0).f_code.co_name)) # name of method
+
+    def pass_msg(self):
+        p('pass {}'.format(sys._getframe(1).f_code.co_name)) # name of method
+
+    def test_array(self): # test list or array initialization
+        i,j = (4,3)
+        assert i == 4 and j == 3
+
+        a = [[0]*i]*j
+        assert len(a) == 3 and len(a[0]) == 4
+        for i in range(0,len(a)):
+            for j in range(0, len(a[i])):
+                assert a[i][j] == 0
+
+        '''
+        [[0,1,2,3],[10,11,12,13],[20,21,22,23]]
+        '''
+        a = [[idxi+10*idxj for idxi in range(4)] for idxj in range(3)]
+        assert len(a) == 3 and len(a[0]) == 4
+        for i in range(len(a)):
+            for j in range(len(a[i])):
+                v = i*10 + j
+                assert a[i][j] == v
+
+        a = []
+        for i in range(3):
+            l = []
+            a.append(l)         # appending reference
+            for j in range(4):
+                l.append(i*10+j)
+
+        for i in range(len(a)):
+            for j in range(len(a[i])):
+                v = i*10 + j
+                assert a[i][j] == v
+
+        a = []
+        for i in range(3):
+            l = []
+            a.extend(l)         # extending nothing
+            for j in range(4):
+                l.append(i*10+j)
+        assert len(a) == 0
+
+        a = []
+        for i in range(3):
+            l = []
+            for j in range(4):
+                l.append(i*10+j)
+            a.extend(l)         # extending populated list
+        assert len(a) == 12
+
+        a = [1,2]
+        b = [3,4]
+        c = [5,6]
+        d = []
+        d.extend(a+b+c)
+        assert len(d) == 6
+
+        self.pass_msg()
+
+    def test_self_inspect(self, a1='default1', a2='default2'):
+        p('called methodname:{} args:{} varcount:{}'.format(
+            sys._getframe(0).f_code.co_name,
+            sys._getframe(0).f_code.co_varnames,
+            sys._getframe(0).f_code.co_argcount)) # name of method
     def test(self, argv):
         '''
         self.test_parse_args(argv)
@@ -4602,9 +4714,11 @@ class Tests:
 def check_args(args):
     if(len(args) <= 1):
         return
+    '''
     for arg in args:
         print(arg)
     print(len(args))
+    '''
 
 def maintestcases():
     if(sys.version_info[0] < 3):
@@ -4614,7 +4728,17 @@ def maintestcases():
     check_args(sys.argv)
     global global_fh_
     t = Tests()
-    t.test(None)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-tc', help='-tc with methodname')
+    parser.add_argument('-targeted', action='store_true', help='-targeted with methodname')
+    args = parser.parse_args()
+    if(args.tc is not None):
+        methodname = args.tc
+        getattr(t, methodname)()
+    elif(args.targeted == True):
+        getattr(t, 'test_longest_common_substring')('hello','there')
+    else:
+        t.test(None)
     if(global_fh_ is not None):
         global_fh_.close()
 
