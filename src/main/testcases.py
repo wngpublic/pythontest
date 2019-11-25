@@ -54,6 +54,7 @@ import datetime
 import numpy
 import requests
 
+global_debug_level_ = 0  # 0 to 5. 0 = off, 1 = highest, 5 = lowest
 global_output_to_file_ = False
 global_fh_ = None
 
@@ -65,6 +66,19 @@ def p(s):
         if(global_fh_ is None):
             global_fh_ = open('output_debug.log','w')
         global_fh_.write(s + '\n')
+
+def set_debug_level(debuglevel):
+    global global_debug_level_
+    global_debug_level_ = debuglevel
+    d('debug level set to {}'.format(global_debug_level_),1)
+
+def d(s,debuglevel=1):
+    global global_debug_level_
+    if(global_debug_level_ == 0):
+        return
+    if(global_debug_level_ < debuglevel):
+        return
+    p(s)
 
 class ENUMTEST1(auto):
     CAT = auto()
@@ -4588,7 +4602,7 @@ class Tests:
             idxi = -1
             idxj = -1
             size = 0
-            a = [[0]*len(s2)]*len(s1)
+            a = [[0 for i in range(len(s2))] for j in range(len(s1))]
             assert len(a) == len(s1)
             for i in range(0,len(s1)):
                 for j in range(0,len(s2)):
@@ -4599,8 +4613,8 @@ class Tests:
                             a[i][j] = a[i-1][j-1] + 1
                         tmpsz = a[i][j]
                         if(tmpsz > size):
-                            idxi = i
-                            idxj = j
+                            idxi = i-tmpsz+1
+                            idxj = j-tmpsz+1
                             size = tmpsz
             return (idxi,idxj,size)
         return lcs2(s1,s2)
@@ -4609,6 +4623,7 @@ class Tests:
         s1 = '234,12345,456'
         s2 = '12312345678'
         (i,j,k) = self.test_longest_common_substring(s1,s2)
+        d('{},{},{}'.format(i,j,k))
         assert i == 4 and j == 3 and k == 5
         p('pass {}'.format(sys._getframe(0).f_code.co_name)) # name of method
 
@@ -4619,21 +4634,67 @@ class Tests:
         i,j = (4,3)
         assert i == 4 and j == 3
 
-        a = [[0]*i]*j
+        maxrows = 3
+        maxcols = 4
+
+        a = [[0]*maxcols]*maxrows   # every row is the same row. you write to one, you write all
         assert len(a) == 3 and len(a[0]) == 4
         for i in range(0,len(a)):
             for j in range(0, len(a[i])):
                 assert a[i][j] == 0
+        a[0][0] = 1
+        for i in range(0,len(a)):
+            for j in range(0, len(a[i])):
+                if(j == 0):
+                    assert a[i][j] == 1
+                else:
+                    assert a[i][j] == 0
+
+        # this is right way of doing it
+        a = [[0 for i in range(maxcols)] for j in range(maxrows)]
+        assert len(a) == 3 and len(a[0]) == 4
+        for i in range(0,len(a)):
+            for j in range(0, len(a[i])):
+                assert a[i][j] == 0
+        a[0][0] = 1
+        for i in range(0,len(a)):
+            for j in range(0, len(a[i])):
+                if(i == 0 and j == 0):
+                    assert a[i][j] == 1
+                else:
+                    assert a[i][j] == 0
 
         '''
         [[0,1,2,3],[10,11,12,13],[20,21,22,23]]
+        this actually initializes each row/col to unique val
         '''
-        a = [[idxi+10*idxj for idxi in range(4)] for idxj in range(3)]
-        assert len(a) == 3 and len(a[0]) == 4
+        a = [[idxi+10*idxj for idxi in range(maxcols)] for idxj in range(maxrows)]
+        assert len(a) == maxrows and len(a[0]) == maxcols
         for i in range(len(a)):
             for j in range(len(a[i])):
                 v = i*10 + j
                 assert a[i][j] == v
+
+        a = [[0,1,2,3],[4,5,6,7],[8,9,10,11]]
+        ctr = 0
+        assert len(a) == 3 and len(a[0]) == 4
+        for i in range(len(a)):
+            for j in range(len(a[i])):
+                assert a[i][j] == ctr
+                ctr += 1
+
+        a = [[]]
+        assert isinstance(a,list)
+        assert len(a) == 1
+        assert isinstance(a[0],list)
+        assert len(a[0]) == 0
+
+        a = [[] for _ in range(3)]
+        assert isinstance(a,list)
+        assert len(a) == 3
+        for i in range(len(a)):
+            assert isinstance(a[i],list)
+            assert len(a[i]) == 0
 
         a = []
         for i in range(3):
@@ -4677,6 +4738,7 @@ class Tests:
             sys._getframe(0).f_code.co_name,
             sys._getframe(0).f_code.co_varnames,
             sys._getframe(0).f_code.co_argcount)) # name of method
+
     def test(self, argv):
         '''
         self.test_parse_args(argv)
@@ -4729,12 +4791,31 @@ def maintestcases():
     global global_fh_
     t = Tests()
     parser = argparse.ArgumentParser()
+    parser.add_argument('-debuglevel', type=int, help='debuglevel 0-5')
     parser.add_argument('-tc', help='-tc with methodname')
+    parser.add_argument('-a0', help='arg0')
+    parser.add_argument('-a1', help='arg1')
+    parser.add_argument('-a2', help='arg2')
     parser.add_argument('-targeted', action='store_true', help='-targeted with methodname')
     args = parser.parse_args()
+
+    if(args.debuglevel is not None):
+        set_debug_level(args.debuglevel)
+    d(args)
+
     if(args.tc is not None):
         methodname = args.tc
-        getattr(t, methodname)()
+        a0 = args.a0
+        a1 = args.a1
+        a2 = args.a2
+        if  (a0 is not None and a1 is not None and a2 is not None):
+            getattr(t, methodname)(a0,a1,a2)
+        elif(a0 is not None and a1 is not None):
+            getattr(t, methodname)(a0,a1)
+        elif(a0 is not None):
+            getattr(t, methodname)(a0)
+        else:
+            getattr(t, methodname)()
     elif(args.targeted == True):
         getattr(t, 'test_longest_common_substring')('hello','there')
     else:
