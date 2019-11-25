@@ -4617,6 +4617,17 @@ class Tests:
                             idxj = j-tmpsz+1
                             size = tmpsz
             return (idxi,idxj,size)
+        '''
+        this is not working
+        '''
+        def lcs_recursive(i,j,s1,s2,size):
+            if(i >= len(s1) or j >= len(s2)):
+                return (0,0,0)
+            if(s1[i] == s2[j]):
+                return self.lcs_recursive(i+1,j+1,s1,s2,size+1)
+            return (0,0,0)
+        def lcs_recursive(s1,s2):
+            return
         return lcs2(s1,s2)
 
     def test_tc_longest_common_substring(self):
@@ -4627,8 +4638,44 @@ class Tests:
         assert i == 4 and j == 3 and k == 5
         p('pass {}'.format(sys._getframe(0).f_code.co_name)) # name of method
 
+    def longest_common_subsequence(self, d, s1, s2):
+        pass
+
+    def test_tc_longest_common_subsequence(self):
+        d = { i:0, j:0, sz:0 }
+        pass
+
     def pass_msg(self):
         p('pass {}'.format(sys._getframe(1).f_code.co_name)) # name of method
+
+    def test_dict(self):
+        d = { 'i':1, 'j':2, 'k':3 }
+        assert d['i'] == 1
+        assert len(d) == 3
+
+        i = 'i'
+        j = 'j'
+        d = { i:2, j:3 }
+        assert d[i] == 2
+        assert d['i'] == 2
+        assert len(d) == 2
+
+        d['i'] += 1
+        assert d['i'] == 3
+
+        a = (1,2,3,4)               # immutable, can be different types
+        assert len(a) == 4
+        assert a[1] == 2
+        assert isinstance(a, tuple)
+        assert not isinstance(a, list)
+
+        a = [1,2,3,4]               # mutable
+        assert len(a) == 4
+        assert a[1] == 2
+        assert isinstance(a, list)
+        assert not isinstance(a, tuple)
+
+        self.pass_msg()
 
     def test_array(self): # test list or array initialization
         i,j = (4,3)
@@ -4730,6 +4777,24 @@ class Tests:
         d = []
         d.extend(a+b+c)
         assert len(d) == 6
+
+        a = [2,3,4,5,1]
+        a.append(6)                  # push
+        assert a == [2,3,4,5,1,6]
+        assert a != [6,2,3,4,5,1]
+        v = a.pop()
+        assert v == 6
+        assert v != None and v != 1
+        a.sort()
+        assert a == [1,2,3,4,5]
+
+        q = deque()
+        q.append(1)
+        q.appendleft(2)
+        v = q.pop()
+        assert v == 1
+        v = q.pop()
+        assert v == 2
 
         self.pass_msg()
 
