@@ -44,7 +44,6 @@ from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import ProcessPoolExecutor
 import random
 import threading
-import queue
 import aiohttp
 import uuid
 import logging
@@ -4318,12 +4317,6 @@ class Tests:
             ctr = ctr + 1
         hit_rate = hit / (hit + miss) * 1.0
         p('hit rate = {}'.format(hit_rate))
-    def test_list(self):
-        l = []
-        l.append('hello 1\nhello 2\n')
-        l.append('hello 1\nhello 2\n')
-        l.append('hello 1\nhello 2\n')
-        assert len(l) == 3
     def test_datetime(self):
         t1 = datetime.datetime.now()
         t2 = datetime.datetime.now()
