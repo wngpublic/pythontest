@@ -4,6 +4,8 @@ import heapq
 import math
 import collections
 import re
+import functools
+import array
 
 '''
 python3 -m unittest syntax_unittests.ut.test_method
@@ -22,6 +24,9 @@ this class can be for object testing syntax
 global_debug_level_ = 0  # 0 to 5. 0 = off, 1 = highest, 5 = lowest
 global_output_to_file_ = False
 global_fh_ = None
+
+def printit(s):
+    p(s)
 
 def p(s):
     global global_output_to_file_
@@ -199,8 +204,91 @@ class ut(unittest.TestCase):
         l[1] = 8
         assert l == [8,8,3,4,5]
 
-        p('pass test_list')
+        # ways to generate list
+        l1 = [1,2,3,4,5]
 
+        l = [0] * 5
+        assert l == [0,0,0,0,0]
+        l[1] = 1
+        assert l == [0,1,0,0,0]
+        l = [x for x in range(5)]
+        assert l == [0,1,2,3,4]
+        l = [x for x in l1]
+        assert l == [1,2,3,4,5]
+        l = [(x*2) for x in l1]
+        assert l == [2,4,6,8,10]
+        l = [x for x in l1 if x % 2 == 0]
+        assert l == [2,4]
+        l = [x for x in l1 if x % 2 == 1]
+        assert l == [1,3,5]
+
+        l = [1 for i in range(3)]
+        assert l == [1,1,1]
+        l[1] = 2
+        assert l == [1,2,1]
+        l = [1] * 3
+        assert l == [1,1,1]
+        l[1] = 2
+        assert l == [1,2,1]
+
+        l = [[1]*3]
+        assert l == [[1,1,1]]
+        assert l != [[1,2,3]]
+        l = [[1]*3]*2   # this is replica!
+        assert l == [[1,1,1],[1,1,1]]
+        assert l != [[1,1,2],[1,1,1]]
+        l[0][1] = 2     # this is copied to all arrays!
+        assert l != [[1,2,1],[1,1,1]]
+        assert l == [[1,2,1],[1,2,1]]
+        l = [[1]*i for i in range(5)]
+        assert l == [[],[1],[1,1],[1,1,1],[1,1,1,1]]
+        l = [[0]*i for i in range(5)]
+        assert l == [[],[0],[0,0],[0,0,0],[0,0,0,0]]
+
+
+        # this is one way to create list of list
+        l = [[]]*2
+        assert l == [[],[]]
+        for i in range(2):
+            l[i] = [0] * 3      # this is not replica
+        assert l == [[0,0,0],[0,0,0]]
+        l[0][1] = 2
+        assert l == [[0,2,0],[0,0,0]]
+
+        l = [[] for i in range(2)]
+        assert l == [[],[]]
+        assert l != [[],[],[]]
+        assert [[] for i in range(2)] == [[]] * 2
+        for i in range(2):
+            l[i] = [0] * 3
+        assert l == [[0,0,0],[0,0,0]]
+        l[0][1] = 2             # modifying 1 value doesnt affect others
+        assert l == [[0,2,0],[0,0,0]]
+
+        # another way of doing 2d array not by replicas
+        l = [[0 for x in range(3)] for x in range(2)]
+        assert l == [[0,0,0],[0,0,0]]
+        l[0][1] = 2
+        assert l == [[0,2,0],[0,0,0]]
+
+        cols = 3
+        rows = 2
+        l = [[(i*cols+j) for j in range(cols)] for i in range(rows)]
+        assert l == [[0,1,2],[3,4,5]]   # yay
+
+        l = [None] * 3
+        assert l == [None,None,None]
+
+        l = list(range(5))              # init list to sequential
+        assert l == [0,1,2,3,4]
+
+        l = list(range(5,10))
+        assert l == [5,6,7,8,9]
+
+        l = array.array('i',(1,)*5)
+        assert l == array.array('i',[1,1,1,1,1])
+
+        p('pass test_list')
 
     '''
     test priority queue, heap, queue
@@ -571,17 +659,115 @@ class ut(unittest.TestCase):
             l.append(i)
         assert l == [0,2,4]
 
-
         p('pass test_control_loops')
 
+    def test_lambda(self):
+        s3 = lambda x,y,z: x+y+z
+        assert 12 == s3(3,4,5)
+
+        l1 = [1,2,3,4,5]
+        l2 = list(map(lambda x: x*2, l1))
+        assert l2 == [2,4,6,8,10]
+
+        sum = functools.reduce((lambda x,y: x+y), l1)
+        assert sum == (1+2+3+4+5)
+
+        f1 = lambda x,y: [x,y,x+y]          # return multiple values
+        assert f1(1,2) == [1,2,3]
+
+        l2 = list(filter(lambda x: x%2 == 0, l1))
+        assert l2 == [2,4]
+
+        l2 = list(filter(lambda x: x%2 == 1, l1))
+        assert l2 == [1,3,5]
+
+        l1 = [{"k":"k1","v":80},{"k":"k4","v":30},{"k":"k5","v":90},{"k":"k3","v":20},{"k":"k2","v":40}]
+        assert l1[4]["k"] == 'k2'
+        l2 = sorted(l1,key = lambda x: x['v'])  # sort by v
+        l3 = list(map(lambda x: x["v"], l2))
+        assert l3 == [20,30,40,80,90]
+
+        l2 = sorted(l1,key = lambda x: x['k'])  # sort by k
+        l3 = list(map(lambda x: x["v"], l2))
+        assert l3 == [80,40,20,30,90]
+
+
+
+        p('pass test_lambda')
+
+    def test_sort(self):
+        class my_o1:
+            def __init__(self, a, b, c):
+                self.a = a
+                self.b = b
+                self.c = c
+            def __lt__(self, other):
+                return self.c < other.c
+            def __eq__(self, other):
+                return self.c == other.c
+            def __gt__(self, other):
+                return self.c > other.c
+        class my_o2:
+            def __init__(self, a, b, c):
+                self.a = a
+                self.b = b
+                self.c = c
+
+        o1_1 = my_o1(5,5,30)
+        o1_2 = my_o1(2,2,40)
+        o1_3 = my_o1(1,1,20)
+        o1_4 = my_o1(4,4,50)
+        o1_5 = my_o1(3,3,10)
+        o1_6 = my_o1(6,6,40)
+        o1_7 = my_o1(2,2,30)
+
+        o2_1 = my_o2(5,5,30)
+        o2_2 = my_o2(2,2,40)
+        o2_3 = my_o2(1,1,20)
+        o2_4 = my_o2(4,4,50)
+        o2_5 = my_o2(3,3,10)
+        o2_6 = my_o2(6,6,40)
+        o2_7 = my_o2(2,2,30)
+        o2_8 = my_o2(2,2,40)
+
+        l = [o1_1,o1_2,o1_3,o1_4,o1_5]
+        lsorted = sorted(l)
+        lexp = [3,1,5,2,4]
+        lact = list(map(lambda x: x.a, lsorted))
+        assert lact == lexp
+
+        l = [o2_1,o2_2,o2_3,o2_4,o2_5]
+        lsorted = l.copy()
+        lsorted.sort(key=lambda x: x.a)
+        lexp = [1,2,3,4,5]
+        lact = list(map(lambda x: x.a, lsorted))
+        assert lact == lexp
+
+        lsorted = l.copy()
+        lsorted.sort(key=lambda x: x.c)
+        lexp = [3,1,5,2,4]
+        lact = list(map(lambda x: x.a, lsorted))
+        assert lact == lexp
+
+        assert o1_1 < o1_2
+        assert o1_1 > o1_3
+        assert o1_2 == o1_6 and o1_2.c == 40 and o1_6.c == 40
+
+        # this is by reference and __eq__ not overridden so it's address comparison
+        assert o2_2 != o2_8 and o2_2.a == o2_8.a and o2_2.b == o2_8.b and o2_2.c == o2_8.c
+
+        p('pass test_sort')
+
     def main(self) -> None:
+        self.test_list()
         self.test_methods_and_vars_in_scope()
         self.test_set_vs_map_vs_list()
         self.test_math_functions()
         self.test_built_in_functions()
         self.test_control_loops()
         self.test_string()
-        p('passed testmain')
+        self.test_lambda()
+        self.test_sort()
 
     def test_named_vars(self) -> None:      # return type is None
         pass

@@ -385,7 +385,7 @@ class ut(unittest.TestCase):
                 if j in s: continue
                 s.add(j)
                 tmpo = tmpi + l[j]
-                dbg('{}:{}'.format(getperfctr(),tmpo))
+                #dbg('{}:{}'.format(getperfctr(),tmpo))
                 cnt += permutation(l,k,tmpo,s,doprint)
                 s.discard(j)
 
@@ -404,103 +404,103 @@ class ut(unittest.TestCase):
 
         p('testPermutation pass')
 
+    # heapq implementation
+    '''
+    heapq implementation
+
+    00 01 02 03 04 05 06 07 08 09 10 11 12
+    00 0L 0R 1L 1R 2L 2R 3L 3R 4L 4R 5L 5R
+
+        child idx L = idx * 2 + 1
+        child idx R = idx * 2 + 2
+            0 -> 0*2+1,0*2+2 == 1,2
+            1 -> 1*2+1,1*2+2 == 3,4
+            2 -> 2*2+1,2*2+2 == 5,6
+            3 -> 3*2+1,3*2+2 == 7,8
+
+        parent idx = UPPER(idx / 2) - 1
+            12/2-1 = 5
+            11/2-1 = 5
+            10/2-1 = 4
+             9/2-1 = 4
+    '''
+    class _HeapQ:
+        def __init__(self, is_max=False):
+            self.is_max = is_max
+            self.q = []
+
+        def push(self, v):
+            self.q.append(v)
+            self.swim(self.q, len(self.q)-1)
+
+        def pop(self):
+            size = self.size()
+            if size == 0:
+                return None
+            v = self.q[0]
+            self.q[0] = self.q[size-1]
+            del self.q[size-1]
+            self.sink(self.q, 0)
+            return v
+
+        def swap(self, q, srci, dsti):
+            v = q[srci]
+            q[srci] = q[dsti]
+            q[dsti] = v
+
+        '''
+        if minheap, swap with smaller of left or right child
+        if maxheap, swap with larger of left or right child
+        '''
+        def sink(self, q, idx):
+            size = self.size()
+            idxl = idx*2+1
+            idxr = idx*2+2
+            if(self.is_max == False):
+                if(idxr < size):
+                    if(q[idxl] < q[idxr]):
+                        self.swap(q, idx, idxl)
+                        self.sink(q, idxl)
+                    else:
+                        self.swap(q, idx, idxr)
+                        self.sink(q, idxr)
+                elif(idxl < size):
+                    if(q[idxl] < q[idx]):
+                        self.swap(q, idx, idxl)
+            else:
+                if(idxr < size):
+                    if(q[idxl] > q[idxr]):
+                        self.swap(q, idx, idxl)
+                        self.sink(q, idxl)
+                    else:
+                        self.swap(q, idx, idxr)
+                        self.sink(q, idxr)
+                elif(idxl < size):
+                    if(q[idxl] > q[idx]):
+                        self.swap(q, idx, idxl)
+
+        '''
+        if minheap, swap with parent if parent > current
+        if maxheap, swap with parent if parent < current
+        '''
+        def swim(self, q, idx):
+            if(idx == 0):
+                return
+            size = self.size()
+            idxp = math.ceil(idx*1.0/2)-1
+            if(self.is_max == False):
+                if(q[idx] < q[idxp]):
+                    self.swap(q, idx, idxp)
+                    self.swim(q, idxp)
+            else:
+                if(q[idx] > q[idxp]):
+                    self.swap(q, idx, idxp)
+                    self.swim(q, idxp)
+
+        def size(self):
+            return len(self.q)
 
     def testHeapQueue(self):
-        # heapq implementation
-        '''
-        heapq implementation
-
-        00 01 02 03 04 05 06 07 08 09 10 11 12
-        00 0L 0R 1L 1R 2L 2R 3L 3R 4L 4R 5L 5R
-
-            child idx L = idx * 2 + 1
-            child idx R = idx * 2 + 2
-                0 -> 0*2+1,0*2+2 == 1,2
-                1 -> 1*2+1,1*2+2 == 3,4
-                2 -> 2*2+1,2*2+2 == 5,6
-                3 -> 3*2+1,3*2+2 == 7,8
-
-            parent idx = UPPER(idx / 2) - 1
-                12/2-1 = 5
-                11/2-1 = 5
-                10/2-1 = 4
-                 9/2-1 = 4
-        '''
-        class _HeapQ:
-            def __init__(self, is_max=False):
-                self.is_max = is_max
-                self.q = []
-
-            def push(self, v):
-                self.q.append(v)
-                self.swim(self.q, len(self.q)-1)
-
-            def pop(self):
-                size = self.size()
-                if size == 0:
-                    return None
-                v = self.q[0]
-                self.q[0] = self.q[size-1]
-                del self.q[size-1]
-                self.sink(self.q, 0)
-                return v
-
-            def swap(self, q, srci, dsti):
-                v = q[srci]
-                q[srci] = q[dsti]
-                q[dsti] = v
-
-            '''
-            if minheap, swap with smaller of left or right child
-            if maxheap, swap with larger of left or right child
-            '''
-            def sink(self, q, idx):
-                size = self.size()
-                idxl = idx*2+1
-                idxr = idx*2+2
-                if(self.is_max == False):
-                    if(idxr < size):
-                        if(q[idxl] < q[idxr]):
-                            self.swap(q, idx, idxl)
-                            self.sink(q, idxl)
-                        else:
-                            self.swap(q, idx, idxr)
-                            self.sink(q, idxr)
-                    elif(idxl < size):
-                        if(q[idxl] < q[idx]):
-                            self.swap(q, idx, idxl)
-                else:
-                    if(idxr < size):
-                        if(q[idxl] > q[idxr]):
-                            self.swap(q, idx, idxl)
-                            self.sink(q, idxl)
-                        else:
-                            self.swap(q, idx, idxr)
-                            self.sink(q, idxr)
-                    elif(idxl < size):
-                        if(q[idxl] > q[idx]):
-                            self.swap(q, idx, idxl)
-
-            '''
-            if minheap, swap with parent if parent > current
-            if maxheap, swap with parent if parent < current
-            '''
-            def swim(self, q, idx):
-                if(idx == 0):
-                    return
-                size = self.size()
-                idxp = math.ceil(idx*1.0/2)-1
-                if(self.is_max == False):
-                    if(q[idx] < q[idxp]):
-                        self.swap(q, idx, idxp)
-                        self.swim(q, idxp)
-                else:
-                    if(q[idx] > q[idxp]):
-                        self.swap(q, idx, idxp)
-                        self.swim(q, idxp)
-
-            def size(self):
-                return len(self.q)
 
         def _t0():
             hq = _HeapQ()
@@ -534,6 +534,55 @@ class ut(unittest.TestCase):
 
         _t()
 
+    class pair:
+        def __init__(self, v1, v2):
+            self.v1 = v1
+            self.v2 = v2
+        def get1(self):
+            return self.v1
+        def get2(self):
+            return self.v2
+        def __eq__(self,other):
+            return self.v1 == other.v1
+        def __lt__(self,other):
+            return self.v1 < other.v1
+        def __gt__(self,other):
+            return self.v1 > other.v1
+
+    def test_merge_sort(self):
+        def t0():
+            ctr = 0
+            l = [[],[],[]]
+            maxcols = 5
+            maxrows = 3
+            for i in range(maxcols):
+                for j in range(maxrows):
+                    p = ut.pair(ctr,j)
+                    ctr += 1
+                    l[j].append(p)
+            r = [list(map(lambda x: x.v1,l[0])),list(map(lambda x: x.v1,l[1])),list(map(lambda x: x.v1,l[2]))]
+            assert  len(l) == maxrows and r == [[0,3,6,9,12],[1,4,7,10,13],[2,5,8,11,14]]
+
+            act = []
+            for p in l[0]: act.append(p.get1())
+            assert act == [0,3,6,9,12]
+            q = ut._HeapQ()
+            q.push(l[0][0])
+            q.push(l[1][0])
+            q.push(l[2][0])
+            ctrs = [1,1,1]
+            r = []
+            while(q.size() != 0):
+                p = q.pop()
+                r.append(p.v1)
+                if(ctrs[p.v2] < maxcols):
+                    q.push(l[p.v2][ctrs[p.v2]])
+                    ctrs[p.v2] += 1
+            assert r == [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]
+
+        t0()
+        p('passed test_merge_sort')     # named conflict with pv if it was named p
+
     def test_binary_search(self):
         class _Node:
             def __init__(self,v,l=None,r=None):
@@ -564,6 +613,7 @@ class ut(unittest.TestCase):
     def main(self):
         self.testCombination()
         self.testPermutation()
+        self.test_merge_sort()
         p('main passed')
 
 if __name__ == "__main__":
