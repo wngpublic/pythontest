@@ -41,10 +41,12 @@ def p(s):
 class ut(unittest.TestCase):
 
     def setUp(self):
-        p('setup called')
+        #p('setup called')
+        pass
 
     def tearDown(self) -> None:
-        p('teardown called')
+        #p('teardown called')
+        pass
 
     def test_list(self):
         # push and pop
@@ -57,9 +59,37 @@ class ut(unittest.TestCase):
         assert v == 2
         assert len(l) == 1
 
+        l2 = []                 # empty list operations
+        assert l2[-1:] == []    # empty list, no exception
+        flag = False
+        try:
+            flag = False
+            v = l2[-1:]
+            assert v == []
+            v2 = v[0]           # index error
+            assert False
+        except Exception as e:
+            flag = True         # expect Exception
+        assert flag
+
+        try:
+            flag = False
+            v = l2[-1]          # IndexError
+            assert False
+        except Exception as e:
+            flag = True         # expect Exception
+        assert flag
+
         # push and pop left and right
         l = [1,2,3,4,5]
+        assert l[-1] == 5       # peek, generates IndexError if empty
+        assert l[-1] == 5       # peek repeat
+        assert l[-1:] == [5]    # dont raise error if empty
+
         v = l.pop()
+        assert l[-1] == 4       # peek
+        assert l[-1:] == [4]    # peek into array
+        assert l[0] == 1        # peek head
         assert v == 5 and len(l) == 4
         v = l.pop(0)
         assert v == 1 and len(l) == 3
@@ -75,6 +105,10 @@ class ut(unittest.TestCase):
         l.extend([1,2,3])
         l.extend([4,5,6])
         assert l == [1,2,3,4,5,6]
+        lcopy = l.copy()
+        l.reverse()
+        assert l == [6,5,4,3,2,1]
+        assert lcopy == [1,2,3,4,5,6]
 
         # append list vs extend list
         l.clear()
@@ -288,7 +322,45 @@ class ut(unittest.TestCase):
         l = array.array('i',(1,)*5)
         assert l == array.array('i',[1,1,1,1,1])
 
-        p('pass test_list')
+        l1 = [1,2,3,4,5]
+        l2 = [2,3,4,5,6]
+
+        l3 = []
+        for x,y in zip(l1,l2): l3.append(x+y)
+        assert l3 == [3,5,7,9,11]
+
+        def f(x,y): return x+y
+        l3 = [f(x,y) for x,y in zip(l1,l2)]
+        assert l3 == [3,5,7,9,11]
+
+        l1 = [1,2,3,4,5]
+        l2 = [2,3,4,5,6]
+        l3 = [3,4,5,6,7]
+        def f(x,y,z): return x+y+z
+        l4 = [f(x,y,z) for x,y,z in zip(l1,l2,l3)]
+        assert l4 == [6,9,12,15,18]
+
+        assert sum([1,2,3,4,5]) == 15
+
+        l = [1,2,3,4,5]
+        assert min(l) == 1
+        assert max(l) == 5
+        assert l[2] == 3
+
+        t = (1,2,3,4,5)         # does min/max matter if this is tuple?
+        assert min(t) == 1
+        assert max(t) == 5
+        assert t[2] == 3
+
+        assert (1,2,3,4,5) != [1,2,3,4,5]
+
+        s = 'test'
+        l = []
+        for c in s:
+            l.append(c)
+        assert l == ['t','e','s','t']
+
+        #p('pass test_list')
 
     '''
     test priority queue, heap, queue
@@ -342,7 +414,7 @@ class ut(unittest.TestCase):
             r.append(q.get())
         assert r == ['v1','v10','v3','v4']
 
-        p('queue test passed')
+        #p('queue test passed')
 
     def test_list_of_list(self) -> None:   # return type is none
         '''
@@ -370,7 +442,7 @@ class ut(unittest.TestCase):
         ll1 = [[0,1,2],[3,4,6]]
         assert ll0 != ll1
 
-        p('test_list_of_list passed')
+        #p('test_list_of_list passed')
 
     def test_methods_and_vars_in_scope(self):
         '''
@@ -408,7 +480,7 @@ class ut(unittest.TestCase):
 
         test0()
 
-        p('test_methods_and_vars_in_scope')
+        #p('test_methods_and_vars_in_scope')
 
     def test_string(self):
         s_orig = ' abc  def   123 \n'
@@ -437,7 +509,7 @@ class ut(unittest.TestCase):
         l = s.splitlines()
         assert l == ['111 111','222  222 ',' 333 333  ']
 
-        p('test_string')
+        #p('test_string')
 
     def test_set_vs_map_vs_list(self):
         vset = set()
@@ -463,6 +535,11 @@ class ut(unittest.TestCase):
             cnt += 1
         assert cnt == 7
         assert len(d) == 5
+
+        numduplicates = 0
+        for k,v in d.items():
+            if(v > 1): numduplicates += v
+        assert numduplicates == 4
 
         s = set(l)
         assert len(s) == 5
@@ -550,10 +627,7 @@ class ut(unittest.TestCase):
         assert l1 == [3,3,2]
         assert l == [2,3,2]
 
-
-
-
-        p('pass test_set_vs_map_vs_list')
+        #p('pass test_set_vs_map_vs_list')
 
     def test_built_in_functions(self):
         assert max(4,10,8,3) == 10  # max(a1,a2,*args[,key])
@@ -601,7 +675,7 @@ class ut(unittest.TestCase):
         assert 'gg' in 'eggs'
         assert 'bb' not in 'eggs'
 
-        p('pass test_built_in_functions')
+        #p('pass test_built_in_functions')
 
     def test_math_functions(self):
         vact = math.factorial(5)
@@ -628,7 +702,7 @@ class ut(unittest.TestCase):
         assert math.ceil(3.333) == 4
         assert math.ceil(3.5) == 4
 
-        p('pass test_math_functions')
+        #p('pass test_math_functions')
 
     def test_control_loops(self):
         l = []
@@ -659,7 +733,7 @@ class ut(unittest.TestCase):
             l.append(i)
         assert l == [0,2,4]
 
-        p('pass test_control_loops')
+        #p('pass test_control_loops')
 
     def test_lambda(self):
         s3 = lambda x,y,z: x+y+z
@@ -668,6 +742,38 @@ class ut(unittest.TestCase):
         l1 = [1,2,3,4,5]
         l2 = list(map(lambda x: x*2, l1))
         assert l2 == [2,4,6,8,10]
+
+        f = lambda x: x*2
+        l2 = [f(x) for x in l1]
+        assert l2 == [2,4,6,8,10]
+
+        l2 = [(lambda x: x*2) for x in l1]      # i dont know what this means but not expected answer
+        assert l2 != [2,4,6,8,10]
+
+        def f(x): return x*2
+        l2 = [f(x) for x in l1]
+        assert l2 == [2,4,6,8,10]
+
+        l1 = [1,2,3,4,5]
+        l2 = [2,3,4,5,6]
+        l3 = list(map(lambda x,y: x+y, l1,l2))
+        assert l3 == [3,5,7,9,11]
+
+        l3 = []
+        for x,y in zip(l1,l2):      # it's not x,y in l1,l2
+            l3.append(x+y)
+        assert l3 == [3,5,7,9,11]
+
+        def f(x,y): return x+y
+        l3 = [f(x,y) for x,y in zip(l1,l2)]
+        assert l3 == [3,5,7,9,11]
+
+        l1 = [1,2,3,4,5]
+        l2 = [2,3,4]
+        l3 = []
+        for x,y in zip(l1,l2):      # stops at shortest list
+            l3.append(x+y)
+        assert l3 == [3,5,7]
 
         sum = functools.reduce((lambda x,y: x+y), l1)
         assert sum == (1+2+3+4+5)
@@ -691,9 +797,7 @@ class ut(unittest.TestCase):
         l3 = list(map(lambda x: x["v"], l2))
         assert l3 == [80,40,20,30,90]
 
-
-
-        p('pass test_lambda')
+        #p('pass test_lambda')
 
     def test_sort(self):
         class my_o1:
@@ -756,7 +860,7 @@ class ut(unittest.TestCase):
         # this is by reference and __eq__ not overridden so it's address comparison
         assert o2_2 != o2_8 and o2_2.a == o2_8.a and o2_2.b == o2_8.b and o2_2.c == o2_8.c
 
-        p('pass test_sort')
+        #p('pass test_sort')
 
     def main(self) -> None:
         self.test_list()
@@ -768,6 +872,7 @@ class ut(unittest.TestCase):
         self.test_string()
         self.test_lambda()
         self.test_sort()
+        p('passed main')
 
     def test_named_vars(self) -> None:      # return type is None
         pass

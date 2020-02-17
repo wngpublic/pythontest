@@ -127,7 +127,7 @@ class ut(unittest.TestCase):
         _tc3()
         _tc4()
         _tc5()
-        p('pass test_increasing_val')
+        #p('pass test_increasing_val')
 
     '''
     given list l and window size k, return list of max values of the sliding window
@@ -197,7 +197,7 @@ class ut(unittest.TestCase):
             e = [6,7,7,8,9,9,9,9,7]
             assert r == e
         _t0()
-        p('pass testSlidingWindowMax')
+        #p('pass testSlidingWindowMax')
 
 
     def testFindSumInArrayFirst(self):
@@ -340,7 +340,7 @@ class ut(unittest.TestCase):
 
         t0()
 
-        p('testCombination pass')
+        #p('testCombination pass')
 
     def testPermutation(self):
         perfctr = 0
@@ -402,7 +402,7 @@ class ut(unittest.TestCase):
 
         t0()
 
-        p('testPermutation pass')
+        #p('testPermutation pass')
 
     # heapq implementation
     '''
@@ -526,7 +526,7 @@ class ut(unittest.TestCase):
             while(hq.size() > 0):
                 l.append(hq.pop())
             assert l == [7,6,5,4,3]
-            p('pass heapq t1')
+            #p('pass heapq t1')
 
         def _t():
             _t0()
@@ -581,7 +581,208 @@ class ut(unittest.TestCase):
             assert r == [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]
 
         t0()
-        p('passed test_merge_sort')     # named conflict with pv if it was named p
+        #p('passed test_merge_sort')     # named conflict with pv if it was named p
+
+    def test_trapping_rain_water(self):
+        class trap:
+            '''
+            i   0 1 2 3 4 5 6 7 8 9
+            -----------------------
+            h   5 7 9 4 6 5 8 3 4 7
+            -----------------------
+
+            time    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0
+            lptr    0 1
+            lmax    0 1
+            lstack  -
+            rptr    9
+            rmax    9
+            rstack  -
+            total
+
+
+            '''
+            def calculate1(self, l):
+                stackl = []
+                stackr = []
+                len = len(l)
+
+    def test_stack_list(self):
+        class stack_ops:
+            def get_less_equal_current_left2right(self,l):
+                q = [0]
+                a = []
+                while(len(q) != 0):
+                    i = q[-1] + 1
+                    if(i >= len(l)): break
+                    while(len(q) != 0 and l[q[-1]] <= l[i]):
+                        a.append(l[q.pop()])
+                    q.append(i)
+                return a
+            def get_less_equal_current_right2left(self,l):
+                q = [len(l)-1]
+                a = []
+                while(len(q) != 0):
+                    i = q[-1] - 1
+                    if(i < 0): break
+                    while(len(q) != 0 and q[-1] <= l[i]):
+                        a.append(l[q.pop()])
+                    q.append(i)
+                return a
+            # local maxes are local peaks, meaning its left <= cur
+            def get_local_maxes_left2right(self,l):
+                q = [0]
+                a = []
+                while(len(q) != 0):
+                    i = q[-1] + 1
+                    if(i >= len(l)): break
+                    if(l[i] >= q[-1]):
+                        a.append(l[q.pop()])
+                return a
+            def sum_both_directions(self,l):
+                al,ar = [0 for i in range(len(l))],[0 for i in range(len(l))]
+                sum = 0
+                for i in range(0,len(l),1):
+                    sum += l[i]
+                    al[i] = sum
+                sum = 0
+                for i in range(len(l)-1,-1,-1):
+                    sum += l[i]
+                    ar[i] = sum
+                return al,ar
+            def sum_both_directions_diff(self,l):
+                al,ar = self.sum_both_directions(l)
+                a = list(map(lambda x,y: int(math.fabs(x-y)), al,ar))
+                return a
+            def sum_both_directions_sum(self,l):
+                al,ar = self.sum_both_directions(l)
+                a = list(map(lambda x,y: x+y, al,ar))
+                return a
+            def sum_list(self,l):
+                a = [l[0]]
+                for i in range(1,len(l)):
+                    a.append(a[i-1]+l[i])
+                return a
+
+        test = stack_ops()
+
+        l = [50,30,60,40,50,20]
+        a = test.get_less_equal_current_left2right(l)
+        assert a == [30,50,40]
+
+        l = [50,30,60,40,30,70,20]
+        a = test.get_less_equal_current_left2right(l)
+        assert a == [30,50,30,40,60]
+
+        l = [10,20,30,40]
+        a = test.get_less_equal_current_left2right(l)
+        assert a == [10,20,30]
+
+        l = [40,30,20,10]
+        a = test.get_less_equal_current_left2right(l)
+        assert a == []
+
+        l = [1,2,3,4,5]
+        al,ar = test.sum_both_directions(l)
+        assert al == [ 1, 3, 6,10,15] and \
+               ar == [15,14,12, 9, 5]
+
+        a = test.sum_both_directions_diff([1,2,3,4,5])
+        assert a == [14,11,6,1,10]
+
+        a = test.sum_both_directions_sum([1,2,3,4,5])
+        assert a == [16,17,18,19,20]
+
+        a = test.sum_list([1,2,3,4,5,6,7])
+        assert a == [1,3,6,10,15,21,28]
+        assert (a[6]-a[2]) == (7+6+5+4)
+
+        #p('pass test_stack_list')
+
+    def test_max_product_subarray(self):
+        def max_product_subarray_1(l):
+            cmin = 0
+            cmax = 0
+            res = 0
+            for v in l:
+                t = min(v,min(cmin*v,cmax*v))
+                cmax = max(v,max(cmin*v,cmax*v))
+                res = max(res,cmax)
+                cmin = t
+            return res
+        def max_product_subarray_2(l):
+            prd = 1
+            a = []
+            for i in range(l):
+                prd *= l[i]
+                a.append(prd)
+            min = None
+            max = None
+
+    def test_longest_consecutive_sequence(self):
+        # return index of longest consecutive sequence, eg 5,6,3,4,5,6,3,4,5 -> 3,4,5,6 -> 2
+        def longest_consecutive_sequence(l):
+            if(len(l) <= 1): return 0
+            max = 0
+            curi = 0
+            for i in range(1,len(l)):
+                if((i-curi) > max):
+                    max = curi
+                if(l[i-1]+1 != l[i]):
+                    curi = i
+            return max
+        def t0():
+            assert longest_consecutive_sequence([5]) == 0
+            assert longest_consecutive_sequence([5,6,3,4,5,6,3,4,5]) == 2
+            assert longest_consecutive_sequence([1,2,3,1,2,3,4,1,2,3,4,5]) == 7
+        t0()
+        #p('passed test_longest_consecutive_sequence')
+
+    def test_find_all_anagrams_in_string(self):
+        def dict_meets_min_criteria(d_exp,d_act):
+            if(len(d_exp) != len(d_act)): return False
+            for k,v in d_act.items():
+                if(k not in d_exp): return False
+                if(v < d_exp[k]): return False
+            return True
+        def find_all_anagrams_in_string(s, pat):
+            # return all pairs of starting index,ending index of anagram of pat in string s
+            # one way is sliding window and use map to cover all the values in pat
+            l = []
+            i = 0
+            j = 0
+            pat_cnt = 0
+
+            d_exp = {}
+            # populate the expected map
+            for c in pat:
+                if c in d_exp:  d_exp[c] += 1
+                else:           d_exp[c] = 0
+            d = {}
+            for c in d:         d[c] = 0
+            j = 0
+            for i in range(s):
+                if s[i] in d:
+                    d[s[i]] += 1
+                    if(dict_meets_min_criteria(d_exp, d)):
+                        l.append([j,i])
+                        # now try to reduce window, temporarily remove next matching char from dict
+                        # and see if still meet min criteria. keep doing until not meet criteria
+                        k = j
+                        while(k < i):
+                            k += 1
+                            # finish code here
+            return l
+        def t0():
+            pass
+        t0()
+
+    def test_largest_rectangle_in_histogram(self):
+        def largest_rectangle_1(l):
+            pass
+        def t0():
+            pass
+        t0()
 
     def test_binary_search(self):
         class _Node:
@@ -614,6 +815,8 @@ class ut(unittest.TestCase):
         self.testCombination()
         self.testPermutation()
         self.test_merge_sort()
+        self.test_stack_list()
+        self.test_longest_consecutive_sequence()
         p('main passed')
 
 if __name__ == "__main__":
