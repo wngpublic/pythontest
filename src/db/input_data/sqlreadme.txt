@@ -894,6 +894,9 @@ select avg(price),count(*),* from products_prices where name = 'fruits' order by
 select avg(price),count(*),name,product_id from products_prices group by name order by avg(price);
 select min(price), * from products_prices group by name order by price;
 select max(price), * from products_prices group by name order by price;
+
+update tablename set k1=v1, k2=v2 where k3=id;
+update cities set name='mad3', province_id=1 where gid=2;
 {
 - characteristics of input_tiny_db.txt
 

@@ -1,5 +1,7 @@
 #!/usr/local/bin/python3
 
+# python3 testcases.py -tc test_regex_groups
+# python3 testcases.py
 import sys
 sys.path.append('../algos')
 import os
@@ -50,8 +52,10 @@ import logging
 import hashlib
 import zlib
 import datetime
+from datetime import timezone
 import numpy
 import requests
+import unittest
 
 global_debug_level_ = 0  # 0 to 5. 0 = off, 1 = highest, 5 = lowest
 global_output_to_file_ = False
@@ -243,7 +247,7 @@ class MyClass3(MyBaseClass):
 class MyNode:
     pass
 
-class Tests:
+class Tests(unittest.TestCase):
 
     def __init__(self):
         self.utils = myclasses.Myutils()
@@ -4635,7 +4639,7 @@ class Tests:
         pass
 
     def test_tc_longest_common_subsequence(self):
-        d = { i:0, j:0, sz:0 }
+        d = { 'i':0, 'j':0, 'sz':0 }
         pass
 
     def pass_msg(self):
@@ -4791,6 +4795,170 @@ class Tests:
 
         self.pass_msg()
 
+    # returns true if str date is today
+    def str_date_is_today(self, str_date):
+        pass
+
+    def test_time(self):
+        strdate = '2019-10-11 12:00:01'
+        p('01: {}'.format(strdate))
+
+        dt1 = datetime.datetime(2019,10,11,12,0,1)
+        p('02: {}'.format(dt1))
+
+        epochSeconds1 = dt1.strftime('%s') # output is string
+        epochSeconds2 = dt1.time()
+        epochSeconds3 = int(epochSeconds1)
+        p('03: {}, {}, {}'.format(epochSeconds1, epochSeconds2, epochSeconds3))
+
+        dt3 = datetime.datetime.fromtimestamp(epochSeconds3)
+        p('04: {}'.format(dt3))
+
+        dt2 = time.strftime('%Y-%m-%d %H:%M:%S', dt3.timetuple())
+        p('05: {}'.format(dt2))
+
+        epochSeconds2 = datetime.datetime(2019,10,11,12,0,1).timestamp()
+        p('06: {}'.format(epochSeconds2))
+
+        dt3 = datetime.datetime.fromtimestamp(epochSeconds2)
+        p('07: {}'.format(dt3))
+
+        strdate = '2019-10-11 12:00:01'
+        dt1 = datetime.datetime.strptime(strdate, '%Y-%m-%d %H:%M:%S')
+
+        match = re.search(r'.*((\d{4})-(\d{2})-(\d{2})) ',strdate)
+        if match is not None:
+            p('match {} {} {}'.format(match.group(2),match.group(3),match.group(4)))
+            dt2 = datetime.datetime.strptime(match.group(1), '%Y-%m-%d')
+            dt3 = dt2.strftime('%Y-%m-%d')
+        else:
+            dt2 = None
+            dt3 = None
+
+        p('08: {}, {},  {}'.format(dt1, dt2, dt3))
+
+        dt3 = time.strftime('%Y-%m-%d', dt1.timetuple())
+        dt2 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.timetuple())
+        dt4 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.utctimetuple())
+        dt5 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.replace(tzinfo=timezone.utc).astimezone(tz=None).timetuple())
+
+        p('09: \n\t{}\n\t{}\n\t{}\n\t{}\n\t'.format(dt2,dt3,dt4,dt5))
+
+        dt2 = time.strftime('%Y-%m-%d T%H:%M:%S.000Z', dt1.utctimetuple())
+        p('0a: {}'.format(dt2))
+
+        dt2 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.utctimetuple())
+        p('0a: {}'.format(dt2))
+
+        dts = dt1.timestamp()
+        p('0b: {}'.format(dts))
+
+        secondsgm = dts = calendar.timegm(dt1.timetuple())  # UTC
+        secondslc = dts = time.mktime(dt1.timetuple())      # localtime
+        p('0c: {}, {}'.format(secondsgm, secondslc))
+
+        dt1 = datetime.datetime.now()
+        dt2 = datetime.datetime.now().time()
+        dt3 = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+        dt4 = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+        p('0d: {},  {},   {},   {}'.format(dt1, dt2, dt3, dt4))
+
+        dt1 = time.localtime().tm_sec
+        dt2 = time.strftime('%s', time.localtime())
+        dt3 = int(dt2)
+        p('0e: {}, {}, {}'.format(dt1, dt2, dt3))
+
+        strdate = '2019-10-11X12:00:01.123Y'
+        m = re.search(r'^(((\d{4})-(\d{2})-(\d{2}))[a-zA-Z]{1}((\d{1,2}):(\d{1,2}):(\d{1,2})))',strdate)
+        assert m is not None
+        p('0f:\n\t{};\t{};\n\t{};\t{};\t{};\t{};\n\t{};\t{};\t{};\t{}\n'
+          .format(m.group(0),m.group(1),
+                  m.group(2),m.group(3),m.group(4),m.group(5),
+                  m.group(6),m.group(7),m.group(8),m.group(9)))
+        formatted_str = '{} {}'.format(m.group(2),m.group(6))
+
+        dt1 = datetime.datetime.strptime(formatted_str, '%Y-%m-%d %H:%M:%S')
+        dt2 = time.strftime('%Y-%m-%d', dt1.timetuple())
+        dt3 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.timetuple())
+        dt4 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.utctimetuple())
+        dt5 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.replace(tzinfo=timezone.utc).astimezone(tz=None).timetuple())
+        p('10: \n\tdt2 {}\n\tdt3 {}\n\tdt4 {}\n\tdt5 {}\n\t'.format(dt2,dt3,dt4,dt5))
+
+        dt1 = datetime.datetime.strptime(formatted_str, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc).astimezone(tz=None)
+        dt2 = time.strftime('%Y-%m-%d', dt1.timetuple())
+        dt3 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.timetuple())
+        dt4 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.utctimetuple())
+        dt5 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.replace(tzinfo=timezone.utc).astimezone(tz=None).timetuple()) # this is applying UTC twice
+        p('11: \n\tdt2 {}\n\tdt3 {}\n\tdt4 {}\n\tdt5 {}\n\t'.format(dt2,dt3,dt4,dt5))
+
+        dt1 = datetime.datetime.strptime(formatted_str, '%Y-%m-%d %H:%M:%S').replace(tzinfo=None).astimezone(tz=timezone.utc)
+        dt2 = time.strftime('%Y-%m-%d', dt1.timetuple())
+        dt3 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.timetuple())
+        dt4 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.utctimetuple())
+        dt5 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.replace(tzinfo=timezone.utc).astimezone(tz=None).timetuple()) # this is applying UTC twice
+        dt6 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.replace(tzinfo=None).astimezone(tz=timezone.utc).timetuple()) # this is applying UTC twice
+        dt7 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.replace(tzinfo=None).astimezone(tz=timezone.utc).timetuple()) # this is applying UTC twice
+        p('12: \n\torg {}\n\tdt2 {}\n\tdt3 {}\n\tdt4 {}\n\tdt5 {}\n\tdt6 {}\n\tdt7 {}\n\t'.format(formatted_str,dt2,dt3,dt4,dt5,dt6,dt7))
+
+        dt1 = datetime.datetime.strptime(formatted_str, '%Y-%m-%d %H:%M:%S').replace(tzinfo=None).astimezone(tz=None)
+        dt2 = time.strftime('%Y-%m-%d', dt1.timetuple())
+        dt3 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.timetuple())
+        dt4 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.utctimetuple())
+        dt5 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.replace(tzinfo=timezone.utc).astimezone(tz=None).timetuple()) # this is applying UTC twice
+        dt6 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.replace(tzinfo=None).astimezone(tz=timezone.utc).timetuple()) # this is applying UTC twice
+        dt7 = time.strftime('%Y-%m-%d %H:%M:%S', dt1.replace(tzinfo=None).astimezone(tz=timezone.utc).timetuple()) # this is applying UTC twice
+        p('13: \n\torg {}\n\tdt2 {}\n\tdt3 {}\n\tdt4 {}\n\tdt5 {}\n\tdt6 {}\n\tdt7 {}\n\t'.format(formatted_str,dt2,dt3,dt4,dt5,dt6,dt7))
+
+        formatted_str = '2019-10-11'
+        # dt1 = datetime.datetime.strptime(formatted_str, '%Y-%m-%d %H:%M:%S') # not correct format for 2019-10-11
+        dt1 = datetime.datetime.strptime(formatted_str, '%Y-%m-%d')
+        p('14: \n\t{}\n\t{}'.format(formatted_str, dt1))
+
+    def test_regex_groups(self):
+        s1 = '2019-10-11 12:00:01'
+        m = re.search(r'^((\d{4})-(\d{2})-(\d{2}))$',s1)
+        assert m is None
+
+        m = re.search(r'^((\d{4})-(\d{2})-(\d{2}))',s1)
+        assert m is not None
+        p('match {} {} {}; {}; {}'.format(m.group(2),m.group(3),m.group(4), m.group(0), m.group(1)))
+        m = re.search(r'^(((\d{4})-(\d{2})-(\d{2})) ((\d{2}):(\d{2}):(\d{2})))',s1)
+        assert m is not None
+        p('s1: {}'.format(s1))
+        p('match\n\t{} {} {};\n\t{} {} {};\n\t{}; {}; {};'
+          .format(m.group(3),m.group(4),m.group(5),
+                  m.group(7),m.group(8),m.group(9),
+                  m.group(1),m.group(2),m.group(6)))
+
+        s2 = '2019-10-11 12:00:01.1234'
+        p('s2: {}'.format(s2))
+        m = re.search(r'^(((\d{4})-(\d{2})-(\d{2}))\s+((\d{2}):(\d{2}):(\d{2})))',s2)
+        assert m is not None
+        p('match\n\t{} {} {};\n\t{} {} {};\n\t{}; {}; {};'
+          .format(m.group(3),m.group(4),m.group(5),
+                  m.group(7),m.group(8),m.group(9),
+                  m.group(1),m.group(2),m.group(6)))
+        m = re.search(r'^(((\d{4})-(\d{2})-(\d{2})) ((\d{2}):(\d{2}):(\d{2}).(\d+)))$',s2)
+        assert m is not None
+        p('match\n\t{} {} {};\n\t{} {} {} {};\n\t{}; {}; {};'
+          .format(m.group(3),m.group(4),m.group(5),
+                  m.group(7),m.group(8),m.group(9),m.group(10),
+                  m.group(1),m.group(2),m.group(6)))
+
+        s3 = '2019-10-11'
+        m = re.search(r'^(((\d{4})-(\d{2})-(\d{2})) ((\d{2}):(\d{2}):(\d{2})))', s3)
+        assert m is None
+        m = re.search(r'^((\d{4})-(\d{2})-(\d{2}))', s3)
+        assert m is not None
+        p('match\n\t{};\n\t{} {} {}'
+          .format(m.group(0),m.group(1),m.group(2),m.group(3)))
+        m = re.search(r'^((\d{4})-(\d{1,2})-(\d{1,2}))', s3)
+        assert m is not None
+        p('match\n\t{};\n\t{} {} {}'
+          .format(m.group(0),m.group(1),m.group(2),m.group(3)))
+
+        p('passed test_regex_groups')
+
     def test_self_inspect(self, a1='default1', a2='default2'):
         p('called methodname:{} args:{} varcount:{}'.format(
             sys._getframe(0).f_code.co_name,
@@ -4855,7 +5023,8 @@ def maintestcases():
     parser.add_argument('-a1', help='arg1')
     parser.add_argument('-a2', help='arg2')
     parser.add_argument('-targeted', action='store_true', help='-targeted with methodname')
-    args = parser.parse_args()
+    #args = parser.parse_args()
+    args,unknown = parser.parse_known_args()
 
     if(args.debuglevel is not None):
         set_debug_level(args.debuglevel)
@@ -4883,6 +5052,8 @@ def maintestcases():
 
 maintestcases()
 
+#if __name__ == '__main__':
+#    unittest.main()
 
 #
 #        #if(not re.match(r'^\d{4}-\d{2}-\d{2}$', v)):

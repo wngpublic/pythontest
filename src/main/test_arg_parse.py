@@ -23,7 +23,7 @@ class TestArgParse:
 
         parser.add_argument('req1', type=int,                         help='required position1 req1 is type int')
         parser.add_argument('req2', type=str,                         help='required position2 req2 is type str')
-        args = parser.parse_args()
+        args,unknown = parser.parse_known_args()
         msg = ''
         if args.out == True:
             msg += '-o was used; '
@@ -41,6 +41,7 @@ class TestArgParse:
             a = args.l2
             msg += 'l2 vals: (arg0={} arg1={})'.format(a[0], a[1])
         self.p(args)
+        self.p(unknown)
         self.p('\nprinting req1={}, req2={} msg: {}'.format(args.req1, args.req2, msg))
 
 test = TestArgParse()
