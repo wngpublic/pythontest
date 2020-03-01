@@ -276,8 +276,21 @@ function test_strings($token_in=0) {
     assert(count($a1) == 6);
     assert($a1[5] == 'hat');
     $v7='the  hat  cat in   the cat hat';
+    $pat_dog = "dog";
+    $pat_cat = "cat";
+
     assert(!preg_match("/dog/",$v7));
     assert(preg_match("/cat/",$v7));
+    assert(!preg_match($pat_dog,$v7));
+    assert(preg_match($pat_cat,$v7));
+    assert(!preg_match("$pat_dog",$v7));
+    assert(preg_match("$pat_cat",$v7));
+    assert(!preg_match("/$pat_dog/",$v7));
+    assert(preg_match("/$pat_cat/",$v7));
+    assert(!preg_match("/${pat_dog}/",$v7));
+    assert(preg_match("/${pat_cat}/",$v7));
+    assert(!preg_match("/{$pat_dog}/",$v7));
+    assert(preg_match("/{$pat_cat}/",$v7));
     assert(preg_match_all("/cat/",$v7));
     assert(!preg_match("/cat$/",$v7));
     assert(preg_match("/ hat$/",$v7));

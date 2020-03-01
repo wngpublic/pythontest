@@ -6,6 +6,17 @@ import collections
 import re
 import functools
 import array
+import sys
+import string
+import collections
+import os
+import json
+import time
+import random
+import hashlib
+import datetime
+import numpy
+import calendar
 
 '''
 python3 -m unittest syntax_unittests.ut.test_method
@@ -862,6 +873,218 @@ class ut(unittest.TestCase):
 
         #p('pass test_sort')
 
+    def is_approximate(self, act_int_val,exp_int_val,delta) -> bool:
+        diff = int(math.fabs(act_int_val - exp_int_val))
+        return diff <= delta
+
+    def test_time(self) -> None:
+        time_s = "12-31-2019 23:59:00"
+        lcl_delta_dec = 8 * 60 * 60  # dec 8 hours between UTC and PST. what about daylight savings?? 28800
+        time_utc_12_31_2019_23_59_00 = 1577836740                                       # 12-31-19 23:59:00
+        time_utc_12_31_2019_15_59_00 = time_utc_12_31_2019_23_59_00 - lcl_delta_dec     # 12-31-19 15:59:00
+        time_utc_01_01_2020_07_59_00 = time_utc_12_31_2019_23_59_00 + lcl_delta_dec     # 01-01-20 07:59:00
+
+        # string to time.struct_time
+        time_obj_1 = time.strptime("12-31-2019 23:59:00", "%m-%d-%Y %H:%M:%S")
+        assert isinstance(time_obj_1, time.struct_time)
+        assert time_obj_1.tm_isdst == -1
+        assert time_obj_1.tm_year == 2019 and time_obj_1.tm_mon == 12 and time_obj_1.tm_mday == 31 and time_obj_1.tm_hour == 23
+
+        # time.struct_time to string
+        time_s_2 = time.strftime("%m-%d-%Y %H:%M:%S", time_obj_1)
+        assert isinstance(time_s_2, str)
+        assert time_s_2 == "12-31-2019 23:59:00"
+
+        time_obj_june = time.strptime("06-30-2019 23:59:00", "%m-%d-%Y %H:%M:%S")
+        assert isinstance(time_obj_june, time.struct_time)
+        assert time_obj_june.tm_isdst == -1 # ????
+        assert time_obj_june.tm_year == 2019 and time_obj_june.tm_mon == 6 and time_obj_june.tm_mday == 30 and time_obj_june.tm_hour == 23
+
+        # string to datetime.datetime
+        time_obj_2 = datetime.datetime.strptime("12-31-2019 23:59:00", "%m-%d-%Y %H:%M:%S")
+        assert isinstance(time_obj_2,datetime.datetime)
+        assert time_obj_2.tzinfo is None
+        assert time_obj_2.year == 2019 and time_obj_2.month == 12 and time_obj_2.day == 31 and time_obj_2.hour == 23
+
+        # datetime.datetime to string
+        assert isinstance(time_obj_2,datetime.datetime)
+        time_s_3 = time_obj_2.strftime("%m-%d-%Y %H:%M:%S")     # converted to local time
+        assert time_s_3 == "12-31-2019 23:59:00"
+        time_utc_int_3 = int(time_obj_2.timestamp())
+        assert time_utc_int_3 == 1577865540 and time_utc_int_3 == time_utc_01_01_2020_07_59_00
+
+        time_dt_1 = datetime.datetime(time_obj_1.tm_year,time_obj_1.tm_mon,time_obj_1.tm_mday,time_obj_1.tm_hour,time_obj_1.tm_min,time_obj_1.tm_sec)
+        assert isinstance(time_dt_1, datetime.datetime)
+        assert time_dt_1.tzinfo is None
+        assert time_dt_1.year == 2019 and time_dt_1.month == 12 and time_dt_1.day == 31 and time_dt_1.hour == 23
+
+        time_utc_int = calendar.timegm(time_dt_1.timetuple())           # UTC output
+        assert isinstance(time_utc_int,int)
+        assert time_utc_int == 1577836740
+        time_lcl_int = int(time.mktime(time_dt_1.timetuple()))          # local time output
+        assert time_lcl_int == (time_utc_int + lcl_delta_dec)
+
+        datetime_1 = datetime.datetime.fromtimestamp(time_utc_int)      # this gets adjusted to local from 12-31-2019 23:59:00 -> 12-31-2019 15:59:00
+        assert isinstance(datetime_1, datetime.datetime)
+        assert datetime_1.tzinfo is None
+        assert datetime_1.year == 2019 and datetime_1.month == 12 and datetime_1.day == 31 and datetime_1.hour == 15
+        time_sec_2_int = int(time.mktime(datetime_1.timetuple()))        # assumes pass in localtime
+        time_sec_3_int = int(calendar.timegm(datetime_1.timetuple()))    # assumes pass in UTC
+
+        assert time_sec_2_int == 1577836740 and time_sec_2_int == time_utc_int
+        datetime_2 = datetime.datetime.fromtimestamp(time_sec_2_int)
+        assert datetime_2.year == 2019 and datetime_2.month == 12 and datetime_2.day == 31 and datetime_2.hour == 15
+
+        assert time_sec_3_int == 1577807940 and time_sec_3_int == (time_sec_2_int - lcl_delta_dec)
+        datetime_3 = datetime.datetime.fromtimestamp(time_sec_3_int)
+        assert datetime_3.year == 2019 and datetime_3.month == 12 and datetime_3.day == 31 and datetime_3.hour == 7
+
+        time_obj_3 = time.gmtime(time_utc_int)
+        assert isinstance(time_obj_3, time.struct_time)
+        assert time_obj_3.tm_year == 2019 and time_obj_3.tm_mon == 12 and time_obj_3.tm_mday == 31 and time_obj_3.tm_hour == 23
+
+        time_obj_4 = time.localtime(time_utc_int)
+        assert isinstance(time_obj_4, time.struct_time)
+        assert time_obj_4.tm_year == 2019 and time_obj_4.tm_mon == 12 and time_obj_4.tm_mday == 31 and time_obj_4.tm_hour == 15
+
+        time_utc_int = calendar.timegm(time_obj_1)
+        time_lcl_flt = time.mktime(time_obj_1)
+        assert isinstance(time_lcl_flt,float)
+        time_lcl_int = int(time_lcl_flt)
+        time_lcl_int_exp = time_utc_int + lcl_delta_dec
+        assert time_lcl_int == time_lcl_int_exp
+
+        time_s_1 = time.strftime("%m-%d-%Y %H:%M:%S", time_obj_1)
+        assert time_s_1 == "12-31-2019 23:59:00"
+
+        time_obj_3 = datetime.datetime.strptime(time_s, "%m-%d-%Y %H:%M:%S").replace(tzinfo=None).astimezone(tz=datetime.timezone.utc).timetuple()
+        assert isinstance(time_obj_3, time.struct_time)
+        assert time_obj_3.tm_year == 2020 and time_obj_3.tm_mon == 1 and time_obj_3.tm_mday == 1 and time_obj_3.tm_hour == 7
+
+        time_s_2 = time.strftime("%m-%d-%Y %H:%M:%S", time_obj_3)
+        assert isinstance(time_s_2, str)
+        assert time_s_2 == "01-01-2020 07:59:00"
+
+        time_obj_4 = datetime.datetime.strptime(time_s_2, "%m-%d-%Y %H:%M:%S")
+        assert isinstance(time_obj_4,datetime.datetime)
+        assert time_obj_4.year == 2020 and time_obj_4.month == 1 and time_obj_4.day == 1 and time_obj_4.hour == 7
+
+        assert isinstance(time_obj_2,datetime.datetime)
+        assert time_obj_2.year == 2019 and time_obj_2.month == 12 and time_obj_2.day == 31 and time_obj_2.hour == 23
+        time_s_3 = time.strftime("%m-%d-%Y %H:%M:%S", time_obj_2.replace(tzinfo=None).astimezone(tz=datetime.timezone.utc).timetuple())
+        assert isinstance(time_s_3, str)
+        assert time_s_3 == "01-01-2020 07:59:00"
+
+        assert time_obj_2.year == 2019 and time_obj_2.month == 12 and time_obj_2.day == 31 and time_obj_2.hour == 23
+        time_s_4 = time.strftime("%m-%d-%Y %H:%M:%S", time_obj_2.replace(tzinfo=datetime.timezone.utc).astimezone(tz=None).timetuple())
+        assert isinstance(time_s_4, str)
+        assert time_s_4 == "12-31-2019 15:59:00"
+
+        assert isinstance(time_obj_3, time.struct_time)
+        assert time_obj_3.tm_year == 2020 and time_obj_3.tm_mon == 1 and time_obj_3.tm_mday == 1 and time_obj_3.tm_hour == 7
+
+        # convert time.struct_time to datetime.datetime
+        time_obj_5 = datetime.datetime.fromtimestamp(time.mktime(time_obj_3))
+        assert isinstance(time_obj_5, datetime.datetime)
+        assert time_obj_5.year == 2020 and time_obj_5.month == 1 and time_obj_5.day == 1 and time_obj_5.hour == 7
+
+        # convert datetime.datetime to time.struct_time
+        assert isinstance(time_obj_5, datetime.datetime)
+        time_obj_6 = time_obj_5.timetuple()
+        assert isinstance(time_obj_6, time.struct_time)
+
+        # replace timezone to UTC, which is +8 hr from 01-01-2020 07:59:00
+        time_s_5 = time.strftime("%m-%d-%Y %H:%M:%S", time_obj_5.replace(tzinfo=None).astimezone(tz=datetime.timezone.utc).timetuple())
+        assert isinstance(time_s_5, str)
+        assert time_s_5 == "01-01-2020 15:59:00"
+
+        # replace timezone from UTC to lcl, which -8 from 01-01-2020 07:59:00
+        time_s_6 = time.strftime("%m-%d-%Y %H:%M:%S", time_obj_5.replace(tzinfo=datetime.timezone.utc).astimezone(tz=None).timetuple())
+        assert isinstance(time_s_6, str)
+        assert time_s_6 == "12-31-2019 23:59:00"
+
+        # local timezone difference has no DST (daylight savings) in june!
+        time_obj_7 = datetime.datetime.strptime("06-01-2020 23:59:00", "%m-%d-%Y %H:%M:%S").replace(tzinfo=None).astimezone(tz=datetime.timezone.utc).timetuple()
+        assert isinstance(time_obj_7, time.struct_time)
+        assert time_obj_7.tm_year == 2020 and time_obj_7.tm_mon == 6 and time_obj_7.tm_mday == 2 and time_obj_7.tm_hour == 6
+
+        # local timezone difference uses DST (daylight savings) in jan!
+        time_obj_8 = datetime.datetime.strptime("01-01-2020 23:59:00", "%m-%d-%Y %H:%M:%S").replace(tzinfo=None).astimezone(tz=datetime.timezone.utc).timetuple()
+        assert isinstance(time_obj_8, time.struct_time)
+        assert time_obj_8.tm_year == 2020 and time_obj_8.tm_mon == 1 and time_obj_8.tm_mday == 2 and time_obj_8.tm_hour == 7
+
+        # strftime converstion
+        assert isinstance(time_obj_2,datetime.datetime)
+        assert time_obj_2.year == 2019 and time_obj_2.month == 12 and time_obj_2.day == 31 and time_obj_2.hour == 23
+        assert isinstance(time_obj_1, time.struct_time)
+        assert time_obj_1.tm_year == 2019 and time_obj_1.tm_mon == 12 and time_obj_1.tm_mday == 31 and time_obj_1.tm_hour == 23
+        time_s_8 = time.strftime("%m-%d-%Y %H:%M:%S", time_obj_1)   # works for time.struct_time, not for datetime.datetime
+        #time_s_9 = datetime.strftime("%m-%d-%Y %H:%M:%S", time_obj_2)   # works for time.struct_time, not for datetime.datetime
+
+        datenow = datetime.datetime.now()
+        assert isinstance(datenow, datetime.datetime)
+        time_s_7 = time.strftime("%m-%d-%Y %H:%M:%S")       # current time
+        assert isinstance(time_s_7, str)
+
+        time_s_1 = "12-31-2019 23:59:00"
+
+        time_utc_diff_1 = datetime.datetime.utcnow() - datetime.datetime.now()
+        assert isinstance(time_utc_diff_1, datetime.timedelta)
+        assert time_utc_diff_1.days == 0
+        assert self.is_approximate(time_utc_diff_1.seconds,lcl_delta_dec,5)
+
+        time_sec_lcl_1  = datetime.datetime.fromtimestamp(time_utc_12_31_2019_23_59_00)
+        time_sec_utc_1  = datetime.datetime.utcfromtimestamp(time_utc_12_31_2019_23_59_00)
+        time_sec_diff_2 = time_sec_utc_1 - time_sec_lcl_1
+        assert isinstance(time_sec_lcl_1, datetime.datetime)
+        assert isinstance(time_sec_utc_1, datetime.datetime)
+        assert isinstance(time_sec_diff_2, datetime.timedelta)
+        assert time_sec_diff_2.days == 0 and time_sec_diff_2.seconds == lcl_delta_dec
+
+        datetime_1 = datetime.datetime.fromtimestamp(time_utc_12_31_2019_23_59_00)
+        time_sec_lcl_2 = int(time_sec_lcl_1.timestamp())
+        time_sec_utc_2 = int(time_sec_utc_1.timestamp())
+        time_sec_utc_3 = int(calendar.timegm(datetime_1.timetuple()))
+
+        assert isinstance(time_sec_lcl_2, int) and time_sec_lcl_2 == time_utc_12_31_2019_23_59_00
+        assert isinstance(time_sec_utc_2, int) and time_sec_utc_2 == time_utc_01_01_2020_07_59_00
+        assert isinstance(time_sec_utc_3, int) and time_sec_utc_3 == time_utc_12_31_2019_15_59_00
+
+        # parsing out time formats
+        time_dt_1 = datetime.datetime.strptime("12-31-2019 23:59:00",         "%m-%d-%Y %H:%M:%S") # no spaces or extra chars allowed. chop off or split
+        time_dt_2 = datetime.datetime.strptime("Dec 31, 2019 23:59:00",       "%b %d, %Y %H:%M:%S")   # comma ok
+        time_dt_3 = datetime.datetime.strptime("Dec 31 2019 11:59:00PM",      "%b %d %Y %H:%M:%S%p")  # 24 hr clock reads this as 11th hr, PM doesnt matter
+        time_dt_4 = datetime.datetime.strptime("Dec 31 2019 11:59:00PM",      "%b %d %Y %I:%M:%S%p")  # 12 hr clock reads this as 23rd hr
+        time_dt_5 = datetime.datetime.strptime("Dec 31 2019 11:59:00AM",      "%b %d %Y %I:%M:%S%p")  # 12 hr clock reads this as 11th hr, AM matters
+        time_dt_6 = datetime.datetime.strptime("2019/12/31 23:59:00.000",     "%Y/%m/%d %H:%M:%S.%f")
+        time_dt_7 = datetime.datetime.strptime("2019/12/31 23:59:00 -0800",   "%Y/%m/%d %H:%M:%S %z") # timezone offset
+        time_dt_8 = datetime.datetime.strptime("2019/12/31   23:59:00 -0800", "%Y/%m/%d %H:%M:%S %z") # extra space doesnt matter
+        time_dt_9 = datetime.datetime.strptime("2019/12/31 23:59:00 +0800",   "%Y/%m/%d %H:%M:%S %z") # timezone offset
+
+        assert isinstance(time_dt_1, datetime.datetime)
+        assert time_dt_3 != time_dt_4 # 12-31-2019 11:59:00 != 12-31-2019 23:59:00
+        assert time_dt_3 == time_dt_5 # 12-31-2019 11:59:00
+        assert time_dt_4 == time_dt_1 # 12-31-2019 23:59:00
+
+        # creating datetimes
+        tz_pst = datetime.timezone(datetime.timedelta(hours=8))
+        time_dt_1 = datetime.datetime(2019,12,31,23,59,0)
+        time_dt_2 = datetime.datetime(2019,6,30,23,59,0)                # 2019-12-31 23:59:00
+        time_dt_3 = datetime.datetime(2019,6,30,23,59,0,tzinfo=None)    # 2019-12-31 23:59:00
+        time_dt_4 = datetime.datetime(2019,6,30,23,59,0,tzinfo=tz_pst)      # 2019-12-31 23:59:00+08:00
+
+        tzname = time.tzname
+        assert isinstance(tzname,tuple)
+        local_non_dst_timezone = tzname[0]
+        local_dst_timezone = tzname[1]
+        assert local_non_dst_timezone == 'PST' and local_dst_timezone == 'PDT'
+
+        timezone = time.timezone
+        assert isinstance(timezone,int) and timezone == lcl_delta_dec       # non DST timezone delta/offset from utc in seconds
+        is_currently_dst = time.localtime().tm_isdst    # this is currently 03/08-11/01 and non_dst is 11/01-03/08
+
+        p('pass test_time')
+
     def main(self) -> None:
         self.test_list()
         self.test_methods_and_vars_in_scope()
@@ -872,6 +1095,7 @@ class ut(unittest.TestCase):
         self.test_string()
         self.test_lambda()
         self.test_sort()
+        self.test_time()
         p('passed main')
 
     def test_named_vars(self) -> None:      # return type is None
@@ -884,4 +1108,4 @@ class ut(unittest.TestCase):
         return in_list
 
 if __name__ == "__main__":
-    syntax_ut.main()
+    ut.main()
