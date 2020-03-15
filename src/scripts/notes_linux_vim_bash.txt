@@ -1210,6 +1210,21 @@ jcmd -> attach -> jvm attach <-> dcmd <-> monitored jvm <-> jmx client
                   jvmstat     -> jstat -> jstat client rmi
 
 --------------------------------------------------------------------------------
+* toc_sql
+
+- sqlite3
+.tables
+.schema
+.mode columns
+.header
+.headers on
+.headers off
+.read filename
+.output test.csv
+.databases
+
+
+--------------------------------------------------------------------------------
 
 * toc_redis
 - toc_redis_iterate_keys

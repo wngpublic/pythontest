@@ -24,9 +24,8 @@ from collections import OrderedDict
 import urllib.request as url
 import pathlib
 import algos
-import myclasses
-#import src.main.myclasses
-#from src.algos import algos
+import myclasses        # needs __init__.py to say ok to import from this directory
+import utils.myutils    # there is utils directory here.
 #import algos
 import json
 import unittest

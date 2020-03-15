@@ -423,6 +423,25 @@ class Test {
         $act = "the '$a[$keycat]' in the hat";
         assert($act == "the 'cat' in the hat");
 
+        $str_num = "123.45";
+        $str_cat = "cat";
+        assert(is_numeric($str_num));
+        assert(!is_numeric($str_cat));
+        $v_int = (int)$str_num;
+        assert($v_int == 123);
+        $v_f = (float)$str_num;
+        assert($v_f == 123.45);
+        $v_d = (double)$str_num;
+        assert($v_d == 123.45);
+        $v = $str_cat . $v_int;
+        assert($v == "cat123");
+        assert(intval("10") == 10);
+        assert(intval("-10") == -10);
+        assert(!is_int("10"));
+        assert(is_int(10));
+        assert(!is_int(10.1));
+        assert(is_string("10"));
+        assert(is_array(array()));
 
         $this->dbg("test_strings",$this->dbg_lvl_end);
     }
@@ -524,6 +543,58 @@ class Test {
         assert($e == 1);
 
     }
+
+    function test_json() {
+        $s_val = '{"k1":{"k11":"v11","k12":"v12","k13":"v13"},"k2":[{"k211":"v211","k212":"v212"},{"k221":"v221","k222":"v222"},{"k231":"v231","k232":"v232"}],"k3":"v3"}';
+        $json_val = json_decode($s_val,true);
+
+        assert($json_val != null);
+        assert($json_val["k3"] == "v3");
+        assert(is_array($json_val["k1"]));
+        assert(is_array($json_val["k2"]));
+        assert(!is_array($json_val["k3"]));
+        assert(!key_exists("k1111",$json_val["k1"]));
+        assert(key_exists("k11",$json_val["k1"]));
+        assert(key_exists(1,$json_val["k2"]));
+        assert($json_val["k2"][1]["k221"] == "v221");
+        assert(!key_exists(10,$json_val["k2"]));
+
+        $s_val = '{"k1":[["v11","v12","v13"],["v21","v22","v23"],["v31","v32","v33"]]}';
+        $json_val = json_decode($s_val,true);
+        echo var_export($json_val,true);
+
+        $this->dbg("test_json",$this->dbg_lvl_end);
+    }
+
+    function test_time() {
+        $time_str_pst = "Tuesday, March 10, 2020 11:35:00 AM";
+        $time_str_gmt = "Tuesday, March 10, 2020 6:35:00 PM";
+        $time_str_mil_pst = "2020-03-10 11:35";
+        $time_str_mil_gmt = "2020-03-10 18:35";
+        $time_sec_1 = 1583840100;   # Tuesday, March 10, 2020 11:35:00 AM GMT or Tuesday, March 10, 2020 4:35:00 AM GMT-07:00 DST PST
+        $time_sec = 1583865300;
+        $time_1   = 1583840100;
+        $time_dif = $time_sec - $time_1;
+        $v1 = strtotime($time_str_mil_pst);
+        $v2 = strtotime($time_str_mil_gmt);
+        echo "time_sec: $time_sec translated pst/gmt:$v1/$v2 time_dif = $time_dif\n";
+        $date = new DateTime();
+        $time_zone = $date->getTimezone();
+        echo $time_zone->getName() . "\n";
+        echo date_default_timezone_get() . "\n";
+        //$timezone_get_1 = date_timezone_get();
+        //echo var_export($timezone_get_1,true);
+        //assert($v1 == $time_sec);
+        //t0: 2020-03-10 11:40 t1: 2020-03-10 11:45 t0_sec: 1583865600  t1_sec: 1583865900
+        $time_s1 = "2020-03-10 11:40";
+        $time_i1 = strtotime($time_s1);
+        echo "time s1: $time_s1 i:$time_i1\n";
+
+        $time_s1 = "2020-03-10 18:40";
+        $time_i1 = strtotime($time_s1);
+        echo "time s1: $time_s1 i:$time_i1\n";
+
+    }
 }
 
 openlog("mylog.php.log", LOG_CONS, LOG_USER);
@@ -532,7 +603,9 @@ $t->test_ranges();
 $t->test_syntax();
 $t->test_array();
 $t->test_strings();
+$t->test_json();
 $t->test_url();
+$t->test_time();
 closelog();
 
 ?>
