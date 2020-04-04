@@ -244,6 +244,132 @@ class Test {
         assert(array_key_exists('k1',$a1));
         assert(!array_key_exists('k10',$a1));
 
+        // array of arrays
+        $aa = array();
+        for($i = 0; $i < 3; $i++) {
+            $k = "k.$i";
+            $aa[$k] = array();              // this works!
+            for($j = 0; $j < 3; $j++) {
+                $kk = "$k.$j";
+                $aa[$k][$kk] = $j;
+            }
+        }
+        //echo "aa: " . var_export($aa,true) . "\n";
+        assert(array_key_exists("k.1",$aa));
+        $a = $aa["k.1"];
+        assert(array_key_exists("k.1.2",$a));
+        assert($a["k.1.2"] == 2);
+        assert(count($aa) == 3);
+        assert(count($aa['k.1']) == 3);
+
+        $aa1 = array();
+        $aa2 = array();
+        $aa3 = array();
+        $a1 = array();
+        $a2 = array();
+        $aa1['a1'] = $a1; // this doesnt work, copies $a1 into $aa1, which is empty
+        $aa1['a2'] = $a2; // this doesnt work
+        $aa3['a1'] = &$a1; // this works, copies $a1 into $aa1, which is reference
+        $aa3['a2'] = &$a2; // this works
+        for($j = 0; $j < 2; $j++) {
+            $a1["a1.$j"] = $j;
+        }
+        for($j = 0; $j < 2; $j++) {
+            $a2["a2.$j"] = $j;
+        }
+        $aa2['a1'] = $a1;  // this works, copies $a1 into $aa2, which is populated
+        $aa2['a2'] = $a2;  // this works
+
+        //echo "aa1: " . var_export($aa1,true) . "\n";
+        //echo "aa2: " . var_export($aa2,true) . "\n";
+        //echo "aa3: " . var_export($aa3,true) . "\n";
+        $va1 = $aa1['a1'];
+        $va2 = $aa2['a1'];
+        $va3 = $aa3['a1'];
+        assert(!array_key_exists('a1.1',$aa1['a1']));
+        assert(array_key_exists('a1.1',$aa2['a1']));
+        assert(array_key_exists('a1.1',$aa3['a1']));
+        assert(!array_key_exists('a1.1',$va1));
+        assert(array_key_exists('a1.1',$va2));
+        assert(array_key_exists('a1.1',$va3));
+        assert(count($aa1) == 2);
+        assert(count($aa1['a1']) == 0);
+        assert(count($aa2['a1']) == 2);
+        assert(count($aa3['a1']) == 2);
+
+        // array of arrays, this is broken!
+        $aa = array();
+        for($i = 0; $i < 2; $i++) {
+            $a = array();
+            $aa["k.$i"] =  $a;      // this doesnt work!! why?? because $a gets reassigned
+            //$aa["k.$i"] = &$a;      // this doesnt work!! why??
+            for($j = 0; $j < 2; $j++) {
+                $a["$k.$j"] = $j;
+            }
+        }
+        assert(count($aa['k.1']) == 0);
+        assert(count($aa) == 2);
+
+        //echo "aa: " . var_export($aa,true) . "\n";
+
+        //assert(array_key_exists("k.1",$aa));
+        //$a = $aa["k.1"];
+        //echo "a " . var_export($a,true) . "\n";
+        //assert(array_key_exists("k.1.2",$a));
+        //assert($a["k.1.2"] == 2);
+
+        // this works!!
+        $aa = array();
+        for($i = 0; $i < 2; $i++) {
+            $a = array();
+            for($j = 0; $j < 2; $j++) {
+                $a["k.$i.$j"] = $i * 10 + $j;
+            }
+            $aa["k.$i"] =  $a;
+        }
+        //echo "aa: " . var_export($aa,true) . "\n";
+        assert(count($aa) == 2);
+        assert(count($aa['k.0']) == 2);
+        assert(count($aa['k.1']) == 2);
+        assert($aa['k.0']['k.0.0'] == 0);
+        assert($aa['k.0']['k.0.1'] == 1);
+        assert($aa['k.1']['k.1.0'] == 10);
+        assert($aa['k.1']['k.1.1'] == 11);
+
+        $aa = array();
+        for($i = 0; $i < 2; $i++) {
+            $aa["k.$i"] = array();
+            $a = $aa["k.$i"];
+            for($j = 0; $j < 2; $j++) {
+                $a["k.$i.$j"] = $j;
+            }
+        }
+        //echo "aa: " . var_export($aa,true) . "\n";
+        assert(count($aa) == 2);
+        assert(count($aa['k.0']) == 0);
+        assert(count($aa['k.1']) == 0);
+
+        $a = array('k8'=>'v8','k2'=>'v2','k4'=>'v4','k1'=>'v1');
+        ksort($a);
+        //echo "sorted " . var_export($a,true) . "\n";
+
+        $a = array();
+        for($i = 0; $i < 100; $i++) {
+            $a[$i] = "k.$i";
+        }
+        $chunks_of_10 = array_chunk($a,10);
+        $chunks_of_25 = array_chunk($a,25);
+        $chunks_of_5 = array_chunk($chunks_of_10, 5);
+
+        assert(count($chunks_of_10) == 10);
+        assert(count($chunks_of_25) == 4);
+        assert(count($chunks_of_5) == 2); // chunks 0-4 and 5-10 of chunks_of_10
+        //echo "count: " . count($chunks_of_25) . " count: " . count($chunks_of_5) . " count: " . count($chunks_of_10) . "\n";
+        //echo "\n------chunks_of_25:\n " . var_export($chunks_of_25,true) . "\n";
+        //echo "\n------chunks_of_10:\n " . var_export($chunks_of_10,true) . "\n";
+        //echo "\n------chunks_of_5:\n " . var_export($chunks_of_5,true) . "\n";
+        //assert(count($chunks_of_20) == 50);
+
         $this->dbg("test_structures",$this->dbg_lvl_end);
     }
 
@@ -443,6 +569,10 @@ class Test {
         assert(is_string("10"));
         assert(is_array(array()));
 
+        $v = null;
+        assert($v !== FALSE);
+        assert($v === null && $v == null && $v == NULL && $v == Null);
+
         $this->dbg("test_strings",$this->dbg_lvl_end);
     }
     function test_url() {
@@ -561,7 +691,7 @@ class Test {
 
         $s_val = '{"k1":[["v11","v12","v13"],["v21","v22","v23"],["v31","v32","v33"]]}';
         $json_val = json_decode($s_val,true);
-        echo var_export($json_val,true);
+        //echo var_export($json_val,true);
 
         $this->dbg("test_json",$this->dbg_lvl_end);
     }
@@ -577,22 +707,22 @@ class Test {
         $time_dif = $time_sec - $time_1;
         $v1 = strtotime($time_str_mil_pst);
         $v2 = strtotime($time_str_mil_gmt);
-        echo "time_sec: $time_sec translated pst/gmt:$v1/$v2 time_dif = $time_dif\n";
+        //echo "time_sec: $time_sec translated pst/gmt:$v1/$v2 time_dif = $time_dif\n";
         $date = new DateTime();
         $time_zone = $date->getTimezone();
-        echo $time_zone->getName() . "\n";
-        echo date_default_timezone_get() . "\n";
+        //echo $time_zone->getName() . "\n";
+        //echo date_default_timezone_get() . "\n";
         //$timezone_get_1 = date_timezone_get();
         //echo var_export($timezone_get_1,true);
         //assert($v1 == $time_sec);
         //t0: 2020-03-10 11:40 t1: 2020-03-10 11:45 t0_sec: 1583865600  t1_sec: 1583865900
         $time_s1 = "2020-03-10 11:40";
         $time_i1 = strtotime($time_s1);
-        echo "time s1: $time_s1 i:$time_i1\n";
+        //echo "time s1: $time_s1 i:$time_i1\n";
 
         $time_s1 = "2020-03-10 18:40";
         $time_i1 = strtotime($time_s1);
-        echo "time s1: $time_s1 i:$time_i1\n";
+        //echo "time s1: $time_s1 i:$time_i1\n";
 
     }
 }

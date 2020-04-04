@@ -21,6 +21,9 @@ import string           # this is for string templates
 import enum
 import utils.myutils    # test import from utils directory
 import utils.myutils as myutils1
+import zlib
+import hashlib
+import typing
 
 '''
 python3 -m unittest syntax_unittests.ut.test_method
@@ -469,6 +472,61 @@ class ut(unittest.TestCase):
         ll1 = [[0,1,2],[3,4,6]]
         assert ll0 != ll1
 
+
+        # matrix, two dimensional array
+        a = []
+        for i in range(3):
+            a.append([])
+            for j in range(4):
+                a[i].append(i*10 + j)
+        assert len(a) == 3 and len(a[0]) == 4
+        assert a[0][0] == 0 and a[1][0] == 10 and a[0][1] == 1 and a[2][3] == (2*10+3)
+
+        a = [[0 for j in range(4)] for i in range(3)]
+        for i in range(3):
+            for j in range(4):
+                a[i][j] = (i*10+j)
+        assert len(a) == 3 and len(a[0]) == 4
+        assert a[0][0] == 0 and a[1][0] == 10 and a[0][1] == 1 and a[2][3] == (2*10+3)
+
+        a = [   [0,1,2,3],
+                [10,11,12,13],
+                [20,21,22,23]]
+        assert len(a) == 3 and len(a[0]) == 4
+        assert a[0][0] == 0 and a[1][0] == 10 and a[0][1] == 1 and a[2][3] == (2*10+3)
+
+        a = [[],[],[]]
+        for i in range(3):
+            for j in range(4):
+                a[i].append(i*10 + j)
+        assert len(a) == 3 and len(a[0]) == 4
+        assert a[0][0] == 0 and a[1][0] == 10 and a[0][1] == 1 and a[2][3] == (2*10+3)
+
+        a = [[] for i in range(3)]
+        for i in range(3):
+            for j in range(4):
+                a[i].append(i*10 + j)
+        assert len(a) == 3 and len(a[0]) == 4
+        assert a[0][0] == 0 and a[1][0] == 10 and a[0][1] == 1 and a[2][3] == (2*10+3)
+
+        '''
+        a = [[]]    # doesnt work
+        for i in range(3):
+            for j in range(4):
+                a[i].append(i*10 + j)
+        '''
+
+        a = {}
+        for i in range(3):
+            for j in range(4):
+                a[i,j] = i*10+j
+        assert len(a) == 3*4
+        assert a[0,0] == 0 and a[1,0] == 10 and a[0,1] == 1 and a[2,3] == (2*10+3)  # index is [x,y]
+
+        l1 = [1.123,2.123,3.123,4.123,5.123,6.123,7.123,8.123,9.123]
+        l = [round(v,1) for v in l1]
+        assert l == [1.1,2.1,3.1,4.1,5.1,6.1,7.1,8.1,9.1]
+
         #p('pass test_list')
 
     '''
@@ -641,6 +699,48 @@ class ut(unittest.TestCase):
               '        '
         v = string_template.format(**template_map)
         assert v == exp
+
+        s = "hello\n\n\nhi\n\n\nbye\n"
+        s1 = re.sub(r"\n+","\n",s)
+        assert s1 == "hello\nhi\nbye\n"
+        idx = s.find('hi')
+        assert idx != 0
+        idx = s.find('badstring')
+        assert idx == -1
+
+        groups = re.search(r'hi',s)
+        assert groups is not None
+        group = groups.group()
+        assert group is not None
+        groups = re.search(r'badstring',s)
+        assert groups is None
+
+        assert 'hi' in s
+        assert 'badstring' not in s
+
+        l = ['v1','v2','v3']
+        assert 'v2' in l
+        assert 'badstring' not in l
+        assert l.index('v2') == 1
+        assert l.index('v3') == 2
+        assert l[2] == 'v3'
+        #assert l.index('badstring') is None # this will exception
+
+        res = [i for i, j in enumerate(l) if j == 'v2']
+        assert len(res) == 1 and res[0] == 1
+
+        l = ['v1','v2','v3','v2']
+        res = [i for i, j in enumerate(l) if j == 'v2']
+        assert len(res) == 2 and res == [1,3]
+
+        res = [j for j, j in enumerate(l) if j == 'v2']
+        assert len(res) == 2 and res == ['v2','v2']
+
+        res = [j for j, j in enumerate(l) if j == 'v1' or j == 'v3']
+        assert len(res) == 2 and res == ['v1','v3']
+
+        res = [i for i, j in enumerate(l) if j == 'v1' or j == 'v3']
+        assert len(res) == 2 and res == [0,2]
 
         #p('test_string')
 
@@ -895,6 +995,23 @@ class ut(unittest.TestCase):
         assert d1 == dexp
         assert d2 == dexp
 
+        # dict to json
+        d1 = {"k1":"v1","k2":"v2","k3":[1,2,3],"k4":{"k4.1":"v4.1","k4.2":"v4.2"}}
+        d2 = {"k1":"v1","k2":"v2","k3":[1,2,3],"k4":{"k4.1":"v4.1","k4.2":"v4.2"}}
+        d3 = {"k1":"v1","k2":"v2","k3":[1,2,3],"k4":{"k4.1":"v4.1","k4.2":"v4.x"}}
+        assert d1 == d2
+        assert d2 != d3
+
+        j1 = json.dumps(d1)
+        d4 = json.loads(j1)
+
+        assert d1 == d4
+        assert j1 == '{"k1": "v1", "k2": "v2", "k3": [1, 2, 3], "k4": {"k4.1": "v4.1", "k4.2": "v4.2"}}'
+        # stupid string value MUST be like this. dont ever compare string vals
+        assert isinstance(j1,str)
+        assert isinstance(d1,dict)
+
+
     def test_built_in_functions(self):
         assert max(4,10,8,3) == 10  # max(a1,a2,*args[,key])
         assert min(4,10,8,3) == 3
@@ -982,9 +1099,16 @@ class ut(unittest.TestCase):
 
     def test_control_statements(self):
         l = []
-        for i in range(5,0,-1):
+        for i in range(5,0,-1): # [5,0)
             l.append(i)
         assert l == [5,4,3,2,1]
+
+        i = 0
+        l.clear()
+        for _ in range(5):      # underscore variable
+            l.append(i)
+            i += 1
+        assert l == [0,1,2,3,4]
 
         l.clear()
         assert l == []
@@ -1009,6 +1133,11 @@ class ut(unittest.TestCase):
             l.append(i)
         assert l == [0,2,4]
 
+        l.clear()
+        for i in range(10,15,1):        # start at 10 til 15
+            l.append(i)
+        assert l == [10,11,12,13,14]
+
         v = 10
         flag = False
         if v < 0:
@@ -1020,6 +1149,33 @@ class ut(unittest.TestCase):
         else:
             flag = False
         assert flag
+
+        s = 'abcdefg'
+        sz = len(s)
+        li = []
+        lc = []
+        for i in range(sz-1,0,-1):
+            li.append(i)
+            lc.append(s[i])
+        assert li == [6,5,4,3,2,1]
+        assert lc == ['g','f','e','d','c','b']
+
+        li = []
+        lc = []
+        for i in range(sz-1,-1,-1):     # count down to 0
+            li.append(i)
+            lc.append(s[i])
+        assert li == [6,5,4,3,2,1,0]
+        assert lc == ['g','f','e','d','c','b','a']
+
+        li = []
+        lc = []
+        for i in range(sz):     # count up to sz-1
+            li.append(i)
+            lc.append(s[i])
+        assert li == [0,1,2,3,4,5,6]
+        assert lc == ['a','b','c','d','e','f','g']
+
 
         #p('pass test_control_loops')
 
@@ -1173,7 +1329,111 @@ class ut(unittest.TestCase):
         # this is by reference and __eq__ not overridden so it's address comparison
         assert o2_2 != o2_8 and o2_2.a == o2_8.a and o2_2.b == o2_8.b and o2_2.c == o2_8.c
 
-        #p('pass test_sort')
+        # sort string
+        s =       '78291372'
+        sortedv = '12237789'
+        res = ''.join(sorted(s))
+        assert res == sortedv
+
+        l = sorted([5,4,5,2,1])
+        assert l == [1,2,4,5,5]
+
+        d = {'k0':'v90','k1':'v81','k2':'v72','k3':'v63','k3.1':'v63','k4':'v54'}
+        l = sorted(d.keys())
+        assert l == ['k0','k1','k2','k3','k3.1','k4']
+        l = sorted(d.items())
+        assert l == [('k0','v90'),('k1','v81'),('k2','v72'),('k3','v63'),('k3.1','v63'),('k4','v54')]
+        l = sorted(d.items(), key=lambda kv:(kv[0],kv[1]))
+        assert l == [('k0','v90'),('k1','v81'),('k2','v72'),('k3','v63'),('k3.1','v63'),('k4','v54')]
+        l = sorted(d.items(), key=lambda kv:(kv[1],kv[0]))
+        assert l == [('k4','v54'),('k3','v63'),('k3.1','v63'),('k2','v72'),('k1','v81'),('k0','v90')]
+        l = sorted(d.items(), key=lambda kv:kv[1])
+        assert l == [('k4','v54'),('k3','v63'),('k3.1','v63'),('k2','v72'),('k1','v81'),('k0','v90')]
+        l = sorted(d, key=d.get)
+        assert l == ['k4','k3','k3.1','k2','k1','k0']
+        l = sorted(d, key=d.get, reverse=True)
+        assert l == ['k0','k1','k2','k3','k3.1','k4']
+        l = [(v,k) for k,v in sorted(d.items(), key=lambda x:x[1])] # sort by val
+        assert l == [('v54','k4'),('v63','k3'),('v63','k3.1'),('v72','k2'),('v81','k1'),('v90','k0')]
+        dictv = {v:k for k,v in sorted(d.items(), key=lambda x:x[1])} # sort by val
+        l = sorted(dictv)
+        assert l == ['v54','v63','v72','v81','v90'] # duplicate  key was overwritten
+        l = sorted(list(dictv.keys()))
+        assert l == ['v54','v63','v72','v81','v90']
+        l = sorted(dictv.items())
+        assert l == [('v54','k4'),('v63','k3.1'),('v72','k2'),('v81','k1'),('v90','k0')] # v63,k3 overwritten
+        l = sorted(dictv.values())
+        assert l == ['k0','k1','k2','k3.1','k4']    # k3 was overwritten because duplicate key
+
+        # heapq
+        li = ['k4','k0','k3','k1','k2']
+        heapq.heapify(li)
+        assert li != ['k0','k1','k2','k3','k4'] # not sorted!
+        l = li.copy()
+
+        lo = []
+        while len(l) != 0:
+            lo.append(heapq.heappop(l))
+        assert lo == ['k0','k1','k2','k3','k4'] # sorted!
+
+        # sort dict in heapq
+        hq = []
+        for k,v in d.items():
+            heapq.heappush(hq,(k,v))
+        l = list(x for x in hq)
+        assert l == [('k0','v90'),('k1','v81'),('k2','v72'),('k3','v63'),('k3.1','v63'),('k4','v54')]
+
+        # sort tuple in heapq with custom key, or the obj should implement __lt__ __cmp__ __gt__ methods
+        li = [('k4','y0','z1'),('k3','y1','z4'),('k2','y2','z0'),('k1','y3','z3'),('k0','y4','z2')]
+
+        # this doesnt put tuples in order
+        hq = []
+        for t in li:
+            heapq.heappush(hq,(t[0],t))
+        l = list(x for x in hq) # this is not in order
+        assert l == [('k0',('k0','y4','z2')),('k1',('k1','y3','z3')),('k3',('k3','y1','z4')),('k4',('k4','y0','z1')),('k2',('k2','y2','z0'))]
+        l = []
+        # this is in order! you have to pop it off q
+        while len(hq) != 0:
+            l.append(heapq.heappop(hq))
+        assert l == [('k0',('k0','y4','z2')),('k1',('k1','y3','z3')),('k2',('k2','y2','z0')),('k3',('k3','y1','z4')),('k4',('k4','y0','z1'))]
+        l = list(x[1] for x in l)
+        assert l == [('k0','y4','z2'),('k1','y3','z3'),('k2','y2','z0'),('k3','y1','z4'),('k4','y0','z1')]
+
+        hq = []
+        for t in li:
+            heapq.heappush(hq,(t[1],t))
+        l = list(x for x in hq) # this is not in order
+        assert l == [('y0',('k4','y0','z1')),('y1',('k3','y1','z4')),('y2',('k2','y2','z0')),('y3',('k1','y3','z3')),('y4',('k0','y4','z2'))]
+
+        # this doesnt put tuples in order
+        li = [('k4','y0','z1'),('k3','y1','z4'),('k2','y2','z0'),('k1','y3','z3'),('k0','y4','z2')]
+        l = li.copy()
+        heapq.heapify(l)
+        assert l != [('k0','y4','z2'),('k1','y3','z3'),('k2','y2','z0'),('k3','y1','z4'),('k4','y0','z1')]        # this is not in order!
+        lo = []
+        while len(l) != 0:
+            lo.append(heapq.heappop(l))
+        assert lo == [('k0','y4','z2'),('k1','y3','z3'),('k2','y2','z0'),('k3','y1','z4'),('k4','y0','z1')] # sorted!
+
+        li = [('k4',('k4','y0','z1')),('k1',('k1','y3','z3')),('k0',('k0','y4','z2')),('k2',('k2','y2','z0')),('k3',('k3','y1','z4'))]
+        l = li.copy()
+        heapq.heapify(l)
+        assert l != [('k0',('k0','y4','z2')),('k1',('k1','y3','z3')),('k3',('k3','y1','z4')),('k4',('k4','y0','z1')),('k2',('k2','y2','z0'))] # this is not in order!
+        lo = []
+        while len(l) != 0:
+            lo.append(heapq.heappop(l))
+        assert lo == [('k0',('k0','y4','z2')),('k1',('k1','y3','z3')),('k2',('k2','y2','z0')),('k3',('k3','y1','z4')),('k4',('k4','y0','z1'))] # sorted!
+
+        # this doesnt put tuples in order
+        hq = []
+        for t in li:
+            heapq.heappush(hq,t)
+        l = list(x for x in hq)
+        assert l != [('k0','y4','z2'),('k1','y3','z3'),('k2','y2','z0'),('k3','y1','z4'),('k4','y0','z1')]
+
+        pass
+
 
     def is_approximate(self, act_int_val,exp_int_val,delta) -> bool:
         diff = int(math.fabs(act_int_val - exp_int_val))
@@ -1421,7 +1681,31 @@ class ut(unittest.TestCase):
         inner_func()
         assert cnt == 20
 
-    def main(self) -> None:
+    def testHash(self):
+        m = hashlib.sha1()
+        m.update(b"{aval=123 anotherval='null'}")
+        val = m.hexdigest()
+        #p(val)
+        pass
+
+    def test_hints(self):
+        def ret_tuple_1(i:int,j:int,k:int) -> tuple:
+            return (j,k)
+        def ret_tuple_2(i:int,j:int,k:int) -> typing.Tuple[int,int]:
+            return (j,k)
+
+        assert ret_tuple_1(1,2,3) == (2,3)
+        assert ret_tuple_1(1,2,3) != [2,3]
+        assert ret_tuple_2(1,2,3) == (2,3)
+        assert ret_tuple_2(1,2,3) != [2,3]
+        assert isinstance((2,3), typing.Tuple)
+        assert isinstance((2,3), tuple)
+        assert isinstance([2,3], list)
+
+        tup = 2,3
+        assert isinstance(tup, tuple)
+
+    def test_all(self) -> None:
         self.test_list()
         self.test_methods_and_vars_in_scope()
         self.test_set_vs_map_vs_list()
@@ -1437,6 +1721,34 @@ class ut(unittest.TestCase):
         self.test_import_class()
         p('passed main')
 
+    def test_class_args(self) -> None:
+        class N:
+            ID = 0
+            def __init__(self,v=None):
+                self.id = N.ID
+                N.ID += 1
+                self.v = v
+        class T:
+            def __init__(self):
+                self.r = N()
+            def get_root(self) -> N:
+                return self.r
+            # self instance variable not allowed because default evaluated before instances exist
+            #def get_n(self,n:N=self.get_root()) -> N:
+            def get_n(self,n:N=None) -> N:
+                if n is None:
+                    return self.get_root()
+                return n
+            def get_int(self,v:int) -> int:
+                return v
+        t = T()
+        n = N(1)
+        r = t.get_root()
+        assert t.get_n(n) == n
+        assert t.get_n(None) == r
+        assert t.get_n() == r
+        assert t.get_int('hello') == 'hello'  # hints not enforced!! static typing probably needs library for enforce
+
     def test_named_vars(self) -> None:      # return type is None
         pass
 
@@ -1446,5 +1758,16 @@ class ut(unittest.TestCase):
     def returnlist2(self, in_list: list, in_str: str, in_int: int = 5) -> list:
         return in_list
 
+    def test_print_format(self):
+        width = 3
+        v1 = 1
+        v2 = 2
+        #p('--| ---|')
+        assert f"{v1:{width}} {v2:{width+1}}" == '  1    2'
+
+        v3 = '|'
+        assert f"{v3:{width}}"  == '|  '
+        assert f"{v3:>{width}}" == '  |'
+
 if __name__ == "__main__":
-    ut.main()
+    unittest.main() # not ut.main()!

@@ -6,6 +6,7 @@ import enum
 import time
 import random
 import utils.myutils
+import typing
 
 '''
 python3 -m unittest unittests.ut.test_list
@@ -21,6 +22,13 @@ pythonut unittest_algos.ut.main
 global_debug_level_ = 0  # 0 to 5. 0 = off, 1 = highest, 5 = lowest
 global_output_to_file_ = False
 global_fh_ = None
+
+class CTR:
+    def __init__(self): self.v = 0
+    def inc(self,v=1): self.v += v
+    def get(self): return self.v
+    def set(self,v): self.v = v
+    def dec(self,v=1): self.v -= v
 
 def p(s):
     global global_output_to_file_
@@ -98,8 +106,12 @@ class Utils:
             s.append(charset[i])
         result = ''.join(s)
         return result
-    def rand(self, min:int,max:int) -> int:
+    def rand(self, min:int,max:int) -> int: # [min,max)
+        if min == max: return min
         return random.randrange(min,max)
+    def randint(self,min:int,max:int) -> int: # [min,max]
+        if min == max: return min
+        return random.randint(min,max)
     def rand_list(self, min:int,max:int,num:int,allow_repetition=False) -> list:
         sz = max - min + 1
         assert num < sz
@@ -124,6 +136,167 @@ class Pair:
     def __init__(self, v1, v2):
         this.v1 = v1
         this.v2 = v2
+
+class GNode:
+    ID = 0
+    def __init__(self,v=None):
+        self.id = GNode.ID
+        self.v = v
+        self.vertices = {}  # dst_id:weight
+        GNode.ID += 1
+    def get_vertices(self,is_copy=False):
+        if is_copy:
+            return self.vertices.copy()
+        return self.vertices
+    def get_v(self):
+        return self.v
+    def get_id(self):
+        return self.id
+    def add_edge(self,dst_id:int,weight=0):
+        self.vertices[dst_id] = weight
+    def get_global_id(self):
+        return GNode.ID
+    @staticmethod
+    def reset_id(v:int=0):
+        GNode.ID = v
+
+class GraphNode(GNode):
+    def __init__(self,v=None,name=None):
+        super.__init__(v)
+        self.name = name
+
+class Graph:
+    class DType(enum.Enum):
+        DIRECTED = 0
+        UNDIRECTED = 1
+        MIXED = 2
+
+    def __init__(self):
+        self.all_nodes = {} # map of all_nodes[id] = GNode
+        self.u = Utils()
+
+    def get_all_nodes_map(self,is_copy=False):
+        if is_copy:
+            return self.all_nodes.copy()
+        return self.all_nodes
+
+    def add_edge_to_ids(self, src_id:int, dst_id:int, weight=0, is_directed=True):
+        nodes = self.get_all_nodes_map()
+        if src_id not in nodes or dst_id not in nodes:
+            return
+        self.add_edge_to_nodes(nodes[src_id],nodes[dst_id],weight,is_directed)
+        pass
+
+    def add_edge_to_nodes(self, src_node: GNode, dst_node: GNode, weight=0, is_directed=True):
+        if src_node is None or dst_node is None:
+            return
+        src_node.add_edge(dst_node.get_id(),weight)
+        if not is_directed:
+            dst_node.add_edge(src_node.get_id(),weight)
+
+    def make_random_graph(self, num_nodes:int, directed_type:DType, min_edges:int, max_edges:int, min_weight:int, max_weight:int) -> dict:
+        '''
+        directed_type:
+            0 directed only
+            1 bidirectionaly only
+            2 mixed directed and bidirectional
+
+        num_edges == [min_edges,max_edges]
+        '''
+        u = self.u
+        GNode.reset_id()
+        nodes = {}
+        for i in range(num_nodes):
+            node = GNode('v.{:03}'.format(i))
+            nodes[i] = node
+        set_target = set(nodes.keys())
+        for i in range(num_nodes):
+            src_node = nodes[i]
+            src_id = i
+            num_edges = u.randint(min_edges,max_edges)
+            dst_ids = u.get_random_from_set(set_target, set([src_id]), num_edges)
+            for dst_id in dst_ids:
+                w = u.randint(min_weight,max_weight)
+                src_node.add_edge(dst_id,w)
+                dst_node = nodes[dst_id]
+                if directed_type == Graph.DType.UNDIRECTED:
+                    dst_node.add_edge(src_id,w)
+                    pass
+                elif directed_type == Graph.DType.MIXED:
+                    if u.randint(0,1) == 1:
+                        w = u.randint(min_weight,max_weight)
+                        dst_node.add_edge(src_id,w)
+        return nodes
+
+    def set_graph(self, nodes:dict):    # nodes must be nodes[id] = GNode map
+        self.all_nodes = nodes.copy()
+
+    def print_graph_summary(self):
+        '''
+        print this sort of format:
+
+        id1 id2 id3 id4 id5
+          |   |   |   |   |
+          |   |   |   |   +-- all outbound ids and weights
+          |   |   |   +------ all outbound ids and weights
+          |   |   +---------- all outbound ids and weights
+          |   +-------------- all outbound ids and weights
+          +------------------ all outbound ids and weights
+        '''
+        p('---- print_graph_summary: num_nodes:{}'.format(len(self.all_nodes)))
+        width = 3
+        horizontal_line = '---'
+        nodes = self.get_all_nodes_map()
+        list_node_ids = list(nodes.keys())
+        sz_ids = len(list_node_ids)
+        buffered_lines = {}
+        line = ''
+        for id in list_node_ids:
+            line += f"{id:{width}} "
+        buffered_lines[0] = line
+        bar = '|'
+        cross = '+'
+        line = ''
+        for j in range(sz_ids):
+            line += f"{bar:>{width}} "
+        buffered_lines[1] = line
+
+        for i in range(sz_ids):
+            line = ''
+            line_num = sz_ids - i + 1
+            for j in range(i):
+                line += f"{bar:>{width}} "
+            line += f"{cross:>{width}}"
+            for j in range(sz_ids-i):
+                line += f"{horizontal_line}-"
+            id = list_node_ids[i]
+            node = nodes[id]
+            vertices = node.get_vertices()
+            buffered_vertices = ''
+            is_first = True
+            for vertex_id, vertex_weight in vertices.items():
+                if is_first:
+                    buffered_vertices += '({})'.format(vertex_id)
+                    is_first = False
+                else:
+                    buffered_vertices += ',({})'.format(vertex_id)
+            line += '{}'.format(buffered_vertices)
+            buffered_lines[line_num] = line
+        sorted_lines = sorted(buffered_lines)
+        for line_num in sorted_lines:
+            #p('{:3}: {}'.format(line_num,buffered_lines[line_num]))
+            p('{}'.format(buffered_lines[line_num]))
+        p('\n')
+        p('\n')
+        p('\n')
+
+    def run_prims_mst(self):
+        nodes = self.get_all_nodes_map()
+        visited_node_ids = set()
+        non_visited_node_ids = nodes.keys()
+        for node_id,node in nodes.items():
+            pass
+
 
 class ut(unittest.TestCase):
     '''
@@ -311,20 +484,23 @@ class ut(unittest.TestCase):
 
         pass
 
-    def testFindSumInArrayAllSubsets(self,vsum,varray):
+    def testFindSumInArrayAllSubsets(self):
         '''
         find all subsets in varray that sums to vsum. if none, return none
+        vsum,varray
         '''
         pass
 
-    def testFindProductInArrayFirst(self,vproduct,varray):
+    def testFindProductInArrayFirst(self):
         '''
         find first subset in varray that results in product value. if none, return none
+        vproduct,varray
         '''
 
-    def testFindProductInArrayAllSubsets(self,vproduct,varray):
+    def testFindProductInArrayAllSubsets(self):
         '''
         find all subset in varray that results in product value. if none, return none
+        vproduct,varray
         '''
 
     def ordered_setlist_from_list(self, list) -> list:
@@ -600,7 +776,7 @@ class ut(unittest.TestCase):
     def testHeapQueue(self):
 
         def _t0():
-            hq = _HeapQ()
+            hq = ut._HeapQ()
             hq.push(5)
             hq.push(6)
             hq.push(4)
@@ -613,7 +789,7 @@ class ut(unittest.TestCase):
             p('pass heapq t0')
 
         def _t1():
-            hq = _HeapQ(True)
+            hq = ut._HeapQ(True)
             hq.push(5)
             hq.push(6)
             hq.push(4)
@@ -883,7 +1059,7 @@ class ut(unittest.TestCase):
 
     def testBinarySearchTreeOperations(self):
         class BSTNode:
-            def __init__(self,k:str,v,l:BSTNode=None,r:BSTNode=None):
+            def __init__(self,k:str,v,l=None,r=None):
                 self.k = k
                 self.v = v
                 self.lc = l
@@ -1101,7 +1277,7 @@ class ut(unittest.TestCase):
                 for k,v in self.match_map.items():
                     if k in set_visited:
                         continue
-                    p('{:3}: {} <=> {}'.format(ctr, k,v.id))
+                    #p('{:3}: {} <=> {}'.format(ctr, k,v.id))
                     ctr += 1
                     #assert v.id in self.map
                     if v.match_id != k:
@@ -1117,7 +1293,7 @@ class ut(unittest.TestCase):
                 if match_type == MatchType.MATCH_PREF:
                     self.do_match_MATCH_PREF()
                 self.print_matches()
-                p('num_rounds:{} perf_ctr:{}'.format(self.pctr_rounds, self.pctr))
+                #p('num_rounds:{} perf_ctr:{}'.format(self.pctr_rounds, self.pctr))
 
             def do_match_MATCH_PREF(self):
                 num_rounds = self.num_pref_reqs
@@ -1162,13 +1338,13 @@ class ut(unittest.TestCase):
         def t1(num_req,num_ack,num_pref):
             algos = StableMatch(num_req,num_ack,num_pref,num_pref)
             algos.do_match()
-            p('num_reqs: {} num_acks: {} num_rounds: {} perfctr: {}'
-              .format(len(algos.reqs), len(algos.acks), algos.pctr_rounds, algos.pctr))
-        p('----------')
+            #p('num_reqs: {} num_acks: {} num_rounds: {} perfctr: {}'
+            #  .format(len(algos.reqs), len(algos.acks), algos.pctr_rounds, algos.pctr))
+        #p('----------')
         t1(20,20,3)
-        p('----------')
+        #p('----------')
         t1(20,20,10)
-        p('----------')
+        #p('----------')
         t1(20,20,20)
 
     def test_interleave_with_errors(self):
@@ -1324,13 +1500,435 @@ class ut(unittest.TestCase):
         test_no_errors()
         #t_negative_cases()
 
+    def print_matrix(self, matrix, colx, rowy):
+        sz_box = len(colx) + 1
+        # print by row
+        for i in range(colx):
+            for j in range(rowy):
+                pass
+
     def test_longest_common_subsequence(self):
-        pass
+        def t0():
+            '''
+            s1 feddcbedcafhfgghefcijab
+            s2 aefgdbecfgdchfeibjhe
+
+                f e d d c b e d c a f h f g g h e f c i j a b
+            a                     1                       1
+            e     1                             2
+            f   1                   2   2         3
+            g                             3 3
+            d       2 2       2
+            b
+            e
+            c
+            f
+            g
+            d
+            c
+            h
+            f
+            e
+            i
+            b
+            j
+            h
+            e
+
+            basically when there is match, increment from max of [i-1,j],[i-1,j-1],[i,j-1]
+            this value propagates all the way to the end of each row, and eventually
+            the last col of last row
+            '''
+            pass
+        t0()
 
     def test_longest_common_substring(self):
-        pass
+        '''
+        k common substring
+        generalized suffix tree
+        dynamic programming O(mn)
+        '''
+
+        def dp(s1:str,s2:str) -> typing.Tuple[int,int]: # return of s1 indices beg and end
+            idx_max_beg = 0
+            idx_max_end = 0
+            idx_cur_beg = 0
+            idx_cur_end = 0
+            sz1 = len(s1)
+            sz2 = len(s2)
+            for i in range(sz1):
+                for j in range(sz2):
+                    if s1[i] == s2[j]:
+                        pass
+                    else:
+                        pass
+            return None
+
+        def brute(s1:str,s2:str) -> tuple: # return of s1 indices beg and end
+            idx_max_beg = None
+            idx_max_end = None
+            idx_cur_beg = None
+            idx_cur_end = None
+            s1i = None
+            s1j = None
+            s2i = None
+            s2j = None
+            sz1 = len(s1)
+            sz2 = len(s2)
+            for i in range(sz1):
+                for j in range(sz2):
+                    if s1[i] == s2[j]:
+                        idx_cur_beg = j
+                        idx_cur_end = j
+                    else:
+                        idx_cur_beg = None
+                        idx_cur_end = None
+            return (idx_max_beg,idx_max_end)
+
+        def t0():
+            '''
+                longest common substring
+
+                a b c a b c d d e f g a b c d e f g a b c
+            d   0 0 0 0 0 0 1 1 0 0 0 0 0 0 1
+            e   0 0 0 0 0 0 0 0 2 0 0 0 0 0 0 2
+            f   0 0 0 0 0 0 0 0 0 3 0 0 0 0 0 0 3
+            g   0 0 0 0 0 0 0 0 0 0 4 0 0 0 0 0 0 4
+            h
+            i
+            a   1 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1
+            b   0 2 0 0 2 0 0 0 0 0 0 0 2 0 0 0 0 0 0 2
+            c   0 0 3 0 0 3 0 0 0 0 0 0 0 3 0 0 0 0 0 0 3
+            b   0 1 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1
+            c       2     2               2             2
+            d               3 1             3
+            e                   2             4
+            f                     3             5
+            g                       4             6
+            h
+            a   1     1               1             1
+            b     2     2               2             2
+            c       3     3               3             3
+
+            '''
+            s1 = 'abcabcddefgabcdefgabc'
+            s2 = 'defghiabcbcdefghabc'
+            (s1i,s2i) = brute(s1,s2)
+            #assert s3 == 'cdefgh'
+            pass
+
+        t0()
+
+    def test_suffix_tree(self):
+        '''
+        Node,SuffixTree
+            this implementation has char->node mapping, which can lead to false positives
+        NodeMultiSet,SuffixTreeMultiSet:
+            this implementation has char->set of nodes, which should not lead to false positives,
+            but leads to long runtimes
+        '''
+        class NodeMultiSet:
+            ID = 0
+            def __init__(self, v=None):
+                self._id = Node.ID
+                self._v = v
+                self._c = {}
+                Node.ID += 1
+            def get_v(self):
+                return self._v
+            def get_children_multiset(self) -> dict:
+                return self._c
+            def get_children_of_key(self,key) -> set:
+                children = self.get_children_multiset()
+                if key not in children:
+                    return None
+                set_children = children[key]
+                return set_children
+            def add_child(self,key,child):
+                children = self.get_children()
+                if key not in children:
+                    children[key] = set()
+                children_of_key = children[key]
+                children_of_key.add(child)
+            def reset(self):
+                self._v = None
+                self._c = {}
+        class Node:
+            ID = 0
+            def __init__(self, v=None):
+                self._id = Node.ID
+                self._v = v
+                self._c = {}
+                Node.ID += 1
+                self._indices = set()
+            def get_v(self):
+                return self._v
+            def set_v(self, v):
+                self._v = v
+            def add_index(self, idx):
+                self._indices.add(idx)
+            def is_in_index(self, idx):
+                return idx in self._indices
+            def get_indices(self) -> set:
+                result = self._indices.copy()
+                return result
+            def get_children(self) -> dict:
+                return self._c
+            def get_children_vals(self) -> list:
+                l = []
+                for c,child in self._c.items():
+                    l.append(c)
+                return l
+            def set_child(self,key,child):
+                children = self.get_children()
+                children[key] = child
+            def reset(self):
+                self._v = None
+                self._c = {}
+                self._indices = set()
+            def get_node_summary(self):
+                s = ''
+                for k,child in self._c.items():
+                    v = child._v
+                    if v is None:
+                        v = ' '
+                    if s == '':
+                        s = '(id,v):({:2},{}) '.format(child._id,v)
+                    else:
+                        s = '{}; (id,v):({:2},{})'.format(s,child._id,v)
+                v = self._v
+                if v is None:
+                    v = ' '
+                s = ('SUMMARY: id:{:2}; v:{}; children:{}'.format(self._id,v,s))
+                return s
+        class SuffixTreeMultiSet:
+            def __init__(self):
+                self.r = Node()
+            def get_root(self) -> Node:
+                return self.r
+            def clear(self):
+                self.r = None
+            def make_suffix_tree(self,s:str,parent:Node=None):
+                if s is None or len(s) == 0:
+                    return
+                pass
+            def is_substring(self,s:str,n:Node=None) -> bool:
+                if s is None or len(s) == 0:
+                    return False;
+                if n is None:
+                    n = self.get_root()
+                pass
+        class SuffixTree:
+            def __init__(self):
+                self.r = Node()
+            def get_root(self) -> Node:
+                return self.r
+            def clear(self):
+                self.r = None
+            def make_suffix_tree(self,s:str,parent:Node=None):
+                if s is None or len(s) == 0:
+                    return
+                c = s[0]
+                root = self.get_root()
+                if parent is None:
+                    parent = root
+                root_children = root.get_children()
+                if c not in root_children:
+                    root_children[c] = Node(c)
+                child = root_children[c]
+                parent_children = parent.get_children()
+                if c not in parent_children:
+                    parent_children[c] = child
+                p('s: {:20} parent: {}; root: {}'.format(s,parent.get_node_summary(),root.get_node_summary()))
+                self.make_suffix_tree(s[1:],child)
+            def is_substring(self,s:str,n:Node=None) -> bool:
+                if s is None or len(s) == 0:
+                    return False;
+                if n is None:
+                    n = self.get_root()
+                c = s[0]
+                if c not in n._c:
+                    return False
+                child = n._c[c]
+                s = s[1:]
+                if len(s) == 0:
+                    return True
+                return self.is_substring(s,child)
+            def make_suffix_tree_indexed(self,s:str,i:int=0,parent:Node=None):
+                if s is None or i >= len(s):
+                    return
+                c = s[i]
+                root = self.get_root()
+                if parent is None:
+                    parent = root
+                root_children = root.get_children()
+                if c not in root_children:
+                    root_children[c] = Node(c)
+                child = root_children[c]
+                child.add_index(i)
+                parent_children = parent.get_children()
+                if c not in parent_children:
+                    parent_children[c] = child
+                #p('s: {:20} parent: {}; root: {}'.format(s,parent.get_node_summary(),root.get_node_summary()))
+                self.make_suffix_tree_indexed(s,i+1,child)
+            def is_substring_indexed(self,s:str,i:int=0,offset:int=0,n:Node=None) -> bool:
+                if s is None or i >= len(s):
+                    return False
+                if n is None:
+                    n = self.get_root()
+                c = s[i]
+                children = n.get_children()
+                if c not in children:
+                    return False
+                child = children[c]
+                # if first iteration, go through all indices of the starting character (0)
+                # else continue only with the given path. do not branch to all indices
+                if(i == 0):
+                    indices = child.get_indices()
+                    for index in indices:
+                        match = self.is_substring_indexed(s,i+1,index,child)
+                        if match:
+                            return True
+                    return False
+                else:
+                    if not child.is_in_index(i+offset):
+                        return False
+                    if (i+1) == len(s):
+                        return True
+                    return self.is_substring_indexed(s,i+1,offset,child)
+            def is_substring_indexed_1(self,s:str,i:int=0,indices:set=None,n:Node=None) -> bool:
+                if s is None or i >= len(s):
+                    return False
+                if n is None:
+                    n = self.get_root()
+                c = s[i]
+                children = n.get_children()
+                if c not in children:
+                    return False
+                child = children[c]
+                # if first iteration, go through all indices of the starting character (0)
+                # else continue only with the given path. do not branch to all indices
+                if(i == 0):
+                    indices = child.get_indices() # this is a copy
+                    return self.is_substring_indexed_1(s,i+1,indices,child)
+                else:
+                    indices_to_remove = set()
+                    for index in indices:
+                        if not child.is_in_index(index + i):
+                            indices_to_remove.add(index)
+                    for index in indices_to_remove:
+                        indices.remove(index)
+                    if len(indices) == 0:
+                        return False
+                    if (i+1) == len(s):
+                        return True
+                    return self.is_substring_indexed_1(s,i+1,indices,child)
+            def get_all_suffixes(self,s:str):
+                '''
+                this runs into:
+                circular traversal/no termination
+                '''
+                pass
+        def t0():
+            s = 'abcdefghijklmnopqrstuvwxyz0123456789'
+            stree = SuffixTree()
+            stree.make_suffix_tree(s)
+            assert stree.is_substring('bcb') == False
+            assert stree.is_substring('hijl') == False
+            assert stree.is_substring('hijkl') == True
+            assert stree.is_substring('abd') == False
+            assert stree.is_substring('abc') == True
+            assert stree.is_substring('789') == True
+        def t1():
+            s = 'abracadabra'
+            stree = SuffixTree()
+            stree.make_suffix_tree(s)
+            assert stree.is_substring('cadabr') == True
+            assert stree.is_substring('belly') == False
+            assert stree.is_substring('cadabro') == False
+        def t3():
+            stree = SuffixTree()
+            stree.make_suffix_tree('abracadabra')
+            stree.make_suffix_tree('this is a general suffix tree implementation')
+        def t4():
+            s = 'caberacadabro'
+            stree = SuffixTree()
+            stree.make_suffix_tree(s)
+            assert stree.is_substring('abro') == True
+            assert stree.is_substring('aber') == True
+            assert stree.is_substring('abero') == True # false positive
+        def t5():
+            s = 'abacacbc'
+            stree = SuffixTree()
+            stree.make_suffix_tree(s)
+            assert stree.is_substring('cabc') == True
+            assert stree.is_substring('abac') == True
+            assert stree.is_substring('abca') == True # false positive
+        def t6():
+            r = Node()
+            na = Node('a')
+            nb = Node('b')
+            nc = Node('c')
+            children = r.get_children()
+            children['a'] = na
+            children = r.get_children()
+            children['b'] = nb
+            children = r.get_children()
+            children['c'] = nc
+            children = r.get_children()
+            assert len(children) == 3
+        def t7():
+            #     .   . . .
+            #    0000000000111
+            #    0123456789012
+            s = 'caberacadabro'
+            stree = SuffixTree()
+            stree.make_suffix_tree_indexed(s)
+            assert stree.is_substring_indexed('abro') == True
+            assert stree.is_substring_indexed('aber') == True
+            assert stree.is_substring_indexed('abero') == False
+            assert stree.is_substring_indexed('abra') == False
+            pass
+        def t8():
+            #     .   . . .
+            #    0000000000111
+            #    0123456789012
+            s = 'caberacadabro'
+            stree = SuffixTree()
+            stree.make_suffix_tree_indexed(s)
+            assert stree.is_substring_indexed_1('abro') == True
+            assert stree.is_substring_indexed_1('aber') == True
+            assert stree.is_substring_indexed_1('abero') == False
+            assert stree.is_substring_indexed_1('abra') == False
+            assert stree.is_substring_indexed_1('cadob') == False
+            pass
+        #t0()
+        t8()
 
     def test_edit_distance(self):
+        def edit_distance(s1,s2):
+            d = []
+
+        def t0():
+            '''
+                k i t t e n
+            s   1 2 3 4 5 6
+            i   2 1 2 3 4 5
+            t   3 2 1 2 3 4
+            t   4 3 2 1
+            i
+            n
+            g
+
+                k i t t e n
+            k
+            i
+            t
+            e
+            r
+
+            '''
+            pass
         pass
 
     def test_kmp_algos(self):
@@ -1342,6 +1940,203 @@ class ut(unittest.TestCase):
     def test_raita_algos(self):
         pass
 
+    def test_stack(self):
+        pass
+
+    def test_skip_grams(self):
+        pass
+
+    def test_n_grams(self):
+        '''
+        all possible substrings of length N that are contained in string
+        1-gram
+        2-gram
+        3-gram
+        4-gram
+        5-gram
+        '''
+        pass
+
+    def test_bayes_theorem_examples(self):
+        '''
+        P(A|B) = P(B|A)P(A)/P(B)
+
+        '''
+        pass
+
+    def test_combinatorics_permutations_and_combinations(self):
+        '''
+        permutation:
+            k permutations of n: n!/(n-k)!
+            permutation with repetition: k^n
+            permutation with multiset: n!/(m1!m2!m3!)
+        combination
+            n!/(k!(n-k)!)
+        multiset:
+            (n+k-1)!/(k!(n-1)!)     eg combos with 2,2,2,3,3,4,4
+
+            permutation multiset:
+                if n is total items and mX num of each type
+                (n!)/(m1!m2!m3!)
+                    1,1,2,2,3,3
+                    5!/(2!2!2!) = 120/8=15
+                    6!/(2!2!2!) = 720/8=90
+
+            combination multiset:
+                if n is num of types of items (not the number of items in each type) and choose k
+                (n+k-1)!/(k!(n-1)!)
+                    1,1,2,2,3,3
+                    (3+3-1)!/(3!2!) = 5!/(3!2!) = 10
+        '''
+        def string_to_multiset_map(s:str) -> dict:
+            d = {}
+            for c in s:
+                if c not in d:
+                    d[c] = 0
+                d[c] += 1
+            return d
+        def get_all_permutations_multiset(s:str,sz:int) -> dict:
+            multiset_map = string_to_multiset_map(s)
+            permutations = {}
+            get_all_permutations_multiset_(multiset_map,sz,'',permutations)
+            return permutations
+        def get_all_permutations_multiset_(multiset_map:dict,sz:int,tmp_str:str,permutations:dict):
+            sz_tmp = len(tmp_str)
+            if sz_tmp != 0:
+                if sz_tmp not in permutations:
+                    permutations[sz_tmp] = []
+                permutations[sz_tmp].append(tmp_str)
+            if sz_tmp == sz:
+                return
+            for k in multiset_map.keys():
+                v = multiset_map[k]
+                if v != 0:
+                    multiset_map[k] -= 1
+                    get_all_permutations_multiset_(multiset_map,sz,tmp_str+k,permutations)
+                    multiset_map[k] += 1
+        def get_all_combinations_multiset(s:str,sz:int) -> dict:
+            multiset_map = string_to_multiset_map(s)
+            combinations = {}
+            key_list = list(multiset_map.keys())
+            get_all_combinations_multiset_(multiset_map,key_list,0,sz,'',combinations)
+            return combinations
+        def get_all_combinations_multiset_(multiset_map:dict,key_list:list,idx:int,sz:int,tmp_str:str,combinations:dict) -> dict:
+            sz_tmp = len(tmp_str)
+            if sz_tmp != 0:
+                if sz_tmp not in combinations:
+                    combinations[sz_tmp] = []
+                combinations[sz_tmp].append(tmp_str)
+            if sz_tmp == sz:
+                return
+            for i in range(idx,len(key_list)):
+                key = key_list[i]
+                count = multiset_map[key]
+                new_str = tmp_str
+                for j in range(count):
+                    new_str = new_str + key
+                    get_all_combinations_multiset_(multiset_map,key_list,i+1,sz,new_str,combinations)
+
+        def get_all_permutations(s:str,sz:int) -> dict:
+            permutations = {}
+            visited = set()
+            get_all_permutations_(s,sz,'',visited,permutations)
+            return permutations
+        def get_all_permutations_(s:str,sz:int,tmp_string:str,visited:set,permutations:dict):
+            sz_tmp = len(tmp_string)
+            if sz_tmp != 0:
+                if sz_tmp not in permutations:
+                    permutations[sz_tmp] = []
+                permutations[sz_tmp].append(tmp_string)
+            if sz_tmp == sz:
+                return
+            for j in range(len(s)):
+                if j not in visited:
+                    visited.add(j)
+                    get_all_permutations_(s,sz,tmp_string+s[j],visited,permutations)
+                    visited.remove(j)
+        def get_all_combinations(s:str,sz:int) -> set:
+            combinations = {}
+            get_all_combinations_(s,sz,'',0,combinations)
+            return combinations
+        def get_all_combinations_(s:str,sz:int,tmp_string:str,i:int,combinations:dict):
+            sz_tmp = len(tmp_string)
+            if sz_tmp != 0:
+                if sz_tmp not in combinations:
+                    combinations[sz_tmp] = []
+                combinations[sz_tmp].append(tmp_string)
+            if i >= len(s) or sz_tmp >= sz:
+                return
+            for j in range(i,len(s),1):
+                get_all_combinations_(s,sz,tmp_string+s[j],j+1,combinations)
+            pass
+        def print_map_of_list_stats(d:dict):
+            for k,l in d.items():
+                p('numchar: {:3}: {}'.format(k,l))
+                sorted_str_map = {}
+                for v in l:
+                    vsorted = ''.join(sorted(v))
+                    if vsorted not in sorted_str_map:
+                        sorted_str_map[vsorted] = []
+                    sorted_str_map[vsorted].append(v)
+                for vsorted,sublist in sorted_str_map.items():
+                    p('vsorted key:{} vals:{}'.format(vsorted,sublist))
+        def t0():
+            s = '12345'
+            results = get_all_combinations(s,len(s))
+            #p('combinations\n')
+            for k,l in results.items():
+                l = sorted(l)
+                setv = set(l)
+                setv = sorted(setv)
+                #p('list: {:2}: num_entries: {:4}  {}'.format(k,len(l),l))
+                #p('set:  {:2}: num_entries: {:4}  {}'.format(k,len(setv),setv))
+                assert l == setv
+            #p('\npermutations\n')
+            results = get_all_permutations(s,len(s))
+            for k,l in results.items():
+                l = sorted(l)
+                setv = set(l)
+                setv = sorted(setv)
+                #p('list: {:2}: num_entries: {:4}  {}'.format(k,len(l),l))
+                #p('set:  {:2}: num_entries: {:4}  {}'.format(k,len(setv),setv))
+                assert l == setv
+            #p('\n')
+        def t1():
+            # multiset
+            s = '112233'
+            results = get_all_combinations_multiset(s,len(s))
+            #p('combinations multiset\n')
+            for k,l in results.items():
+                l = sorted(l)
+                setv = set(l)
+                setv = sorted(setv)
+                #p('list: {:2}: num_entries: {:4}  {}'.format(k,len(l),l))
+                #p('set:  {:2}: num_entries: {:4}  {}'.format(k,len(setv),setv))
+                assert l == setv
+            #print_map_of_list_stats(results)
+            #p('\npermutations multiset\n')
+            results = get_all_permutations_multiset(s,len(s))
+            for k,l in results.items():
+                l = sorted(l)
+                setv = set(l)
+                setv = sorted(setv)
+                #p('list: {:2}: num_entries: {:4}  {}'.format(k,len(l),l))
+                #p('set:  {:2}: num_entries: {:4}  {}'.format(k,len(setv),setv))
+                assert l == setv
+            #print_map_of_list_stats(results)
+            p('\n')
+        t0()
+        t1()
+
+    def test_fibonacci_heap(self):
+        pass
+
+    def test_tries(self):
+        pass
+
+    def test_k_d_tree(self):
+        pass
+
     def test_make_random_words(self):
         l = []
         for i in range(100):
@@ -1350,6 +2145,14 @@ class ut(unittest.TestCase):
         for n in l:
             p(n)
         '''
+    def test_graph_make_graph(self):
+        g = Graph()
+        d = g.make_random_graph(7,Graph.DType.DIRECTED, 1,4,1,1)
+        g.set_graph(d)
+        g.print_graph_summary()
+
+    def test_graph_min_spanning_tree(self):
+        pass
 
     def test_count_dfs(self):
         class CTR:
@@ -1398,8 +2201,52 @@ class ut(unittest.TestCase):
             assert ctr.ctr == 671
         t2()
 
+    def test_print_cards(self):
+        '''
+        organize the cards of 5 based on:
+        - sum value of 5 cards
+        - is same suit
+        - is sequenced
+        - is 3 of one value and 2 of another value
+        - is 4 of one value
+        - is same suit and sequenced
+
+        this should help answer questions like:
+        - if you have 2,3,4,5, what is chance that next card is 1 or 5
+        - if you have 2,3,4,5, what is chance that next card is 1 or 5, given that 3 of 1val and 2 of 5val cards have been dealt?
+        '''
+        class Card:
+            def __init__(self,val,suit):
+                self.val = val
+                self.suit = suit
+        num_decks = 2
+        d = {}
+
+    def test_choose(self):
+        '''
+        test choose(n,k) = n!/(n-k)!   == permutation
+        with repetition is k^n
+        with multiset is: n!/(m1!m2!m3!) where m1,m2,m3 is number of types of m1,m2,m3
+        '''
+        def choose_math(n,k):
+            num = math.factorial(n)
+            den = math.factorial(n-k)
+            res = num/den
+            return res
+        def choose_loop(n,k):
+            num = 1
+            for i in range(n,0,-1): # [n,0)
+                num *= i
+            den = 1
+            for i in range(n-k,0,-1): # [n-k,0)
+                den *= i
+            res = num/den
+            return res
+        def choose(n,k) -> int:
+            v = choose_math(n,k)
+            return v
     def main(self):
         p('main passed')
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main() # not ut.main()!
