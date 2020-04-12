@@ -34,6 +34,21 @@ class TestReadWriteFile:
             fo = open(fileo, 'a') if(self.file_exists(fileo) and appendmode) else open(fileo, 'w')
 
         fi = open(filei, 'r')
+
+        '''
+        different ways to read file looping
+        
+        while True:
+            line = fi.readline()    # this is good for calling readline within subroutines
+            if not line: break
+
+        for line in fi:
+            line = line.strip()     # this is a regular for loop
+
+        lines = fi.readlines()      # reading all at once, for small files
+
+        '''
+
         lines = fi.readlines()
         for line in lines:
             line = line.strip('\n')

@@ -7,6 +7,7 @@ import time
 import random
 import utils.myutils
 import typing
+import logging
 
 '''
 python3 -m unittest unittests.ut.test_list
@@ -22,6 +23,21 @@ pythonut unittest_algos.ut.main
 global_debug_level_ = 0  # 0 to 5. 0 = off, 1 = highest, 5 = lowest
 global_output_to_file_ = False
 global_fh_ = None
+
+def set_logger():
+    fh = logging.FileHandler('logging_output.log')
+    fh.setLevel(logging.DEBUG)
+
+    # log formatter is optional         time          appname    level space align
+    log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)-10s - line:%(lineno)-5s - %(message)s')
+    log_formatter = logging.Formatter('%(asctime)s - %(name)s:%(lineno)-5s - %(message)s')
+    fh.setFormatter(log_formatter)
+
+    logger = logging.getLogger('unittest_algos')
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(fh)
+
+set_logger()
 
 class CTR:
     def __init__(self): self.v = 0
@@ -1905,9 +1921,26 @@ class ut(unittest.TestCase):
         #t0()
         t8()
 
+    def test_needleman_wunsch(self):
+        '''
+        edit distances with scoring preference to obtain highest scoring sequence
+        '''
+        pass
+
     def test_edit_distance(self):
         def edit_distance(s1,s2):
-            d = []
+            # this needs to be verified, not verified
+            sz_s1 = len(s1)
+            sz_s2 = len(s2)
+            d = [[0 for j in range(sz_s2)] for i in range(sz_s1)]
+            for i in range(sz_s1):
+                for j in range(sz_s2):
+                    cost = 0
+                    if s1[i-1] != s2[j-1]:
+                        cost = 1
+                    d[i][j] = min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+cost)
+            min_distance = d[sz_s1-1][sz_s2-1]
+            return min_distance
 
         def t0():
             '''
@@ -2211,9 +2244,27 @@ class ut(unittest.TestCase):
         - is 4 of one value
         - is same suit and sequenced
 
-        this should help answer questions like:
-        - if you have 2,3,4,5, what is chance that next card is 1 or 5
-        - if you have 2,3,4,5, what is chance that next card is 1 or 5, given that 3 of 1val and 2 of 5val cards have been dealt?
+        C(x,y) = x!/y!(x-y)!
+        P(x,y) = x!/(x-y)!
+        card odds:
+        C(x,y) is combination(x,y), not permutation(x,y)
+        royal flush: C(4,1) = 4
+        straight flush (exclude royal flush): C(10,1)C(4,1) - C(4,1)
+            1,2,3,4,5,6,7,8,9,10,J,Q,K
+                    1 2 3 4 5  6 7 8 9
+            1-5,2-6,3-7,4-8,5-9,6-10,7-J,8-Q,9-K
+            it is not C(9,1)C(4,1) because you eliminate any of 1-5,2-6,etc, include 10,J,Q,K,1
+        four of a kind: C(13,1)C(12,1)C(4,1)
+        full house: (C(4,3)C(13,1))(C(4,2)C(12,1))
+        flush (exclude royal and straight): C(13,5)C(4,1) - C(10,1)C(4,1)
+        straight (exclude royal and straight flush): POW(C(4,1),5)C(10,1) - C(4,1)C(10,1)
+        three of a kind: C(4,3)C(13,1)POW(C(4,1),2)C(12,2)
+        two pair: POW(C(4,2),2)C(13,2)C(4,1)C(11,1)
+        one pair: C(4,2)C(13,1)POW(C(4,1),3)C(12,3)
+        no pair: (C(13,5)-10)(POW(C(4,1),5)-4)
+                (13!/5!(13-5)!-10)(POW((4!/3!),5)-4)
+                (13*12*11*10*9/120 - 10)(4*4*4*4*4-5) = (1287-10)(1024-4) = 1277*1020
+        total: C(52,5) = 2,598,960
         '''
         class Card:
             def __init__(self,val,suit):

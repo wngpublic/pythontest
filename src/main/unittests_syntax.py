@@ -24,6 +24,9 @@ import utils.myutils as myutils1
 import zlib
 import hashlib
 import typing
+import logging
+import csv
+import pandas
 
 '''
 python3 -m unittest syntax_unittests.ut.test_method
@@ -67,7 +70,24 @@ class AmbiguousClass:
         self.x = x
         self.y = y
 
+#logging.basicConfig(level=logging.INFO)  #basicConfig outputs to STDOUT, so comment out
+
+fh = logging.FileHandler('logging_output.log')
+fh.setLevel(logging.INFO)
+
+# log formatter is optional         time          appname    level space align
+log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)-10s - line:%(lineno)-5s - %(message)s')
+log_formatter = logging.Formatter('%(asctime)s - %(levelname)-9s - %(message)s')
+fh.setFormatter(log_formatter)
+
+logger = logging.getLogger('unittests_syntax_logger')
+logger.setLevel(logging.INFO)
+logger.addHandler(fh)
+
 class ut(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(ut, self).__init__(*args, **kwargs)
+
     class InnerClass:
         def __init__(self,x,y):
             self.x = x
@@ -125,6 +145,13 @@ class ut(unittest.TestCase):
         assert oc2.z == "abc"       # class variable == static variable
         assert oc1.z != oc2.z
         #p('pass test_class_scope')
+
+    def test_logger(self):
+        logger.debug("test_logger_debug")
+        logger.info("test_logger_info")
+        logger.warning("test_logger_warning")
+        logger.error("test_logger_error")
+        logger.critical("test_logger_critical")
 
     def test_random(self):
         min = 1
@@ -1763,11 +1790,53 @@ class ut(unittest.TestCase):
         v1 = 1
         v2 = 2
         #p('--| ---|')
-        assert f"{v1:{width}} {v2:{width+1}}" == '  1    2'
+        assert f"{v1:{width}} {v2:{width+1}}" == '  1    2'     # print width with f" formatter
 
         v3 = '|'
         assert f"{v3:{width}}"  == '|  '
         assert f"{v3:>{width}}" == '  |'
+
+    def test_csv_read(self):
+        def csv_reader(filename):
+            data = {}
+            keys = []
+            filehandle = open(filename,'r')
+            csv_reader = csv.reader(filehandle)
+            keys = next(csv_reader)
+            assert isinstance(keys,list)
+            for key in keys: data[key] = []
+            for line in csv_reader:
+                for k,v in zip(keys,line):
+                    data[k].append(v)
+            filehandle.close()
+            for key in keys:
+                p(key)
+                for v in data[key]:
+                    p('    {}'.format(v))
+
+        def csv_dict_reader(filename):
+            data = {}
+            keys = []
+            filehandle = open(filename,'r')
+            csv_reader = csv.DictReader(filehandle)
+            keys = csv_reader.fieldnames
+            assert isinstance(keys,list)
+            for key in keys: data[key] = []
+            for line in csv_reader:
+                for key in keys:
+                    data[key].append(line[key])
+            filehandle.close()
+            for key in keys:
+                p(key)
+                for v in data[key]:
+                    p('    {}'.format(v))
+        def csv_pandas(filename):
+            data = pandas.read_csv(filename)
+            p(data) # this layout is truncated!
+        filename = None
+        if filename is None:
+            return
+        csv_reader(filename)
 
 if __name__ == "__main__":
     unittest.main() # not ut.main()!
