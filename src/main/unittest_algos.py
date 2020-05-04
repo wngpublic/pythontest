@@ -1,5 +1,6 @@
 import unittest
 import queue
+import heapq
 import math
 import collections
 import enum
@@ -8,6 +9,8 @@ import random
 import utils.myutils
 import typing
 import logging
+import json
+import hashlib
 
 '''
 python3 -m unittest unittests.ut.test_list
@@ -18,6 +21,9 @@ pythonut unittest_algos.ut.main
 where pythonut='python3 -m unittest'
 
 pythonut unittest_algos.ut.main
+
+python -m unittest unittest_algos.ut.test_<methodname>
+
 '''
 
 global_debug_level_ = 0  # 0 to 5. 0 = off, 1 = highest, 5 = lowest
@@ -55,6 +61,37 @@ def p(s):
         global_fh_.write(s + '\n')
     else:
         print(s)
+
+def print_array(s):
+    sz_s = len(s)
+    numbers = []
+    result = sz_s
+    while result != 0:
+        remainder = int(result % 10)
+        numbers.append(remainder)
+        result -= remainder
+        result = int(result/10)
+    numbers.reverse()
+    starting_ten = 10**(len(numbers)-1)
+    buf = []
+    for i in range(len(numbers)):
+        buf.append([])
+        print_v = 0
+        ctr = 0
+        for j in range(sz_s):
+            if j != 0 and j % starting_ten == 0:
+                print_v = (print_v + 1) % 10
+            buf[i].append(str(print_v))
+        starting_ten = int(starting_ten/10)
+    l = []
+    for i in range(sz_s):
+        l.append('-')
+    buf.append(l)
+    buf.append(s)
+    debug = True
+    if debug:
+        for line in buf:
+            p(' '.join(line))
 
 class Utils:
     def __init__(self, seed=0):
@@ -150,8 +187,8 @@ class Utils:
         return l
 class Pair:
     def __init__(self, v1, v2):
-        this.v1 = v1
-        this.v2 = v2
+        self.v1 = v1
+        self.v2 = v2
 
 class GNode:
     ID = 0
@@ -1026,6 +1063,1103 @@ class ut(unittest.TestCase):
             assert longest_consecutive_sequence([1,2,3,1,2,3,4,1,2,3,4,5]) == 7
         t0()
         #p('passed test_longest_consecutive_sequence')
+
+    def test_find_string_compressed_trie(self):
+        class snode:
+            def __init__(self,val=None):
+                self.children = {}
+                self.val = val
+                self.has_terminal = False
+            def get_has_terminal(self):
+                return self.has_terminal
+            def set_has_terminal(self, has_terminal):
+                self.has_terminal = has_terminal
+            def set_val(self,val):
+                self.val = val
+            def get_val(self):
+                return self.val
+            def get_node(self,c):
+                if c not in self.children:
+                    return None
+                return self.children[c]
+            def get_children(self):
+                l = list(self.children.values())
+                return l
+            def add_node(self,c,node):
+                self.children[c] = node
+            def set_node(self,c,node):
+                self.children[c] = node
+
+        class trie_compressed:
+            def __init__(self):
+                self.r = snode()
+            def reset(self):
+                self.r = snode()
+            def construct(self, s):
+                self.r = self._construct(s,self.r)
+            def _construct(self,s,n):
+                '''
+                split rules:
+
+                s       bbbcc
+                c       bbbbc
+
+                current state:
+                node    a->bbbbc->cd
+                                ->ef
+
+                s traverses, splits bbbbc to bbb,bc
+
+                next state:
+                node    a->bbb->bc->cd$
+                                  ->ef$
+                              ->cc$
+
+                '''
+                if len(s) == 0:
+                    return n
+                if n == None:
+                    node = snode(s)
+                    node.set_has_terminal(True)
+                    return node
+
+                c = s[0]
+                if n != self.r:
+                    v = n.get_val()
+                    sz_s = len(s)-1
+                    sz_v = len(v)-1
+                    i = self.get_last_matching_index(s,v)
+                    '''
+                    assert 1 <= i <= sz_s && (i < sz_v || i == sz_v || i > sz_v)
+                    assert NEVER i > sz_s
+                    if i == sz_s: assert i <= sz_v # i is never i > sz_v
+                    if i < sz_s: assert (i < sz_v || i == sz_v || i > sz_v)
+                    '''
+                    if i == sz_s:
+                        if      i < sz_v:
+                            str_p1_v = v[:i+1]
+                            str_p2_v = v[i+1:]
+                            node = snode(str_p1_v)
+                            node.set_has_terminal(True)
+                            n.set_val(str_p2_v)
+                            node.set_node(str_p2_v[0],n)
+                            return node
+                    else:
+                        '''
+                        assert NOT i > sz_s, so this should cover only i < sz_s
+                        if i == sz_v then split current node
+                        if i < sz_v then split incoming s and current node
+                        if i > sz_v: this shouldnt happen
+                        '''
+                        if      i == sz_v:
+                            str_p1_s = s[:i+1]
+                            str_p2_s = s[i+1:]
+                            node = self._construct(str_p2_s,n.get_node(str_p2_s[0]))
+                            n.set_node(str_p2_s[0],node)
+                        elif    i < sz_v:
+                            str_p1_s = s[:i+1]
+                            str_p2_s = s[i+1:]
+                            str_p1_v = v[:i+1]
+                            str_p2_v = v[i+1:]
+
+                            node = n
+                            node.set_val(str_p2_v)
+                            n = snode(str_p1_v)
+                            n.set_node(str_p2_v[0],node)
+
+                            node_s = snode(str_p2_s)
+                            node_s.set_has_terminal(True)
+                            n.set_node(str_p2_s[0],node_s)
+                else:
+                    node = self._construct(s,n.get_node(c))
+                    n.set_node(c,node)
+                return n
+
+            def get_last_matching_index(self,s1,s2):
+                # returns last index that matches, None if no match
+                i = 0
+                while i < len(s1) and i < len(s2):
+                    if s1[i] != s2[i]:
+                        break
+                    i += 1
+                return None if i == 0 else (i - 1)
+            def find(self,s):
+                if s == None:
+                    return False
+                n = self.r.get_node(s[0])
+                return self._find(s,n)
+            def _find(self,s,n):
+                if len(s) == 0 or n == None:
+                    return False
+                v = n.get_val()
+                i = self.get_last_matching_index(s,v)
+                if i == None:
+                    return False
+                substring = s[i+1:]
+                if len(substring) == 0:
+                    return True
+                if len(v) != (i+1):
+                    return False
+                child = n.get_node(substring[0])
+                return self._find(substring,child)
+            def get_all_words(self):
+                l = []
+                self._get_all_words(self.r,l,'')
+                return l
+            def _get_all_words(self,n,l,word):
+                if n == None:
+                    return
+                substring = n.get_val()
+                if substring != None and len(substring) != 0:
+                    word += substring
+                if n.get_has_terminal():
+                    l.append(word)
+                children = n.get_children()
+                if children == None:
+                    return
+                for child in children:
+                    self._get_all_words(child,l,word)
+
+        class suffix_tree(trie_compressed):
+            def __init__(self):
+                super().__init__()
+            def construct_suffix_tree(self,s):
+                sz_s = len(s)
+                for i in range(sz_s):
+                    substring = s[i:]
+                    self.construct(substring)
+        def t0():
+            t = trie_compressed()
+            t.construct('banana')
+            t.construct('barn')
+            t.construct('b')
+            t.construct('bs')
+            t.construct('monkey')
+            t.construct('apple')
+            t.construct('key')
+            t.construct('ban')
+            t.construct('app')
+            t.construct('money')
+            t.construct('applet')
+            t.construct('applets')
+            '''
+            ROOT-+-b-+-a-+-n-+-ana$
+                 |   |   |   +-$
+                 |   |   |
+                 |   |   +-rn$
+                 |   +-$
+                 |   |
+                 |   +-s$
+                 |
+                 +-mon-+-key$
+                 |     |
+                 |     +-ey$
+                 |
+                 +-app-+-l-+-e$
+                 |     |   |
+                 |     |   +-let-+-$
+                 |     |         |
+                 |     +-$       +-s$
+                 |
+                 +-key$
+        
+            R---b---a---n---ana$
+                         ---$
+                     ---rn$
+                 ---$
+                 ---s$
+             ---mon---key$
+                   ---ey$
+             ---app---l---e#
+                   ---$
+                       ---let---$
+                             ---s$
+             ---key$
+            '''
+            l = t.get_all_words()
+            set_words = set(l)
+            assert set_words == {'banana','barn','b','bs','monkey','apple','key','ban','app','money','applet','applets'}
+            r = t.find('ana')
+            assert r == False
+            r = t.find('bar')
+            assert r == True
+            r = t.find('ap')
+            assert r == True
+            r = t.find('apple')
+            assert r == True
+            r = t.find('bana')
+            assert r == True
+
+        def t1():
+            '''
+
+            '''
+            t = suffix_tree()
+            li = ['banana','barn','apple','applet']
+            for word in li:
+                t.construct_suffix_tree(word)
+            l = t.get_all_words()
+            set_words = set(l)
+            exp = {
+                'banana','anana','nana','ana','na','a',
+                'barn','arn','rn','n',
+                'applet','pplet','plet','let','et','t',
+                'apple','pple','ple','le','e'
+            }
+            assert set_words == exp
+
+        def test()
+            try:
+                t0()
+                t1()
+            except Exception as e:
+                raise e
+        test()
+
+
+    def test_find_string_trie(self):
+        class snode:
+            def __init__(self,val=None):
+                self.children = {}
+                self.val = None
+                self.has_terminal = False
+            def get_has_terminal(self):
+                return self.has_terminal
+            def set_has_terminal(self, has_terminal):
+                self.has_terminal = has_terminal
+            def set_val(self,val):
+                self.val = val
+            def get_val(self):
+                return self.val
+            def get_node(self,c):
+                if c not in self.children:
+                    return None
+                return self.children[c]
+            def add_node_from_val(self,val):
+                if val not in self.children:
+                    self.children[val] = snode(val)
+            def add_node(self,c,node):
+                self.children[c] = node
+        class trie:
+            def __init__(self):
+                self.r = snode()
+            def reset(self):
+                self.r = snode()
+            def construct(self, s):
+                return self._construct(s,len(s),0,self.r)
+            def _construct(self,s,sz,i,n):
+                if i == sz:
+                    child = n.get_node('$')
+                    if child == None:
+                        child = snode('$')
+                        n.add_node('$',child)
+                    return
+                c = s[i]
+                child = n.get_node(c)
+                if child == None:
+                    child = snode(c)
+                    n.add_node(c,child)
+                self._construct(s,sz,i+1,child)
+            def find(self,s):
+                return self._find(s,len(s),0,self.r)
+            def _find(self,s,sz,i,n):
+                if i > sz or n == None:
+                    return None
+                if i == sz:
+                    return n.get_node('$')
+                child = n.get_node(s[i])
+                return self._find(s,sz,i+1,child)
+
+        def t0_trie():
+            t = trie()
+            t.construct('banana')
+            t.construct('barn')
+            t.construct('monkey')
+            t.construct('apple')
+            t.construct('key')
+            t.construct('ban')
+            t.construct('app')
+            t.construct('money')
+            t.construct('applet')
+            r = t.find('ana')
+            assert r == None
+            r = t.find('barn')
+            assert r != None
+            r = t.find('applet')
+            assert r != None
+            r = t.find('apple')
+            assert r != None
+        t0_trie()
+
+    def test_find_string_suffix_tree(self):
+        '''
+        have to process the whole text. but after that, you can search any text
+        '''
+        class suffixnode:
+            def __init__(self,c=None,position=None):
+                if c != None:
+                    self.c = c
+                self.set_position = set()       # all the positions where this character exists in text
+                if position != None:
+                    self.set_position.add(position)
+                self.dict_children = {}         # all the child nodes of c->node
+            def getc(self):
+                return self.c
+            def addindex(self,i):
+                self.set_postion.add(i)
+            def addindices(self,i_set):
+                self.set_position.update(i_set)
+            def getindex(self,i):
+                return i in self.set_position
+            def getindices(self,modifiable=True):
+                if modifiable:
+                    return self.set_position
+                return self.set_position.copy()
+            def addchildnode(self,node):
+                c = node.getc()
+                set_indices = node.getindices()
+                if c not in self.dict_children:
+                    self.dict_children[c] = node
+                else:
+                    child = self.dict_children[c]
+                    child.addindices(set_indices)
+            def addchild(self,c,i):
+                if c not in self.dict_children:
+                    self.dict_children[c] = suffixnode(c,i)
+                else:
+                    child = self.dict_children[c]
+                    if not child.getindex(i):
+                        child.addindex(i)
+                return self.dict_children[c]
+            def getchild(self,c,i=None):
+                if c not in self.dict_children:
+                    return None
+                child = self.dict_children[c]
+                if i != None and not child.getindex(i):
+                    return None
+                return child
+        class suffixtree1:
+            def __init__(self):
+                self.r = suffixnode()
+            def reset(self):
+                self.r = None
+            def construct(self, s, i=0, node=None):
+                sz_s = len(s)
+                if i >= sz_s:
+                    return
+                if node == None:
+                    node = self.r
+                child = node.getchild(s[i])
+                if child == None:
+                    node.addchild(s[i],i)
+                    child = node.getchild(s[i])
+                else:
+                    child.addindex(i)
+                self.construct(s,i+1,child)
+            def find(self, s, find_all=True, i=0, j=0, node=None):
+                # return the start index in text where s is found, else None
+                if node == None:
+                    node = self.r
+                if i == len(s):
+                    return j-len(s)
+                child = node.getchild(s[i])
+                if child == None:
+                    return None
+                indices = child.getindices()
+                if i == 0:
+                    results = []
+                    for index in indices:
+                        result = self.find(s,i+1,index,child)
+                        if result != None:
+                            results.append(result)
+                            if find_all == False:
+                                return results
+                else:
+                    if j not in indices:
+                        return None
+                    return self.find(s,i+1,j+1,child)
+                return None
+        def t0():
+            st = suffixtree1()
+            st.construct('the cat in the hat lives with a mouse in the house of a man with a pan who likes eating ham')
+            results = st.find('with')
+            assert len(results) == 2
+            pass
+        class snode:
+            def __init__(self,is_leaf=False,val=None):
+                self.is_leaf = is_leaf
+                self.children = {}
+                self.val = None
+            def set_is_leaf(self,is_leaf):
+                self.is_leaf = is_leaf
+            def get_is_leaf(self):
+                return self.is_leaf
+            def set_val(self,val):
+                self.val = val
+            def get_val(self):
+                return self.val
+            def get_all_nodes(self):
+                return self.children.values()
+            def get_node(self,c):
+                if self.is_leaf or c not in self.children:
+                    return None
+                return self.children[c]
+            def add_node(self,node):
+                v = node.get_val()
+                # what if already existing?
+                if v not in self.children:
+                    self.children[v] = node
+        class trie:
+            def __init__(self):
+                self.r = snode()
+            def reset(self):
+                self.r = snode()
+            def construct(self, s):
+                sz = len(s)
+            def _construct(self,s,sz,i,n):
+                if i == sz:
+                    child = n.get_node('$')
+                    if child == None:
+                        child = snode(True,'$')
+                        n.add_node(child)
+                    return
+                c = s[i]
+                child = n.get_node(c)
+                if child == None:
+                    child = snode(False,c)
+                    n.add_node(child)
+                self._construct(s,sz,i+1,child)
+            def find(self,s):
+                sz = len(s)
+                return self._find(s,sz,0,self.r)
+            def _find(self,s,sz,i,n):
+                if i > sz or n == None:
+                    return None
+                if i == sz:
+                    return n.get_node('$')
+                child = n.get_node(s[i])
+                return self._find(s,sz,i+1,child)
+        class stree:
+            def __init__(self):
+                self.r = snode()
+            def reset(self):
+                self.r = snode()
+            def construct(self, s):
+                sz = len(s)
+                for i in range(sz):
+                    substr = s[i:]
+                    self._construct(substr,0,self.r)
+            def _construct(self,s,i,n):
+                sz = len(s)
+                if i >= sz:
+                    return
+                c = s[i]
+                n.get_node(c)
+                if n == None:
+                    # split if not empty
+                    pass
+
+        t0()
+
+    def test_find_string_kmp(self):
+        pctr = 0
+
+        def find_string_1(s,pat):
+            nonlocal pctr
+            '''
+            this is brute force
+            for(i = 0; i < sz_s;)
+                if first char of pat match, then check
+                else inc
+            '''
+            pctr = 0
+            # brute
+            sz_s = len(s)
+            sz_p = len(pat)
+            i = 0
+            while i < sz_s:
+                pctr += 1
+                j = i
+                if s[j] == pat[0]:
+                    found = True
+                    for m in range(1,sz_p):
+                        pctr += 1
+                        if (j+m) >= sz_s or m >= sz_p:
+                            break
+                        cs = s[j+m]
+                        cp = pat[m]
+                        if s[j+m] != pat[m]:
+                            found = False
+                            break
+                    if found:
+                        return i
+                i = i+1
+            return None
+
+        def find_string_1_1(s,pat):
+            nonlocal pctr
+            '''
+            this is brute force
+            for(i = 0; i < sz_s;)
+                if first and last chras of pat match, then check
+                else inc
+            '''
+            pctr = 0
+            sz_s = len(s)
+            sz_p = len(pat)
+            i = 0
+            while i < sz_s:
+                pctr += 1
+                j = i
+                # match the first and last char
+                if s[j] == pat[0] and (j+sz_p-1) < sz_s and s[j+sz_p-1] == pat[sz_p-1]:
+                    found = True
+                    for m in range(1,sz_p):
+                        pctr += 1
+                        if s[j+m] != pat[m]:
+                            found = False
+                            break
+                    if found:
+                        return i
+                i = i+1
+            return None
+
+        def find_string_2(s,pat):
+            '''
+            for(i = 0; i < sz_s;)
+                if first and last chars of pat match, then check
+                    keep idx of first char in s that matches pat[0] after this condition
+                if mismatch
+                    if there is matching first char
+                        set i to that matching first char idx
+                    else
+                        set i to at least +1 or where mismatch was
+            '''
+            nonlocal pctr
+            pctr = 0
+            # have idx ptr that points to next matching first char, and skip
+            sz_s = len(s)
+            sz_p = len(pat)
+            i = 0
+            m = 0
+            while i < sz_s:
+                pctr += 1
+                j = i
+                m = 0
+                idx_next_match_0_char_offset = None
+                # match the first and last char
+                if s[j] == pat[0] and (j+sz_p-1) < sz_s and s[j+sz_p-1] == pat[sz_p-1]:
+                    found = True
+                    for m in range(1,sz_p):
+                        pctr += 1
+                        # find first char in s that matches pat[0],
+                        # which can be used to jump to next offset if fail match
+                        if s[j+m] == pat[0] and idx_next_match_0_char_offset is not None:
+                            idx_next_match_0_char_offset = m
+                        if s[j+m] != pat[m]:
+                            found = False
+                            break
+                    if found:
+                        return i
+                if idx_next_match_0_char_offset is not None:
+                    i = i + idx_next_match_0_char_offset
+                else:
+                    # if no prefix match at all, just go to next idx
+                    if m != 0:
+                        i += m
+                    else:
+                        i += 1
+            return None
+
+        def find_string_3(s,pat):
+            nonlocal pctr
+            pctr = 0
+            '''
+            for(i = 0; i < sz_s;)
+                if first and last chars of pat match, then check
+                    keep idx of first char in s that matches pat[0] after this condition
+                    keep matching offset
+                if mismatch
+                    if there is matching first char
+                        set i to that matching first char idx + matching offset
+                    else
+                        set i to at least +1 or where mismatch was
+            '''
+            sz_s = len(s)
+            sz_p = len(pat)
+            i = 0
+            i_pat = 0
+            debug = False
+            while i < sz_s:
+                pctr += 1
+                j = i
+                idx_next_match_0_char_offset = None
+                prefix_offset = 0
+                # match the first and last char
+                if debug: print('i:{:2} s:{} p:{}'.format(i,s,pat))
+                if s[j] == pat[0] and (j+sz_p-1) < sz_s and s[j+sz_p-1] == pat[sz_p-1]:
+                    if debug: print('i:{:2} s[{}] == pat[0] ({}) s:{} p:{}'.format(i,j,pat[0],s,pat))
+                    found = True
+                    for m in range(1,sz_p):
+                        pctr += 1
+                        # find first char in s that matches pat[0],
+                        # which can be used to jump to next offset if fail match
+                        if debug: print('i:{:2} s[{}+{}] = {} pat[{}] = {} idx_next_match_0_char_offset:{} prefix_offset:{}'.format(i,j,m,s[j+m],m,pat[m],idx_next_match_0_char_offset,prefix_offset))
+                        if idx_next_match_0_char_offset is not None:
+                            if s[j+m] == pat[m] and (prefix_offset+idx_next_match_0_char_offset) == m:
+                                prefix_offset += 1
+                        if s[j+m] == pat[0] and idx_next_match_0_char_offset is None:
+                            idx_next_match_0_char_offset = m
+                            prefix_offset = 1
+                        if s[j+m] != pat[m]:
+                            found = False
+                            break
+                    if found:
+                        return i
+                if idx_next_match_0_char_offset is not None:
+                    if debug: print('i:{:2} idx_next_match_0_char_offset:{} prefix_offset:{}'.format(i,idx_next_match_0_char_offset,prefix_offset))
+                    i += idx_next_match_0_char_offset
+                    i += prefix_offset      # this is i offset, different from offset and where to start comparing. this can lead to wrong comparisons!
+                else:
+                    i += 1
+            return None
+
+        def find_string_4(s,pat):
+            nonlocal pctr
+            pctr = 0
+            '''
+            NOT currently working
+            
+            for(i = 0; i < sz_s;)
+                if first and last chars of pat match, then check
+                    keep idx of first char in s that matches pat[0] after this condition
+                    keep matching offset
+                if mismatch
+                    if there is matching first char
+                        set i to that matching first char idx + matching offset
+                    else
+                        set i to at least +1 or where mismatch was
+            '''
+            sz_s = len(s)
+            sz_p = len(pat)
+            i = 0
+            i_pat = 0
+            debug = False
+            while i < sz_s:
+                pctr += 1
+                j = i
+                idx_next_match_0_char_offset = None
+                prefix_offset = 0
+                # match the first and last char
+                if debug: print('i:{:2} s:{} p:{}'.format(i,s,pat))
+                if s[j] == pat[0] and (j+sz_p-1) < sz_s and s[j+sz_p-1] == pat[sz_p-1] and s[j+i_pat] == pat[i_pat]:
+                    if debug: print('i:{:2} s[{}] == pat[0] ({}) s:{} p:{}'.format(i,j,pat[0],s,pat))
+                    found = True
+                    for m in range(i_pat,sz_p):
+                        pctr += 1
+                        # find first char in s that matches pat[0],
+                        # which can be used to jump to next offset if fail match
+                        if debug: print('i:{:2} s[{}+{}] = {} pat[{}] = {} idx_next_match_0_char_offset:{} prefix_offset:{}'.format(i,j,m,s[j+m],m,pat[m],idx_next_match_0_char_offset,prefix_offset))
+                        if idx_next_match_0_char_offset is not None:
+                            if s[j+m] == pat[m] and (prefix_offset+idx_next_match_0_char_offset) == m:
+                                prefix_offset += 1
+                        if s[j+m] == pat[0] and idx_next_match_0_char_offset is None:
+                            idx_next_match_0_char_offset = m
+                            prefix_offset = 1
+                        if s[j+m] != pat[m]:
+                            found = False
+                            break
+                    if found:
+                        return i
+                if idx_next_match_0_char_offset is not None:
+                    if debug: print('i:{:2} idx_next_match_0_char_offset:{} prefix_offset:{}'.format(i,idx_next_match_0_char_offset,prefix_offset))
+                    i += idx_next_match_0_char_offset
+                    i_pat = prefix_offset
+                else:
+                    i += 1
+                    i_pat = 0
+            return None
+
+        def find_string_kmp(s,p):
+            nonlocal pctr
+            debug = False
+            sz_s = len(s)
+            sz_p = len(p)
+            l_table_prefix = construct_kmp_table(s)
+            i_s = 0
+            i_p = 0
+            i_t = 0
+            while i_s < sz_s:
+                if s[i_s] != p[i_p]:
+                    i_s += 1
+                    i_p = 0
+                    i_t = 0
+                else:
+                    j = i_s
+                    k = i_p
+                    while j < sz_s and k < sz_p:
+                        if s[j] == p[i_p]:
+                            pass
+            return None
+
+        def construct_kmp_table(s) -> list:
+            prefix_table = []
+            sz_s = len(s)
+            offset = 0
+            for i in range(sz_s):
+                if i == 0:
+                    prefix_table.append(0)
+                elif s[i] == s[offset]:
+                    offset += 1
+                    prefix_table.append(offset)
+                else:
+                    # this part should look at backward index for first matching, then +1
+                    # for now, resetting it to 0 is a performance hit
+                    offset = 0
+                    prefix_table.append(0)
+            return prefix_table
+
+        def test_str_1():
+            '''
+            #    000000000011111111112222222222
+            #    012345678901234567890123456789
+            s = 'cefefcefgcegcefghcefgcefghicef'
+            p = 'cefghi'
+                 cef
+                      cefg
+                          ce
+                             cefgh
+                                  cefg
+                                      cefghi
+            '''
+
+            #    000000000011111111112222222222
+            #    012345678901234567890123456789
+            nonlocal pctr
+            s = 'cefefcefgcegcefghcefgcefghicef'
+            p =                      'cefghi'
+            r = find_string_1(s,p)
+            print('ctr {}'.format(pctr))
+            assert r == 21
+            r = find_string_1_1(s,p)
+            print('ctr {}'.format(pctr))
+            assert r == 21
+            r = find_string_2(s,p)
+            print('ctr {}'.format(pctr))
+            assert r == 21
+            r = find_string_3(s,p)
+            print('ctr {}'.format(pctr))
+            assert r == 21
+
+        def test_str_2():
+            '''
+            #    000000000011111111112222222
+            #    012345678901234567890123456
+            s = 'aabbaabbaabcaaabbccaabbbbcc'
+            p =               'abbcca'
+
+            '''
+            nonlocal pctr
+            s = 'aabbaabbaabcaaabbccaabbbbcc'
+            p =               'abbcca'
+            r = find_string_1(s,p)
+            print('ctr {}'.format(pctr))
+            assert r == 14
+            r = find_string_1_1(s,p)
+            print('ctr {}'.format(pctr))
+            assert r == 14
+            r = find_string_2(s,p)
+            print('ctr {}'.format(pctr))
+            assert r == 14
+            r = find_string_3(s,p)
+            print('ctr {}'.format(pctr))
+            assert r == 14
+
+        def test_str_3():
+            '''
+            #    000000000011111111112222222
+            #    012345678901234567890123456
+            s = 'aabbaabbaabcaaabbccaabbbbcc'
+            p =               'abbccab'
+
+            '''
+            nonlocal pctr
+            s = 'aabbaabbaabcaaabbccaabbbbcc'
+            p =               'abbccb'
+            r = find_string_1(s,p)
+            print('ctr {}'.format(pctr))
+            assert r == None
+            r = find_string_1_1(s,p)
+            print('ctr {}'.format(pctr))
+            assert r == None
+            r = find_string_2(s,p)
+            print('ctr {}'.format(pctr))
+            assert r == None
+            r = find_string_3(s,p)
+            print('ctr {}'.format(pctr))
+            assert r == None
+
+        def test_str_4():
+            '''
+            #    000000000011111111112222222222333333
+            #    012345678901234567890123456789012345
+            s = 'aaabaaabaaabaabaaabaabaaabaababaaaba'
+            p =                       'aaabaababa'
+
+            worksheet:
+            prefix
+                 0123456789
+                 aaabaababa
+                 0120123401
+
+            #    0000000000 1111111111 2222222222 333333
+            #    0123456789 0123456789 0123456789 012345
+            s = 'aaabaaabaa abaabaaaba abaaabaaba baaaba'   p_idx_mismatch  p_shift_val     next_idx_p
+            p =  aaabaababa
+                 aaabaa|                                    6               2               i+(6-2)=i+4
+                     aaabaa|                                6               2               i+(6-2)=i+4
+                         aa abaaba|                         8               0               i+(8-0)=i+8
+                                  aa|                       2               1               i+(2-1)=i+1
+                                   a|                       1               0
+                                    a
+                                     a a|                   2               1
+                                       a|
+                                        |
+                                         aaabaaba ba
+                does this always work?? this shift p by next_idx_p is weird
+            '''
+            nonlocal pctr
+            s = 'aabbaabbaabcaaabbccaabbbbcc'
+            p =               'abbccb'
+            r = find_string_1(s,p)
+            print('ctr {}'.format(pctr))
+            assert r == None
+            r = find_string_1_1(s,p)
+            print('ctr {}'.format(pctr))
+            assert r == None
+            r = find_string_2(s,p)
+            print('ctr {}'.format(pctr))
+            assert r == None
+            r = find_string_3(s,p)
+            print('ctr {}'.format(pctr))
+            assert r == None
+
+        test_str_1()
+        p('\n')
+        test_str_2()
+        p('\n')
+        test_str_3()
+        p('\n')
+
+    def test_printarray(self):
+        def _printarray(s):
+            sz_s = len(s)
+            numbers = []
+            result = sz_s
+            # 0 0-9
+            # 1 10-99
+            # 2 100-999
+            # ...
+            while result != 0:
+                remainder = int(result % 10)
+                numbers.append(remainder)
+                result -= remainder
+                result /= 10
+            numbers.reverse()
+            starting_ten = 10**(len(numbers)-1)
+            # ...
+            # 0 100-999
+            # 1 10-99
+            # 2 0-9
+            buf = []
+            for i in range(len(numbers)):
+                buf.append([])
+                print_v = 0
+                ctr = 0
+                for j in range(sz_s):
+                    if j != 0 and j % starting_ten == 0:
+                        print_v = (print_v + 1) % 10
+                    buf[i].append(str(print_v))
+                #starting_ten = starting_ten/10 if starting_ten > 10 else 10
+                starting_ten = starting_ten/10
+            debug = True
+            if debug:
+                for line in buf:
+                    p(' '.join(line))
+                p(' '.join(s))
+        _printarray('abcdefghijklmnopqrstuvwxyz01234567890abcdefghijklmnopqrstuvwxyz01234567890abcdefghijklmnopqrstuvwxyz01234567890abcdefghijklmnopqrstuvwxyz01234567890')
+
+    def test_k_dimension_search(self):
+        class k_node:
+            def __init__(self,tup):
+                self.sz = len(tup)
+                self.tup = tup
+                self.lchildren = [None for i in range(self.sz)]
+                self.rchildren = [None for i in range(self.sz)]
+            def getdimval(self,dimension):
+                if self.sz <= dimension:
+                    return None
+                return self.tup[dimension]
+            def getdimchild(self,dimension,is_left):
+                if self.sz <= dimension:
+                    return None
+                if is_left:
+                    return self.lchildren[dimension]
+                return self.rchildren[dimension]
+            def gettuple(self):
+                return self.tup
+            def setdimchild(self,dimension,child_k_node,is_left):
+                if self.sz <= dimension:
+                    raise Exception('wrong dimension k_node: {}'.format(dimension))
+                if is_left:
+                    self.lchildren[dimension] = child_k_node
+                else:
+                    self.rchildren[dimension] = child_k_node
+            def calculate_distance(self,tup):
+                return self.calculate_unweighted_distance(tup)
+            def calculate_unweighted_distance(self,tup):
+                res = 0
+                for v1,v2 in (tup,self.tup):
+                    res += (v1-v2) ** 2
+                res = math.sqrt(res)
+                return res
+        class k_dimension_tree:
+            '''
+            this assume rigid dimensions, where all points must have k-dimensions, that are non nullable
+
+            we want operations such as get all elements where tuple[k-dim] < x. does this mean
+            we need k roots and insert into k trees? seems pretty bad
+            - balance
+            - remove
+            - nearest neighbor search
+
+            insertion rotates along k axis, such that each level, the comparison axis is n modulo k
+            '''
+            def __init__(self,num_dimensions):
+                self.r = None
+                self.ndim = num_dimensions
+            def add_point(self, tup):
+                if len(tup) != self.ndim:
+                    raise Exception('wrong dimension for tuple: {}'.format(len(tup)))
+                self.r = self.i_add_point(tup,self.r,0)
+            def i_add_point(self, tup, node, level):
+                if node == None:
+                    newnode = k_node(tup)
+                    return newnode
+                dim = level % self.ndim
+                vcurr = tup[dim]
+                vnode = node.getdimval(dim)
+                childnode = None
+                is_left = True
+                if vcurr < vnode:
+                    is_left = True
+                else:
+                    is_left = False
+                childnode = node.getdimchild(dim,is_left)
+                retnode = self.i_add_point(tup,childnode,level+1)
+                node.setdimchild(dim,retnode,is_left)
+                return node
+            def get_point(self, tup):
+                if len(tup) != self.ndim:
+                    raise Exception('wrong dimension for tuple: {}'.format(len(tup)))
+                return self.i_get_point(tup, self.r, 0)
+            def i_get_point(self, tup, node, level):
+                if node == None:
+                    return None
+                if tup == node.gettuple():
+                    return node
+                dim = level % self.ndim
+                is_left = True
+                vcurr = tup[dim]
+                vnode = node.getdimval(dim)
+                if vcurr < vnode:
+                    is_left = True
+                else:
+                    is_left = False
+                childnode = node.getdimchild(dim, is_left)
+                return self.i_get_point(tup,childnode,level+1)
+
+
+        def test_3vector():
+            a_points = [
+                (5,5,5),
+                (3,5,8),
+                (7,2,4),
+                (8,8,8),
+                (2,2,2)
+            ]
+            kdt = k_dimension_tree(3)
+            for p in a_points:
+                kdt.add_point(p)
+            p = kdt.get_point((7,2,4))
+            assert p != None
+            p = kdt.get_point((3,2,1))
+            assert p == None
+
+
+        test_3vector()
+
+    def test_calculate_all_distances_of_points(self):
+        ap = [
+            (5,2),(5,8),(3,6),(3,4),(2,8),(3,7),(7,3)
+        ]
+        map = {}  # d[tupsrc][tupdst] = distance
+        for p1 in ap:
+            k1 = ','.join(str(v) for v in p1)
+            map[k1] = {}
+            for p2 in ap:
+                if p1 == p2: continue
+                dist = 0
+                for x,y in zip(p1,p2):
+                    dist += (x-y)**2
+                dist = math.sqrt(dist)
+                dist = round(dist,1)
+                k2 = ','.join(str(v) for v in p2)
+                map[k1][k2] = str(dist)
+        debug = True
+        if debug:
+            for k,v in map.items():
+                p('{} = {}'.format(k,json.dumps(v)))
+            #vjson = json.dumps(map)
+            #p(vjson)
+
+        ap = [
+            (5,2,3),(5,8,2),(3,6,5),(3,4,3),(2,8,7),(3,7,6),(7,3,2)
+        ]
+        map = {}  # d[tupsrc][tupdst] = distance
+        for p1 in ap:
+            k1 = ','.join(str(v) for v in p1)
+            map[k1] = {}
+            for p2 in ap:
+                if p1 == p2: continue
+                dist = 0
+                for x,y in zip(p1,p2):
+                    dist += (x-y)**2
+                dist = round(math.sqrt(dist),1)
+                k2 = ','.join(str(v) for v in p2)
+                map[k1][k2] = str(dist)
+        debug = True
+        if debug:
+            for k,v in map.items():
+                p('{} = {}'.format(k,json.dumps(v)))
+            #vjson = json.dumps(map)
+            #p(vjson)
+
+
+        pass
+
+    def test_find_all_points_within_rectangle_2d(self):
+        '''
+        in 2d space, find all points within a given rectangle
+        '''
+        pass
+
+    def test_minmax_diff_in_bst(self):
+        '''
+        within BST, find the first min diff between any two node vals
+        within BST, find the first max diff between any two node vals
+        '''
+        pass
 
     def test_find_all_anagrams_in_string(self):
         def dict_meets_min_criteria(d_exp,d_act):

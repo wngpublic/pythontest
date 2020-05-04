@@ -27,6 +27,8 @@ import typing
 import logging
 import csv
 import pandas
+import types
+import copy
 
 '''
 python3 -m unittest syntax_unittests.ut.test_method
@@ -83,10 +85,16 @@ fh.setFormatter(log_formatter)
 logger = logging.getLogger('unittests_syntax_logger')
 logger.setLevel(logging.INFO)
 logger.addHandler(fh)
+v_global = 100
 
 class ut(unittest.TestCase):
+    v_class = 200
     def __init__(self, *args, **kwargs):
+        self.v_class = 300
         super(ut, self).__init__(*args, **kwargs)
+
+    def get_v_class(self):
+        return self.v_class
 
     class InnerClass:
         def __init__(self,x,y):
@@ -116,16 +124,84 @@ class ut(unittest.TestCase):
         assert 1 == myutilsx.get(1)             # instance function
 
     def test_class_scope(self):
+        v_class = 400
+        v_method = 500
+        v_global = 1000
         class InnerInnerClass:
+            _parent_class = self
             def __init__(self,x,y):
                 self.x = x
                 self.y = y
+                self.v_class = 500
+
+            def test_scope_case1(self):
+                v_global = None
+                v = v_global
+                assert v == None
+
+            def test_scope_case2(self):
+                self.test_scope_case2_1()
+                self.test_scope_case2_2()
+
+            def test_scope_case2_1(self):
+                global v_global         # this takes global v_global
+                v = v_global
+                assert v == 100
+
+            def test_scope_case2_2(self):
+                nonlocal v_global       # this takes method's v_global
+                v = v_global
+                assert v == 1000
+
+            def test_scope_case3(self):
+                v = ut.v_class
+                assert v == 200
+
+                v = self._parent_class.get_v_class()    # access outer class methods
+                assert v == 300
+
+                v = v_class
+                assert v_class == 400
+
+                v = self.v_class
+                assert v == 500
+
+                #v_class = 600
+                #v = v_class
+                #assert v == 600
+
+            def test_scope_case4(self):
+                nonlocal v_class
+                v = v_class
+                assert v == 400
+
+                v_class = 500
+
+                self.test_scope_case_inner()
+
+                v = v_class
+                assert v == 600
+
+
+            def test_scope_case_inner(self):
+                nonlocal v_class
+                v = v_class
+                assert v == 500
+
+                v_class = 600
+
+            def test_scope(self):
+                self.test_scope_case1()
+                self.test_scope_case2()
+                self.test_scope_case3()
+                self.test_scope_case4()
 
         oc      = OuterClass(1,2)
         aco     = AmbiguousClass(2,3)
         ic      = ut.InnerClass(3,4)
         aci     = ut.AmbiguousClass(4,5,6)
         iic     = InnerInnerClass(6,7)
+        iic.test_scope()
         assert oc.x == 1
         assert aco.y == 3
         assert ic.y == 4
@@ -554,7 +630,80 @@ class ut(unittest.TestCase):
         l = [round(v,1) for v in l1]
         assert l == [1.1,2.1,3.1,4.1,5.1,6.1,7.1,8.1,9.1]
 
+        # join list of list int to string, iterating nested for loop for ints
+        l1 = [[1,2],[3,4],[5,6]]
+        vsum = 0
+        s = [','.join([str(i) for i in l1])]
+        assert s == ['[1, 2],[3, 4],[5, 6]']
+        s = [';'.join([','.join([str(i) for i in t]) for t in l1])]
+        assert s == ['1,2;3,4;5,6']
+        s = ';'.join([','.join([str(i) for i in t]) for t in l1])
+        assert s == '1,2;3,4;5,6'
+
+        l1 = ['12','34','56']
+        s = ','.join(l1)
+        assert s == '12,34,56'
+        s = ';'.join([','.join(c for c in tmps) for tmps in l1])
+        assert s == '1,2;3,4;5,6'
+
+        # filter a list in single line conditional list
+        l1 = [1,2,3,4,5,6,7,8,9]
+        l2 = [i for i in l1 if i % 2 == 0]
+        assert l2 == [2,4,6,8]
+        l2 = [i*2 for i in l1]
+        assert l2 == [2,4,6,8,10,12,14,16,18]
+
+        # if else ternary single line
+        v = 10
+        r = 1 if v % 2 == 0 else 2
+        assert r == 1
+        v = 11
+        r = 1 if v % 2 == 0 else 2
+        assert r == 2
+
+        # operate list of list , nested list, in single line
+        l1 = [[1,2],[3,4],[5,6]]
+        l2 = [[i+1 for i in lx] for lx in l1]
+        assert l1 == [[1,2],[3,4],[5,6]]
+        assert l2 == [[2,3],[4,5],[6,7]]
+
+        l = []
+        l.append([])
+        l.append([])
+        l.append([])
+        for i in range(len(l)):
+            for j in range(2):
+                l[i].append(i*10+j)
+        assert l == [[0,1],[10,11],[20,21]]
+        assert len(l) == 3
+
+        l1 = [1,2,3,4,5]
+        l2 = l1.copy()
+        l2.reverse()
+        l3 = l1.copy().reverse()    # produces None
+        assert l1 == [1,2,3,4,5]
+        assert l2 == [5,4,3,2,1]
+        assert l3 == None
         #p('pass test_list')
+
+        l1 = [1,2,3,4,5]
+        l2 = 'hello'
+        s = ' '.join([str(i) for i in l1])
+        assert s == '1 2 3 4 5'
+        s = ' '.join(l2)
+        assert s == 'h e l l o'
+
+        l = []
+        l.append([])
+        l[0].append(1)
+        l[0].append([2,3,4,5])      # append list to list
+        l.append([])
+        l[1].append(1)
+        l[1].extend([2,3,4,5])      # extend list to list
+        l.append([1,2,3,4,5])
+        assert l == [[1,[2,3,4,5]],[1,2,3,4,5],[1,2,3,4,5]]
+
+        pass
 
     '''
     test priority queue, heap, queue
@@ -666,6 +815,71 @@ class ut(unittest.TestCase):
         assert s == 'abc,def,123'
         l = s.split(',')
         assert l == ['abc','def','123']
+
+        pat = 'abc'
+        repeat = 3
+        s = ''.join([c*repeat for c in pat])    # repeating strings
+        assert s == 'aaabbbccc'
+        s = pat * 3
+        assert s == 'abcabcabc'
+        s = ''.join([c for c in pat]*3)
+        assert s == 'abcabcabc'
+
+        flag = False
+        s = None
+        try:
+            assert len(s) == 0      # error for len of null
+        except Exception as e:
+            flag = True
+        assert flag
+
+        s = 'abcabc'
+        assert s[1:] == 'bcabc'
+        assert s[:2] == 'ab'
+        assert s[1:3] == 'bc'
+        assert len(s[1:3]) == (3-1)
+        s1 = s[0:1] + s[1:3] + s[3:]
+        assert s1 == 'abcabc'
+
+        l = ['ab','cd','ef']
+        s = ''.join(l)
+        assert s == 'abcdef'
+
+        s = ','.join(l)
+        assert s == 'ab,cd,ef'
+
+        s = ','.join(l) * 3
+        assert s == 'ab,cd,efab,cd,efab,cd,ef'
+
+        s = ','.join(l * 3)
+        assert s == 'ab,cd,ef,ab,cd,ef,ab,cd,ef'
+
+        s = ''.join(l) * 3
+        assert s == 'abcdefabcdefabcdef'
+
+        s = ''.join(l * 3)
+        assert s == 'abcdefabcdefabcdef'
+
+        s = ','.join([''.join(l) * 3])
+        assert s == 'abcdefabcdefabcdef'
+
+        s = ','.join([''.join(l)] * 3)
+        assert s == 'abcdef,abcdef,abcdef'
+
+        s = ','.join(''.join(l) * 3)
+        assert s == 'a,b,c,d,e,f,a,b,c,d,e,f,a,b,c,d,e,f'
+
+        s = ','.join('abcdefabcdefabcdef')
+        assert s == 'a,b,c,d,e,f,a,b,c,d,e,f,a,b,c,d,e,f'
+
+        s = ''.join('abcdef')
+        assert s == 'abcdef'
+
+        s = ','.join('abcdef')
+        assert s == 'a,b,c,d,e,f'
+
+        s = ','.join(['abcdef'])
+        assert s == 'abcdef'
 
         # string to char list
         a = list('abcde')
@@ -785,6 +999,10 @@ class ut(unittest.TestCase):
         assert isinstance(vm1,dict)
         assert isinstance(vm2,dict)
         assert isinstance(vset,dict) == False
+
+        l = None
+        assert l == None
+        assert l is None
 
         l = [1,2,3,3,4,5,5]
         d = {}
@@ -1038,6 +1256,202 @@ class ut(unittest.TestCase):
         assert isinstance(j1,str)
         assert isinstance(d1,dict)
 
+        a_points = [
+            (5,5,5),
+            (3,5,8),
+            (7,2,4),
+            (8,8,8),
+            (2,2,2)
+        ]
+
+        assert isinstance(a_points,list)
+        assert len(a_points) == 5
+        p = a_points[2]
+        assert len(p) == 3
+        assert isinstance(p,tuple)
+        assert p[0] == 7 and p[2] == 4 and p == (7,2,4) and p != (7,2,4,1) and p != (7,1,4)
+
+        flag = False
+        p = (1,2,3)
+        try:
+            p[1] = 3        # cannot modify immutable tuple
+        except Exception as e:
+            flag = True
+        assert flag
+        assert p[1] == 2
+
+        l = [None for i in range(3)]
+        assert l == [None,None,None]
+        assert len(l) == 3
+        assert l != [None,None]
+        l[2] = 1
+        assert l == [None,None,1]
+
+        # deepcopy vs copy of 2 dimension list
+        ap1 = [[10,20],[30,40],[50,60]]
+        ap2 = copy.copy(ap1)
+        ap3 = copy.deepcopy(ap1)
+        assert ap2 == ap1
+        assert ap3 == ap1
+        assert ap1 == [[10,20],[30,40],[50,60]]
+        ap1[0][1] = 21      # modify the deep element
+        ap2[1][0] = 31      # modify the deep element
+        assert ap1 == [[10,21],[31,40],[50,60]]
+        assert ap2 == [[10,21],[31,40],[50,60]]
+        assert ap3 == [[10,20],[30,40],[50,60]]
+        ap1[2] = [51,61]    # modify the shallow element
+        ap1[0][0] = 11      # modify the deep element
+        ap2[1] = [32,42]    # modify the shallow element
+        assert ap1 == [[11,21],[31,40],[51,61]]
+        assert ap2 == [[11,21],[32,42],[50,60]]
+        assert ap3 == [[10,20],[30,40],[50,60]]
+
+        tup = (1,2,3)
+        sum = 0
+        for v in tup:
+            sum += v
+        assert sum == 6
+
+        l1 = [1,2,3]
+        l2 = [4,5,6]
+        l3 = [7,8,9]
+
+        t1 = (1,2,3)
+        t2 = (4,5,6)
+        t3 = (7,8,9)
+
+        s = 0
+        for x,y in zip(l1,l2):
+            s += x + y
+        assert s == 21
+
+        s = 0
+        for x,y,z in zip(l1,l2,l3):
+            s += x + y + z
+        assert s == 45
+
+        s = 0
+        for x,y,z in zip(t1,t2,t3):
+            s += x + y + z
+        assert s == 45
+
+        s = 0
+        for x,y,z in zip(t1,t1,t1):
+            s += x + y + z
+        assert s == 18
+
+        # join tuple int to string
+        p1 = (1,2,3)
+        p2 = ('1','2','3')
+        s = ','.join(p2)
+        assert s == '1,2,3'
+
+        flag = False
+        try:
+            s = ','.join(p1)        # cannot convert int to str
+            assert s == '1,2,3'
+        except Exception as e:
+            flag = True
+        assert flag
+
+        s = ','.join([str(i) for i in p1])  # first convert it to string
+        assert s == '1,2,3'
+
+        # join list int to string
+        l1 = [1,2,3]
+
+        flag = False
+        try:
+            s = ','.join(l1)        # cannot convert int to str
+            assert s == '1,2,3'
+        except Exception as e:
+            flag = True
+        assert flag
+
+        s = ','.join([str(i) for i in l1])  # first convert it to string
+        assert s == '1,2,3'
+
+        # join list of list int to string, iterating nested for loop for ints
+        l1 = [[1,2],[3,4],[5,6]]
+        vsum = 0
+        s = [','.join([str(i) for i in l1])]
+        assert s == ['[1, 2],[3, 4],[5, 6]']
+        s = [';'.join([','.join([str(i) for i in t]) for t in l1])]
+        assert s == ['1,2;3,4;5,6']
+        s = ';'.join([','.join([str(i) for i in t]) for t in l1])
+        assert s == '1,2;3,4;5,6'
+
+        l1 = ['12','34','56']
+        s = ','.join(l1)
+        assert s == '12,34,56'
+        s = ';'.join([','.join(c for c in tmps) for tmps in l1])
+        assert s == '1,2;3,4;5,6'
+
+        # if char c in dict/set/list/string
+        l1 = [1,2,3]
+        l2 = [7,8,9]
+        s1 = set([1,2,3])
+        s2 = set([7,8,9])
+        d1 = {1:1,2:2,3:3}
+        d2 = {7:7,8:8,9:9}
+        str1 = 'abc'
+        str2 = 'xyz'
+        assert 3 in l1
+        assert 3 not in l2
+        assert 3 in s1
+        assert 3 not in s2
+        assert 3 in d1
+        assert 3 not in d2
+        assert 'c' in str1
+        assert 'c' not in str2
+
+        # add to sets
+        s3 = set([1,2,3])
+        s3.update([4,5,6])
+        assert len(s3) == 6
+        diff = s3.difference({1,2,3,4,5,6})
+        assert diff != None and len(diff) == 0
+        diff = s3.difference({1,2,3,4,5})
+        assert diff != None and len(diff) == 1 # diff == {6}
+        diff = s3.difference({1,2,3,4,5,6,7})
+        assert diff != None and len(diff) == 0
+        diff = {1,2,3,4,5,6,7}.difference(s3)
+        assert diff != None and len(diff) == 1 # diff == {7}
+
+        # add to sets
+        s1 = {1,2,3}
+        s2 = {4,5,6}
+        s3 = s1 | s2
+        s4 = set([1,2,3,4,5,6])
+        assert s3 == s4
+        s4 |= s3
+        assert s3 == s4
+
+        d = {
+            'k1':'v1',
+            'k2':'v2',
+            'k7':'v7',
+            'k6':'v2',
+            'k4':'v2',
+            'k8':'v8',
+            'k3':'v3',
+            'k5':'v5'
+        }
+        assert len(d) == 8
+        l_keys = list(d.keys())
+        l_vals = list(d.values())
+        l_keys.sort()
+        l_vals.sort()
+        assert l_keys == ['k1','k2','k3','k4','k5','k6','k7','k8']
+        assert l_vals == ['v1','v2','v2','v2','v3','v5','v7','v8']
+
+        set_keys = set(d.keys())
+        set_vals = set(d.values())
+
+        assert set_keys == {'k1','k2','k3','k4','k5','k6','k7','k8'}
+        assert set_keys != ('k1','k2','k3','k4','k5','k6','k7','k8')
+        assert set_vals == {'v1','v2','v3','v5','v7','v8'}
+        assert set_vals != ('v1','v2','v3','v5','v7','v8')
 
     def test_built_in_functions(self):
         assert max(4,10,8,3) == 10  # max(a1,a2,*args[,key])
@@ -1796,7 +2210,203 @@ class ut(unittest.TestCase):
         assert f"{v3:{width}}"  == '|  '
         assert f"{v3:>{width}}" == '  |'
 
-    def test_csv_read(self):
+        # old format with % operator
+        s = 'hello %s' % v1
+        assert s == 'hello 1'
+
+        s = 'hello %s %d' % (v1,v2)
+        assert s == 'hello 1 2'
+
+        # format operator
+        s = 'hello {}'.format(v1)
+        assert s == 'hello 1'
+
+        s = 'hello {} {}'.format(v1,v2)
+        assert s == 'hello 1 2'
+
+        # string interpolation f-strings newer python 3.6
+        s = f'hello {v1}'
+        assert s == 'hello 1'
+
+        s = f'hello {v1} {v2}'
+        assert s == 'hello 1 2'
+
+        s = f'{v1:5}'
+        assert s == '    1'
+
+        s = f'{v1:>5}'
+        assert s == '    1'
+
+        s = f'{v1:<5}'
+        assert s == '1    '
+
+        s = 'hello %5d %5d'%(v1,v2)
+        assert s == 'hello     1     2'
+
+        s = 'hello {:5d} {:5d}'.format(v1,v2)
+        assert s == 'hello     1     2'
+
+        # string.Template is for user supplied format
+        t = string.Template('hello $v_1')
+        s = t.substitute({'v_1':v1})
+        assert s == 'hello 1'
+
+        t = string.Template('hello $v_1 $v_2')
+        s = t.substitute({'v_2':v2,'v_1':v1})
+        assert s == 'hello 1 2'
+
+    def test_yield_generator(self):
+        def get_next_1():
+            yield 10
+            yield 20
+            yield 30
+        def get_next(max=None):
+            num = 0
+            while True:
+                yield num       # this replaces return
+                num += 1
+                if max is not None:
+                    if num > max:
+                        break
+        def gen_blob_no_yield(sz_bytes,max,c):
+            num = 0
+            sz_c = len(c)
+            pat = c
+            if sz_c == 0:
+                pat = 'x'
+            num_repeat_pat = int(sz_bytes / sz_c) + 1
+            l = []
+            while num <= max:
+                blob = pat * num_repeat_pat
+                l.append(blob)
+                num += 1
+            return l
+        def gen_blob(sz_bytes,max,c):
+            num = 0
+            sz_c = len(c)
+            pat = c
+            if sz_c == 0:
+                pat = 'x'
+            num_repeat_pat = int(sz_bytes / sz_c) + 1
+            while num <= max:
+                blob = pat * num_repeat_pat
+                yield blob
+                num += 1
+        def test_not_out_of_memory():
+            pat = 'ababababababababaababababa' * 1000
+            g = gen_blob(100_000_000,1000,pat)
+            ctr = 0
+            for v in g:
+                ctr += 1
+            pass
+        def test_out_of_memory():
+            pat = 'ababababababababaababababa' * 1000
+            gen_blob_no_yield(100_000_000,1000,pat)
+            pass
+        def test_get_next():
+            ctr = 0
+            max = 1000
+            flag = False
+
+            gen = get_next()        # gen is a generator with None
+            for i in gen:
+                ctr = i
+                if ctr >= max:
+                    break
+
+            #g = get_next_1         # invalid syntax
+            g = get_next_1()
+            v = next(g)
+            assert v == 10
+            v = next(g)
+            assert v == 20
+            v = next(g)
+            assert v == 30
+            try:
+                v = next(g)         # cannot call anymore
+            except Exception as e:  # StopIteration
+                flag = True
+            assert flag
+            flag = False
+
+            ctr = 0
+            gen = get_next(1000)    # this works
+            for i in gen:           # this stops eventually
+                ctr = i
+            assert ctr == 1000
+
+            gen = get_next(10)
+            for i in gen:
+                ctr = i
+            assert ctr == 10
+
+            gen = get_next(10)
+            v = next(gen)           # you can call next(iterator)
+            assert v == 0
+            v = next(gen)
+            assert v == 1
+            
+            gen = (i for i in range(100))   # this is also a generator
+            l   = [i for i in range(100)]   # this is a list
+            assert isinstance(l,list)
+            #assert isinstance(l,types.ListType) # this exists in 2.7, not in 3+
+            assert isinstance(gen,types.GeneratorType)
+            assert isinstance(gen,list) == False
+            l2  = [i for i in gen]          # now use the generator
+            assert l == l2
+            gen = (i for i in range(100))
+            l2  = list(gen)
+            assert l == l2
+
+            gen = (i for i in range(100))
+            v = next(gen)
+            v = next(gen)
+            v = next(gen)
+            assert v == 2
+
+            # give an example of generator chaining with g1 = (gen1), g2 = (g for g in g1), for v in g2:
+
+            # coroutines are routines that yield, you can chain them for memory efficiency. coroutine
+            # has .send .close .__next__ etc
+            # coroutines used in async context where coroutine can be passed as asyncio.coroutine into future
+
+        test_get_next()
+        #test_out_of_memory()
+        #test_not_out_of_memory()
+
+
+
+    def test_file_read(self):
+        def file_reader(filename):
+            lines = [ line.strip() for line in open(filename,'r').readlines() ]
+            p(lines)
+        def file_reader_with(filename):
+            '''
+            with is for working with resources, such as files and sockets, descriptors
+
+            with expression [as variable]:
+                with-block
+
+            '''
+            lines = []
+            with open(filename,'r') as f:
+                lines = [ line.strip() for line in f.readlines() ]
+            p(lines)
+        def file_reader_generator(filename):
+            g1 = (line for line in open(filename))    # generator chaining
+            g2 = (line.strip() for line in g1)        # another generator
+            lines = []
+            for line in g2:                           # line is already stripped
+                lines.append(line)
+            p(lines)
+        def file_reader_without(filename):
+            f = open(filename,'r')
+            try:
+                lines = [ line.strip() for line in f.readlines() ]
+                p(lines)
+            finally:
+                f.close()
+
         def csv_reader(filename):
             data = {}
             keys = []
