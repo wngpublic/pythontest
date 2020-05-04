@@ -152,8 +152,8 @@ class Utils:
     def rand_str(self, num:int, charset:str=None) -> str:
         if charset is None:
             charset = self.charset_alphanum
-        sz = len(charset)
-        l_idx = self.rand_list(0,sz,True)
+        sz = len(charset)-1
+        l_idx = self.rand_list(0,sz,num,True)
         s = []
         for i in l_idx:
             s.append(charset[i])
@@ -166,8 +166,8 @@ class Utils:
         if min == max: return min
         return random.randint(min,max)
     def rand_list(self, min:int,max:int,num:int,allow_repetition=False) -> list:
-        sz = max - min + 1
-        assert num < sz
+        #sz = max - min + 1
+        #assert num < sz
         l = []
         s = set()
         max_loop = 100
@@ -179,7 +179,7 @@ class Utils:
                     assert j != max_loop
                     v = random.randint(min,max)
                     if v not in s:
-                        v.add(s)
+                        s.add(v)
                         break
         if not allow_repetition:
             assert len(s) == num
@@ -365,6 +365,7 @@ class ut(unittest.TestCase):
     def setUp(self):
         self.perfctr = 0
         self.dbg = False
+        self.utils = Utils()
 
     def incperfctr(self):
         self.perfctr += 1
@@ -1308,7 +1309,7 @@ class ut(unittest.TestCase):
             }
             assert set_words == exp
 
-        def test()
+        def test():
             try:
                 t0()
                 t1()
@@ -1785,21 +1786,43 @@ class ut(unittest.TestCase):
             debug = False
             sz_s = len(s)
             sz_p = len(p)
-            l_table_prefix = construct_kmp_table(s)
-            i_s = 0
-            i_p = 0
-            i_t = 0
-            while i_s < sz_s:
+            l_table_prefix = construct_kmp_table(p)
+            i_s = 0     # index of string
+            i_p = 0     # index of pat
+            if debug:
+                print('prefix_table: {}'.format(''.join([str(i) for i in l_table_prefix])))
+                print('p:            {}'.format(p))
+                print('s:            {}'.format(s))
+            while i_s < sz_s and i_p < sz_p:
+                if debug:
+                    c_s = s[i_s]
+                    c_p = p[i_p]
                 if s[i_s] != p[i_p]:
+                    if debug:
+                        if i_p == 0:
+                            idx_prefix = 0
+                        else:
+                            idx_prefix = l_table_prefix[i_p-1]
+                        print('s[{}]={} != p[{}]={}, next_prefix={}'.format(i_s,s[i_s],i_p,p[i_p],idx_prefix))
+                    if i_p != 0:
+                        i_p = l_table_prefix[i_p-1] + 1
+                    else:
+                        i_p = 0
                     i_s += 1
-                    i_p = 0
-                    i_t = 0
+                    if debug:
+                        print('i_s:{} i_p:{}'.format(i_s,i_p))
+                        print_array(s)
+                        t = ' ' * (i_s-i_p)
+                        print(t + t + ' '.join(p))
+                        print('\n')
+
                 else:
-                    j = i_s
-                    k = i_p
-                    while j < sz_s and k < sz_p:
-                        if s[j] == p[i_p]:
-                            pass
+                    if debug:
+                        print('s[{}]={} == p[{}]={}'.format(i_s,s[i_s],i_p,p[i_p]))
+                    i_p += 1
+                    i_s += 1
+            if i_p == sz_p:
+                return i_s-sz_p
             return None
 
         def construct_kmp_table(s) -> list:
@@ -1886,6 +1909,7 @@ class ut(unittest.TestCase):
             nonlocal pctr
             s = 'aabbaabbaabcaaabbccaabbbbcc'
             p =               'abbccb'
+            r = find_string_kmp(s,p)
             r = find_string_1(s,p)
             print('ctr {}'.format(pctr))
             assert r == None
@@ -1931,25 +1955,88 @@ class ut(unittest.TestCase):
             nonlocal pctr
             s = 'aabbaabbaabcaaabbccaabbbbcc'
             p =               'abbccb'
+            s = 'aaabaaabaaabaabaaabaabaaabaababaaaba'
+            p = 'aaabaababa'
+
             r = find_string_1(s,p)
-            print('ctr {}'.format(pctr))
-            assert r == None
-            r = find_string_1_1(s,p)
-            print('ctr {}'.format(pctr))
-            assert r == None
-            r = find_string_2(s,p)
-            print('ctr {}'.format(pctr))
-            assert r == None
-            r = find_string_3(s,p)
-            print('ctr {}'.format(pctr))
+            assert r != None
+
+            r = find_string_kmp(s,p)
+            assert r != None
+
+        def test_kmp():
+            debug = False
+            if debug:
+                print('-------------------------------------------------')
+            s = 'aabbaabbaabcaaabbccaabbbbcc'
+            p =               'abbccb'
+            r = find_string_kmp(s,p)
             assert r == None
 
+            if debug:
+                print('-------------------------------------------------')
+            s = 'aabbaabbaabcaaabbccaabbbbcc'
+            p =               'abbcca'
+            r = find_string_kmp(s,p)
+            assert r != None
+
+            if debug:
+                print('-------------------------------------------------')
+            s = 'aababaabababaababbbaaabababaabaabaabababaaababaabaaabaaa'
+            p =                                           'ababaabaaab'
+            r = find_string_kmp(s,p)
+            assert r != None
+
+            if debug:
+                print('-------------------------------------------------')
+            s = 'aababaabababaababbbaaabababaabaabaabababaaababaabaaabaaa'
+            p =                                           'ababaabaaabb'
+            r = find_string_kmp(s,p)
+            assert r == None
+
+        def test_kmp_random_positive():
+            num_cases = 100
+            sz_s = 100
+            sz_p = 10
+            charset   = 'abcdef'
+            utils     = self.utils
+            try:
+                for i in range(num_cases):
+                    s = utils.rand_str(sz_s,charset)
+                    j = utils.rand(0,90)
+                    p = s[j:j+10]
+                    r = find_string_kmp(s,p)
+                    if r != j:
+                        print('mismatch: expected match at {}'.format(j))
+                        print('')
+                        print_array(s)
+                        print('')
+                        print_array(p)
+                    assert r == j
+            except Exception as e:
+                raise e
+            return
+
+        def test_kmp_random_negative():
+            num_cases = 100
+            pass
+
+        def test_str_random():
+            pass
+
+        test_kmp()
+        test_kmp_random_positive()
+
+        '''
         test_str_1()
         p('\n')
         test_str_2()
         p('\n')
         test_str_3()
         p('\n')
+        test_str_4()
+        p('\n')
+        '''
 
     def test_printarray(self):
         def _printarray(s):
@@ -2214,6 +2301,12 @@ class ut(unittest.TestCase):
                 self.v = v
                 self.lc = l
                 self.rc = r
+            def __lt__(self,other):
+                return self.v < other.v
+            def __gt__(self,other):
+                return self.v > other.v
+            def __eq__(self, other):
+                return self.v == other.v
 
         class BinarySearchTree:
 
@@ -2242,6 +2335,25 @@ class ut(unittest.TestCase):
                 else:
                     assert self.allow_overwrite
                     p.v = n.v           # same key gets overwritten
+
+            def add(self, v, n=None):
+                if(n is None):
+                    if(self.r is None): self.r = _Node(v)
+                    return
+                if(v < n.v):
+                    if(n.l is None): n.l = _Node(v)
+                    else:            add(v,n.l)
+                else:
+                    if(n.r is None): n.r = _Node(v)
+                    else:            add(v,n.r)
+                return add(v, self.r)
+            def get(self, v, n=None):
+                if(n is None):
+                    if(self.r is None): return None
+                    return get(v,self.r)
+                if(n.v == v): return n
+                if(n.v < v): return get(v,n.l)
+                return get(v,n.r)
 
             def getNode(self, k) -> BSTNode:
                 result = self._getNode(k, self.r, '')
@@ -2656,6 +2768,35 @@ class ut(unittest.TestCase):
         for i in range(colx):
             for j in range(rowy):
                 pass
+    def test_interleave(self):
+        def interleave(s1,s2,stringval:str,results:list):
+            if len(s1) == 0 and len(s2) == 0:
+                if len(stringval) != 0:
+                    results.append(stringval)
+                return
+            if stringval is None:
+                stringval = ''
+            if len(s1) > 0:
+                interleave(s1[1:],s2,stringval+s1[0:1],results)
+            if len(s2) > 0:
+                interleave(s1,s2[1:],stringval+s2[0:1],results)
+        def do_print(s1,s2,l:list):
+            sz = len(l)
+            p('s1:{},s2:{}'.format(s1,s2))
+            for i in range(sz):
+                p('{:3}:{}'.format(i,l[i]))
+        def t0():
+            results = []
+            s1 = '0123'
+            s2 = '4567'
+            interleave(s1,s2,None,results)
+            do_print(s1,s2,results)
+        t0()
+
+    def test_dices(self):
+        def all_dice_combos_2(d1,d2,result):
+            pass
+
 
     def test_longest_common_subsequence(self):
         def t0():
@@ -3430,8 +3571,41 @@ class ut(unittest.TestCase):
         def choose(n,k) -> int:
             v = choose_math(n,k)
             return v
+    def test_trapping_rainwater_2d(self):
+        pass
+
+    def test_largest_rectangle_in_histogram(self):
+        pass
+
+    def test_palindromic_substrings(self):
+        pass
+
+    def test_top_k_frequent_elements(self):
+        pass
+
     def main(self):
         p('main passed')
 
 if __name__ == "__main__":
     unittest.main() # not ut.main()!
+
+
+
+'''
+s1  0123
+s2  4567
+
+interleave values:
+combination tree
+
+0 1 2 3 4 5 6 7
+    4 2 3 5 6 7
+      5 
+  4 1 2 3 5 6 7
+    
+4 0 1 2 3 5 6 7
+  5 0 1 2 3 6 7
+    
+
+'''
+

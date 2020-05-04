@@ -2,8 +2,8 @@ import numpy
 import random
 import scipy
 import unittest
-import matplotlib.pyplot as plt
 import time
+import matplotlib.pyplot as pyplot
 
 def p(s):
     print(s)
@@ -121,6 +121,59 @@ class ut(unittest.TestCase):
         d3()
         time.sleep(1)
         pass
+    def test_random(self):
+        sz = 20
+        l1 = numpy.random.randint(low=0,high=10,size=sz)            # [low,high)
+        l2 = numpy.random.random_integers(low=0,high=10,size=sz)    # [low,high]
+        l3 = numpy.random.uniform(size=sz)
+        l4 = numpy.random.normal(size=sz)
+        l5 = numpy.random.random_sample(size=sz)                    # [0.0,1.0) floats
+        l6 = numpy.random.random(size=sz)                           # [0.0,1.0) floats
+        l7 = numpy.random.sample(size=sz)                           # [0.0,1.0) floats
+        l8 = numpy.random.rand(3,2)                                 # 3 rows, 2 elements per row
+        la = [0,1,2,3,4,5,6,7,8,9]
+        lb = la.copy()
+        numpy.random.shuffle(lb)                                    # in place shuffle
+        lc = numpy.random.permutation(la)
+        assert len(l1) == 20
+    def test_matplotlib_line(self):
+        x = numpy.random.randint(0,10,8)
+        y = [2,6,1,4,8,7,9,5]
+        pyplot.plot(x,y)
+        pyplot.show()
+    def test_matplotlib_bar(self):
+        x = numpy.random.randint(0,10,8)
+        y = [2,6,1,4,8,7,9,5]
+        pyplot.bar(x,y)
+        pyplot.show()
+    def test_matplotlib_scatter(self):
+        x = numpy.random.randint(0,10,8)
+        y = [2,6,1,4,8,7,9,5]
+        pyplot.hist(y)
+        pyplot.show()
+    def test_matplotlib_histogram(self):
+        x = numpy.random.randint(0,10,8)
+        y = [2,6,1,4,8,7,9,5]
+        pyplot.scatter(x,y)
+        pyplot.show()
+    def test_matplotlib_multiline(self):
+        x1 = [2,3,4,5,6,7,8,9]
+        y1 = [2,6,1,4,8,7,9,5]
+        pyplot.plot(x1,y1,label='line-1')
+
+        x2 = [2,3,4,5,6,7,8,9]
+        y2 = [8,3,9,1,4,6,3,7]
+        pyplot.plot(x2,y2,label='line-2')
+
+        x2 = [2,3,4,5,6,7,8,9]
+        y2 = [2,4,5,7,5,4,3,1]
+        pyplot.plot(x2,y2,label='line-3')
+
+        pyplot.title('multi lines')
+        pyplot.legend()
+        pyplot.show()
 
 if __name__ == "__main__":
     unittest.main() # not ut.main()!
+dist2()
+

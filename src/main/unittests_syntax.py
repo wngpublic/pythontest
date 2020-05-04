@@ -983,6 +983,13 @@ class ut(unittest.TestCase):
         res = [i for i, j in enumerate(l) if j == 'v1' or j == 'v3']
         assert len(res) == 2 and res == [0,2]
 
+        # repeat string
+        s = ' ' * 5
+        assert s == '     '
+        s = 'a' * 3
+        assert s == 'aaa'
+        s = 'a ' * 3
+        assert s == 'a a a '
         #p('test_string')
 
     def test_set_vs_map_vs_list(self):
@@ -2103,7 +2110,7 @@ class ut(unittest.TestCase):
         def inner_call(v:int) -> int:
             return v
         return inner_call(v)
-    
+
     def test_static_function(self):
         assert ut.method_return_val_shell(10) == 10
         assert ut.method_call_inner(10) == 10
@@ -2345,7 +2352,7 @@ class ut(unittest.TestCase):
             assert v == 0
             v = next(gen)
             assert v == 1
-            
+
             gen = (i for i in range(100))   # this is also a generator
             l   = [i for i in range(100)]   # this is a list
             assert isinstance(l,list)
