@@ -62,7 +62,7 @@ def p(s):
     else:
         print(s)
 
-def print_array(s):
+def print_array(s,is_double_space=False):
     sz_s = len(s)
     numbers = []
     result = sz_s
@@ -91,7 +91,10 @@ def print_array(s):
     debug = True
     if debug:
         for line in buf:
-            p(' '.join(line))
+            if is_double_space:
+                p(' '.join(line))
+            else:
+                p(''.join(line))
 
 class Utils:
     def __init__(self, seed=0):
@@ -1565,6 +1568,10 @@ class ut(unittest.TestCase):
     def test_find_string_kmp(self):
         pctr = 0
 
+        def get_perf_ctr():
+            nonlocal pctr
+            return pctr
+
         def find_string_1(s,pat):
             nonlocal pctr
             '''
@@ -1781,46 +1788,67 @@ class ut(unittest.TestCase):
                     i_pat = 0
             return None
 
-        def find_string_kmp(s,p):
+        def find_string_kmp(s,p,debug=False):
             nonlocal pctr
-            debug = False
+            debug_is_double_space=True
+            pctr = 0
+            flag = False
             sz_s = len(s)
             sz_p = len(p)
             l_table_prefix = construct_kmp_table(p)
             i_s = 0     # index of string
             i_p = 0     # index of pat
+            i_t = 0
             if debug:
                 print('prefix_table: {}'.format(''.join([str(i) for i in l_table_prefix])))
                 print('p:            {}'.format(p))
                 print('s:            {}'.format(s))
+                print('')
             while i_s < sz_s and i_p < sz_p:
+                pctr += 1
                 if debug:
                     c_s = s[i_s]
                     c_p = p[i_p]
-                if s[i_s] != p[i_p]:
-                    if debug:
-                        if i_p == 0:
-                            idx_prefix = 0
-                        else:
-                            idx_prefix = l_table_prefix[i_p-1]
-                        print('s[{}]={} != p[{}]={}, next_prefix={}'.format(i_s,s[i_s],i_p,p[i_p],idx_prefix))
-                    if i_p != 0:
-                        i_p = l_table_prefix[i_p-1] + 1
-                    else:
-                        i_p = 0
-                    i_s += 1
-                    if debug:
-                        print('i_s:{} i_p:{}'.format(i_s,i_p))
-                        print_array(s)
-                        t = ' ' * (i_s-i_p)
+                    idx_prefix = 0 if i_p == 0 else l_table_prefix[i_p-1]
+                    print('s[{}]={} p[{}]={} t={} next_prefix={}'.format(i_s,c_s,i_p,c_p,i_t,idx_prefix))
+                    print_array(s,debug_is_double_space)
+                    t = ' ' * (i_s-i_p)
+                    if debug_is_double_space:
                         print(t + t + ' '.join(p))
+                    else:
+                        print(t + ''.join(p))
+                    print('\n')
+
+                if s[i_s] != p[i_p]:
+                    '''
+                    if i_t != 0:
+                        i_p = i_t
+                    else:
+                        if i_p != 0:
+                            i_p = l_table_prefix[i_p-1]
+                        else:
+                            i_s += 1
+                    '''
+                    '''
+                    if i_p != 0:
+                        i_p = l_table_prefix[i_p-1]
+                    else:
+                        i_s += 1
+                    '''
+                    if i_p != 0:
+                        i_p = l_table_prefix[i_p-1]
+                        #i_p = l_table_prefix[i_t] if i_p == 0 else i_p
+                    else:
+                        i_s += 1
+                    i_t = 0
+                    if debug:
+                        print('next compare starts at i_s:{} i_p:{}'.format(i_s,i_p))
                         print('\n')
 
                 else:
-                    if debug:
-                        print('s[{}]={} == p[{}]={}'.format(i_s,s[i_s],i_p,p[i_p]))
                     i_p += 1
                     i_s += 1
+                    i_t += 1
             if i_p == sz_p:
                 return i_s-sz_p
             return None
@@ -1839,7 +1867,9 @@ class ut(unittest.TestCase):
                     # this part should look at backward index for first matching, then +1
                     # for now, resetting it to 0 is a performance hit
                     offset = 0
-                    prefix_table.append(0)
+                    if s[i] == s[offset]:
+                        offset += 1
+                    prefix_table.append(offset)
             return prefix_table
 
         def test_str_1():
@@ -1951,6 +1981,7 @@ class ut(unittest.TestCase):
                                         |
                                          aaabaaba ba
                 does this always work?? this shift p by next_idx_p is weird
+                the trick is to shift p relative to s[i], but never move i (of s) backward.
             '''
             nonlocal pctr
             s = 'aabbaabbaabcaaabbccaabbbbcc'
@@ -1994,28 +2025,68 @@ class ut(unittest.TestCase):
             r = find_string_kmp(s,p)
             assert r == None
 
+            '''
+            adcadbabae
+            0001201010
+            '''
+            s = 'abedaadcaadcadbabaedacbcedeee'
+            p =          'adcadbabae'
+            r = find_string_kmp(s,p,False)
+            assert r == 9
+
+            s = 'ceaebabaabdaadcbaeaabcbacd'
+            p =       'baabdaadcb'
+            r = find_string_kmp(s,p,False)
+            assert r != None
+
+            s = 'cdcaaaaaaddebbeabcdeaabdb'
+            p =      'aaaaddebbe'
+            r = find_string_kmp(s,p,False)
+            assert r != None
+
+            s = 'cbededdeddeeebddcbeaa'
+            p =       'deddeeebdd'
+            r = find_string_kmp(s,p,False)
+            assert r != None
+
+            '''
+            s = ''
+            p =      ''
+            r = find_string_kmp(s,p,True)
+            assert r != None
+            '''
+
+
         def test_kmp_random_positive():
-            num_cases = 100
+            num_cases = 1000
             sz_s = 100
             sz_p = 10
             charset   = 'abcdef'
             utils     = self.utils
+            res_pctr  = []
             try:
                 for i in range(num_cases):
                     s = utils.rand_str(sz_s,charset)
-                    j = utils.rand(0,90)
+                    j = utils.rand(0,sz_s-sz_p)
                     p = s[j:j+10]
                     r = find_string_kmp(s,p)
                     if r != j:
-                        print('mismatch: expected match at {}'.format(j))
+                        print('case:{} mismatch: expected match at j:{} r:{}'.format(i,j,r))
                         print('')
                         print_array(s)
                         print('')
                         print_array(p)
+                        print('')
+                        r = find_string_kmp(s,p,True)
+
                     assert r == j
+                    pctr_val = get_perf_ctr()
+                    res_pctr.append(pctr_val)
             except Exception as e:
                 raise e
+            #print('pctr_val {}'.format(res_pctr))
             return
+
 
         def test_kmp_random_negative():
             num_cases = 100
@@ -2023,9 +2094,6 @@ class ut(unittest.TestCase):
 
         def test_str_random():
             pass
-
-        test_kmp()
-        test_kmp_random_positive()
 
         '''
         test_str_1()
@@ -2037,6 +2105,10 @@ class ut(unittest.TestCase):
         test_str_4()
         p('\n')
         '''
+
+        test_kmp()
+        test_kmp_random_positive()
+
 
     def test_printarray(self):
         def _printarray(s):
