@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Tables CSS</title>
+    <link rel="stylesheet" href="styles/my_styles.css">
+</head>
+<body>
+
+<table id="tableid1" border="1">
+    <caption id="caption1id">
+        Caption Name on Top
+    </caption>
+    <thead>
+    <tr>
+        <th colspan="3">Table Header</th>
+    </tr>
+    </thead>
+    <tr>
+        <th>Header 0</th>
+        <th colspan="2">Header 1&2</th>
+    </tr>
+    <tr>
+        <th>Name 0</th>
+        <th>Name 1</th>
+        <th title="this is title metadata">Hover Name 2</th>
+    </tr>
+    <tbody>
+    <tr>
+        <td>row0 col0</td>
+        <td>row0 col1</td>
+        <td>row0 col2</td>
+    </tr>
+    <tr>
+        <td>row1 col0</td>
+        <td>row1 col1</td>
+        <td>row1 col2</td>
+    </tr>
+    </tbody>
+</table>
+
+<br>
+
+<table id="table2id" border="1">
+    <caption id="caption2id">
+        Caption on Top, Use CSS To Align Bottom
+    </caption>
+    <thead>
+    <colgroup>
+        <col>
+        <col span="2" class="col_id1">
+        <col span="2" class="col_id2">
+    </colgroup>
+    <tr>
+        <th colspan="4">Table Header</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <th>Header 0</th>
+        <th></th>
+        <th colspan="2">Header 1&2</th>
+    </tr>
+    <tr>
+        <th>Name 0</th>
+        <th>Name 1</th>
+        <th>Name 2</th>
+        <th></th>
+    </tr>
+    <tr>
+        <td>row0 col0</td>
+        <td>row0 col1</td>
+        <td>row0 col2</td>
+        <th>Header row0 col3</th>
+    </tr>
+    <tr>
+        <td>row1 col0</td>
+        <td>row1 col1</td>
+        <td>row1 col2</td>
+        <td>row1 col3</td>
+    </tr>
+    <tr>
+        <td rowspan="2">row2 and row3 col0</td>
+        <td>row2 col1</td>
+        <td rowspan="2">row2 and row3 col2</td>
+        <td>row2 col3</td>
+    </tr>
+    <tr>
+        <!-- row 3 col0 skipped because above rowspan -->
+        <td>row3 col1</td>
+        <!-- row 3 col2 skipped -->
+        <td>row3 col3</td>
+    </tr>
+    </tbody>
+    <tfoot>
+    <tr>
+        <td colspan="3">Footer 0-2</td>
+        <td>Footer 3</td>
+    </tr>
+    </tfoot>
+</table>
+
+</body>
+</html>

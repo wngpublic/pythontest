@@ -11,6 +11,8 @@ import typing
 import logging
 import json
 import hashlib
+import struct
+import binascii
 
 '''
 python3 -m unittest unittests.ut.test_list
@@ -60,7 +62,14 @@ def p(s):
             global_fh_ = open('output_debug.log','w')
         global_fh_.write(s + '\n')
     else:
-        print(s)
+        if isinstance(s,list):
+            print(s)
+        elif isinstance(s,set):
+            print(s)
+        elif isinstance(s,dict):
+            print(s)
+        else:
+            print(s)
 
 def print_array(s,is_double_space=False):
     sz_s = len(s)
@@ -1068,6 +1077,602 @@ class ut(unittest.TestCase):
         t0()
         #p('passed test_longest_consecutive_sequence')
 
+    def test_find_string_suffix_tree(self):
+        '''
+        ukkonen construction
+        '''
+        class snode:
+            def __init__(self,val=None):
+                self.children = {}
+                self.val = val
+                self.has_terminal = False
+            def get_has_terminal(self):
+                return self.has_terminal
+            def set_has_terminal(self, has_terminal):
+                self.has_terminal = has_terminal
+            def set_val(self,val):
+                self.val = val
+            def get_val(self):
+                return self.val
+            def get_node(self,c):
+                if c not in self.children:
+                    return None
+                return self.children[c]
+            def get_children(self):
+                l = list(self.children.values())
+                return l
+            def add_node(self,c,node):
+                self.children[c] = node
+            def set_node(self,c,node):
+                self.children[c] = node
+
+        class trie_compressed:
+            def __init__(self):
+                self.r = snode()
+            def reset(self):
+                self.r = snode()
+            def construct(self, s):
+                self.r = self._construct(s,self.r)
+            def _construct(self,s,n):
+                pass
+            def get_last_matching_index(self,s1,s2):
+                # returns last index that matches, None if no match
+                i = 0
+                while i < len(s1) and i < len(s2):
+                    if s1[i] != s2[i]:
+                        break
+                    i += 1
+                return None if i == 0 else (i - 1)
+            def find(self,s):
+                if s == None:
+                    return False
+                n = self.r.get_node(s[0])
+                return self._find(s,n)
+            def _find(self,s,n):
+                if len(s) == 0 or n == None:
+                    return False
+                v = n.get_val()
+                i = self.get_last_matching_index(s,v)
+                if i == None:
+                    return False
+                substring = s[i+1:]
+                if len(substring) == 0:
+                    return True
+                if len(v) != (i+1):
+                    return False
+                child = n.get_node(substring[0])
+                return self._find(substring,child)
+            def get_all_words(self):
+                l = []
+                self._get_all_words(self.r,l,'')
+                return l
+            def _get_all_words(self,n,l,word):
+                if n == None:
+                    return
+                substring = n.get_val()
+                if substring != None and len(substring) != 0:
+                    word += substring
+                if n.get_has_terminal():
+                    l.append(word)
+                children = n.get_children()
+                if children == None:
+                    return
+                for child in children:
+                    self._get_all_words(child,l,word)
+
+        class suffix_tree_ukkonen(trie_compressed):
+            def __init__(self):
+                super().__init__()
+            def construct_suffix_tree(self,s):
+                sz_s = len(s)
+                for i in range(sz_s):
+                    substring = s[i:]
+                    self.construct(substring)
+
+        def t1():
+            t = suffix_tree_ukkonen()
+            li = ['banana','barn','apple','applet']
+            for word in li:
+                t.construct_suffix_tree(word)
+            l = t.get_all_words()
+            set_words = set(l)
+            exp = {
+                'banana','anana','nana','ana','na','a',
+                'barn','arn','rn','n',
+                'applet','pplet','plet','let','et','t',
+                'apple','pple','ple','le','e'
+            }
+            assert set_words == exp
+
+        def test():
+            try:
+                t1()
+            except Exception as e:
+                raise e
+        test()
+
+    def test_run_length_encoding(self):
+        def run_length_encode(s):
+            p   = None
+            c   = None
+            cnt = 0
+            li  = []
+            for i in range(len(s)):
+                c = s[i]
+                if c != p:
+                    if cnt != 0:
+                        li.append(cnt)
+                        ic = ord(p)
+                        li.append(ic)
+                    cnt = 1
+                else:
+                    cnt += 1
+                p = c
+            if cnt != 0:
+                li.append(cnt)
+                ic = ord(c)
+                li.append(ic)
+            res = bytearray(li)
+            return res
+        def run_length_decode(ba):
+            ls = []
+            i = 0
+            while i < len(ba):
+                cnt = ba[i]
+                i  += 1
+                ic  = ba[i]
+                i  += 1
+                c   = chr(ic)
+                v   = c * cnt
+                ls.append(v)
+            s = ''.join(ls)
+            return s
+        def t0():   # string compression with run length encoding
+            '''
+                      61  31  3        9
+            '''
+            s = 'aaaaaabaaabaaabbbbbbbbb'
+            bs = bytearray([ord(c) for c in s])
+            assert bs == bytearray(b'\x61\x61\x61\x61\x61\x61\x62\x61\x61\x61\x62\x61\x61\x61\x62\x62\x62\x62\x62\x62\x62\x62\x62')
+            ba = run_length_encode(s)
+            rs = run_length_decode(ba)
+            assert s == rs
+            assert ba == bytearray(b'\x06\x61\x01\x62\x03\x61\x01\x62\x03\x61\x09\x62')
+        try:
+            t0()
+        except Exception as e:
+            raise e
+
+    def test_lzw(self):
+        pass
+
+    def test_huffman(self):
+        '''
+        encode:
+        1. get frequency dict of the data to be encoded, eg count of each char
+        2. each char is leaf node with count
+        3. use priority queue, min heap to choose 2 smallest values and construct a parent node of those 2,
+           record the sum count of those two min leafs
+        4. if next min leaf count > constructed node count, then create a new parent
+           with these nodes (min1,min2,parent of min1+min2,min3. otherwise, recursively construct
+           min pairs until the next min leaf count > any of the constructed sums
+        5. this is repeated until only 1 leaf remaining on heap. at this point, there is a huffman tree.
+        6. this means the heaviest values use the least bit of encoding.
+        7. when constructing compressed data, each level represents 1 bit added, eg
+           root is null
+           L1L = 0,                    L1R = 1
+           L2LL = 0, L2LR = 1,    L2RL = 0, L2RR = 1
+
+           so then encoding is 10 for L2RL if it is a leaf
+           how to prevent ambiguity? must satisfy prefix rule, which results in uniquely decodeable leaf.
+           this means no leaf is a prefix of another leaf.
+        8. now encode the data by using the tree to each each leaf node, which hopefully has less
+           encoding than the char encoding.
+
+        decode:
+        1. read from the huffman tree
+        2. read in the input sequence and decode each variable sequence of 1 and 0 to reach leaf.
+           then start all over.
+
+
+        '''
+        class node:
+            def __init__(self,k,v):
+                self.k = k
+                self.v = v
+            def getk(self):
+                return self.k
+            def getv(self):
+                return self.v
+        def huffman_encode(s):
+            d = {}
+            for c in s:
+                if c not in d:
+                    d[c] = 0
+                d[c] += 1
+            hq = []
+            li = [(v,k) for k,v in d.items()]
+            lo = sorted(li,key=lambda x:int(x[0]))
+
+            pass
+        def huffman_decode(s):
+            pass
+        def t0():
+            s = 'abcbababcabcabcabbcabcabacbababc'
+            #s = 'abcbababcabcabcabbcabcabacbabcbacbabcabcbaccccabc'
+            huffman_encode(s)
+            pass
+        t0()
+
+    def test_hash(self):
+        def rolling_hash_1(substring, next_char, hash_val):
+            '''
+            construction of 5,3,8,6
+            5                           5
+            (5*10)+3                    5*10   + 3
+            ((5*10)+3)*10+8             5*10^2 + 3*10^1 + 8
+            (((5*10)+3)*10+8)*10+6      5*10^3 + 3*10^2 + 8*10^1 + 6
+
+            remove LH 5, add RH 7
+            ((5*10^3 + 3*10^2 + 8*10^1 + 6) - 5*10^(len(S)-1))*10 + 7
+            3*10^3 + 8*10^2 + 6*10^1 + 7*10^0
+
+            ------------------------------------------------------
+            construction from 2,5,3,8  add 6
+            2*10^3 + 5*10^2 + 3*10^1 + 8*10^0
+            5*10^2 + 3*10^1 + 8*10^0                // substract 2*10^3
+            (5*10^2 + 3*10^1 + 8*10^0)*10
+            5*10^3 + 3*10^2 + 8*10^1
+            5*10^3 + 3*10^2 + 8*10^1 + 6
+            '''
+
+            prime = 65449 # 101
+            base  = 256
+
+            sz_s = len(substring)
+
+            if next_char == None and hash_val == None:
+                h = 0
+                for i in range(sz_s):
+                    c = substring[i]
+                    v = ord(c)
+                    h = h*base%prime
+                    h += v
+                return h
+            else:
+                c_p = substring[0]
+                v = ord(c_p)
+                v = v*pow(base,sz_s-1)%prime
+                h = hash_val - v
+                h = h*base%prime
+                v = ord(next_char)
+                h += v
+                return h
+        def test_single():
+            s   = 'abcdef'
+            p   = 'bcde'
+            ss  = 'abcd'
+            hv1 = rolling_hash_1(p,None,None)
+            hv2 = rolling_hash_1(ss,None,None)
+            hv3 = rolling_hash_1(ss,'e',hv2)
+            assert hv3 == hv1
+        def test_basic_0():
+            debug = False
+            s = 'abcdefghijklmnopqrstuvwxyz'
+            l = []
+            sz_ss = 5
+            sz_s = len(s)
+            ss = s[:sz_ss]
+            hashval = None
+            next_char = None
+            for i in range(sz_ss,sz_s,1):
+                hashval = rolling_hash_1(ss,next_char,hashval)
+                l.append(hashval)
+                if next_char != None:
+                    ss = ss[1:] + next_char
+                next_char = s[i]
+            if debug:
+                print(l)
+        def test_uniqueness_1():
+            debug = False
+            charset   = 'abcdefghij'
+            utils     = self.utils
+            sz_s = 1000
+            s = utils.rand_str(sz_s,charset)
+            d_s = {}
+            d_h = {}
+            sz_ss = 5
+            ss = s[:sz_ss]
+            hv = None
+            nc = None
+            for i in range(sz_ss,sz_s,1):
+                nhv = rolling_hash_1(ss,nc,hv)
+                if nc != None:
+                    ss = ss[1:] + nc
+                if ss not in d_s:
+                    d_s[ss] = 0
+                d_s[ss] += 1
+                if nhv not in d_h:
+                    d_h[nhv] = []
+                d_h[nhv].append(ss)
+                nc = s[i]
+                hv = nhv
+            if debug:
+                print('--------------d_string')
+                ctr_u = 0
+                ctr_d = 0
+                for k,v in d_s.items():
+                    if v > 1:
+                        print('ss:{} cnt:{}'.format(k,v))
+                        ctr_d += 1
+                    else:
+                        ctr_u += 1
+                print('ss: unique: {} duplicate:{}'.format(ctr_u, ctr_d))
+                print('--------------d_hash')
+                ctr_u = 0
+                ctr_d = 0
+                for k,v in d_h.items():
+                    if len(v) > 1:
+                        print('hv:{} ss:{}'.format(k,v))
+                        ctr_d += 1
+                    else:
+                        ctr_u += 1
+                print('ss: unique: {} duplicate:{}'.format(ctr_u, ctr_d))
+
+        #test_basic_0()
+        #test_uniqueness_1()
+        test_single()
+
+    def test_prime_number_generator(self):
+        def sieve_of_eratosthenes(max) -> list:
+            if max >= 0xffff_ffff_ffff_ffff:
+                raise Exception
+            l = [True for i in range(max)]
+            for i in range(2,max,1):
+                if l[i]:
+                    for j in range(2,max,1):
+                        v = i*j
+                        if v >= max:
+                            break
+                        l[v] = False
+            primes = []
+            for i in range(max):
+                if l[i]:
+                    primes.append(i)
+            return primes
+        '''
+        0, 1, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 
+        59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 
+        131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 
+        197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 
+        271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349, 
+        353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 
+        433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503, 
+        509, 521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599, 
+        601, 607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661, 673, 
+        677, 683, 691, 701, 709, 719, 727, 733, 739, 743, 751, 757, 761, 
+        769, 773, 787, 797, 809, 811, 821, 823, 827, 829, 839, 853, 857, 
+        859, 863, 877, 881, 883, 887, 907, 911, 919, 929, 937, 941, 947, 
+        953, 967, 971, 977, 983, 991, 997, 1009, 1013, 1019, 1021, 1031, 
+        1033, 1039, 1049, 1051, 1061, 1063, 1069, 1087, 1091, 1093, 1097, 
+        1103, 1109, 1117, 1123, 1129, 1151, 1153, 1163, 1171, 1181, 1187, 
+        1193, 1201, 1213, 1217, 1223, 1229, 1231, 1237, 1249, 1259, 1277, 
+        1279, 1283, 1289, 1291, 1297, 1301, 1303, 1307, 1319, 1321, 1327, 
+        1361, 1367, 1373, 1381, 1399, 1409, 1423, 1427, 1429, 1433, 1439, 
+        1447, 1451, 1453, 1459, 1471, 1481, 1483, 1487, 1489, 1493, 1499, 
+        1511, 1523, 1531, 1543, 1549, 1553, 1559, 1567, 1571, 1579, 1583, 
+        1597, 1601, 1607, 1609, 1613, 1619, 1621, 1627, 1637, 1657, 1663,
+        1667, 1669, 1693, 1697, 1699, 1709, 1721, 1723, 1733, 1741, 1747, 
+        1753, 1759, 1777, 1783, 1787, 1789, 1801, 1811, 1823, 1831, 1847, 
+        1861, 1867, 1871, 1873, 1877, 1879, 1889, 1901, 1907, 1913, 1931, 
+        1933, 1949, 1951, 1973, 1979, 1987, 1993, 1997, 1999, 2003, 2011, 
+        2017, 2027, 2029, 2039, 2053, 2063, 2069, 2081, 2083, 2087, 2089, 
+        2099, 2111, 2113, 2129, 2131, 2137, 2141, 2143, 2153, 2161, 2179, 
+        2203, 2207, 2213, 2221, 2237, 2239, 2243, 2251, 2267, 2269, 2273, 
+        2281, 2287, 2293, 2297, 2309, 2311, 2333, 2339, 2341, 2347, 2351, 
+        2357, 2371, 2377, 2381, 2383, 2389, 2393, 2399, 2411, 2417, 2423, 
+        2437, 2441, 2447, 2459, 2467, 2473, 2477, 2503, 2521, 2531, 2539, 
+        2543, 2549, 2551, 2557, 2579, 2591, 2593, 2609, 2617, 2621, 2633, 
+        2647, 2657, 2659, 2663, 2671, 2677, 2683, 2687, 2689, 2693, 2699, 
+        2707, 2711, 2713, 2719, 2729, 2731, 2741, 2749, 2753, 2767, 2777, 
+        2789, 2791, 2797, 2801, 2803, 2819, 2833, 2837, 2843, 2851, 2857, 
+        2861, 2879, 2887, 2897, 2903, 2909, 2917, 2927, 2939, 2953, 2957, 
+        2963, 2969, 2971, 2999, 3001, 3011, 3019, 3023, 3037, 3041, 3049, 
+        3061, 3067, 3079, 3083, 3089, 3109, 3119, 3121, 3137, 3163, 3167, 
+        3169, 3181, 3187, 3191, 3203, 3209, 3217, 3221, 3229, 3251, 3253, 
+        3257, 3259, 3271, 3299, 3301, 3307, 3313, 3319, 3323, 3329, 3331, 
+        3343, 3347, 3359, 3361, 3371, 3373, 3389, 3391, 3407, 3413, 3433, 
+        3449, 3457, 3461, 3463, 3467, 3469, 3491, 3499, 3511, 3517, 3527, 
+        3529, 3533, 3539, 3541, 3547, 3557, 3559, 3571, 3581, 3583, 3593, 
+        3607, 3613, 3617, 3623, 3631, 3637, 3643, 3659, 3671, 3673, 3677, 
+        3691, 3697, 3701, 3709, 3719, 3727, 3733, 3739, 3761, 3767, 3769, 
+        3779, 3793, 3797, 3803, 3821, 3823, 3833, 3847, 3851, 3853, 3863, 
+        3877, 3881, 3889, 3907, 3911, 3917, 3919, 3923, 3929, 3931, 3943, 
+        3947, 3967, 3989, 4001, 4003, 4007, 4013, 4019, 4021, 4027, 4049, 
+        4051, 4057, 4073, 4079, 4091, 4093, 4099, 4111, 4127, 4129, 4133, 
+        4139, 4153, 4157, 4159, 4177, 4201, 4211, 4217, 4219, 4229, 4231, 
+        4241, 4243, 4253, 4259, 4261, 4271, 4273, 4283, 4289, 4297, 4327, 
+        4337, 4339, 4349, 4357, 4363, 4373, 4391, 4397, 4409, 4421, 4423, 
+        4441, 4447, 4451, 4457, 4463, 4481, 4483, 4493, 4507, 4513, 4517, 
+        4519, 4523, 4547, 4549, 4561, 4567, 4583, 4591, 4597, 4603, 4621, 
+        4637, 4639, 4643, 4649, 4651, 4657, 4663, 4673, 4679, 4691, 4703, 
+        4721, 4723, 4729, 4733, 4751, 4759, 4783, 4787, 4789, 4793, 4799, 
+        4801, 4813, 4817, 4831, 4861, 4871, 4877, 4889, 4903, 4909, 4919, 
+        4931, 4933, 4937, 4943, 4951, 4957, 4967, 4969, 4973, 4987, 4993, 
+        4999, 5003, 5009, 5011, 5021, 5023, 5039, 5051, 5059, 5077, 5081, 
+        5087, 5099, 5101, 5107, 5113, 5119, 5147, 5153, 5167, 5171, 5179, 
+        5189, 5197, 5209, 5227, 5231, 5233, 5237, 5261, 5273, 5279, 5281, 
+        5297, 5303, 5309, 5323, 5333, 5347, 5351, 5381, 5387, 5393, 5399, 
+        5407, 5413, 5417, 5419, 5431, 5437, 5441, 5443, 5449, 5471, 5477, 
+        5479, 5483, 5501, 5503, 5507, 5519, 5521, 5527, 5531, 5557, 5563, 
+        5569, 5573, 5581, 5591, 5623, 5639, 5641, 5647, 5651, 5653, 5657, 
+        5659, 5669, 5683, 5689, 5693, 5701, 5711, 5717, 5737, 5741, 5743, 
+        5749, 5779, 5783, 5791, 5801, 5807, 5813, 5821, 5827, 5839, 5843, 
+        5849, 5851, 5857, 5861, 5867, 5869, 5879, 5881, 5897, 5903, 5923, 
+        5927, 5939, 5953, 5981, 5987, 6007, 6011, 6029, 6037, 6043, 6047, 
+        6053, 6067, 6073, 6079, 6089, 6091, 6101, 6113, 6121, 6131, 6133, 
+        6143, 6151, 6163, 6173, 6197, 6199, 6203, 6211, 6217, 6221, 6229, 
+        6247, 6257, 6263, 6269, 6271, 6277, 6287, 6299, 6301, 6311, 6317, 
+        6323, 6329, 6337, 6343, 6353, 6359, 6361, 6367, 6373, 6379, 6389, 
+        6397, 6421, 6427, 6449, 6451, 6469, 6473, 6481, 6491, 6521, 6529, 
+        6547, 6551, 6553, 6563, 6569, 6571, 6577, 6581, 6599, 6607, 6619, 
+        6637, 6653, 6659, 6661, 6673, 6679, 6689, 6691, 6701, 6703, 6709, 
+        6719, 6733, 6737, 6761, 6763, 6779, 6781, 6791, 6793, 6803, 6823, 
+        6827, 6829, 6833, 6841, 6857, 6863, 6869, 6871, 6883, 6899, 6907, 
+        6911, 6917, 6947, 6949, 6959, 6961, 6967, 6971, 6977, 6983, 6991, 
+        6997, 7001, 7013, 7019, 7027, 7039, 7043, 7057, 7069, 7079, 7103, 
+        7109, 7121, 7127, 7129, 7151, 7159, 7177, 7187, 7193, 7207, 7211, 
+        7213, 7219, 7229, 7237, 7243, 7247, 7253, 7283, 7297, 7307, 7309, 7321, 7331, 7333, 7349, 7351, 7369, 7393, 7411, 7417, 7433, 7451, 
+        7457, 7459, 7477, 7481, 7487, 7489, 7499, 7507, 7517, 7523, 7529, 7537, 7541, 7547, 7549, 7559, 7561, 7573, 7577, 7583, 7589, 7591, 
+        7603, 7607, 7621, 7639, 7643, 7649, 7669, 7673, 7681, 7687, 7691, 7699, 7703, 7717, 7723, 7727, 7741, 7753, 7757, 7759, 7789, 7793, 
+        7817, 7823, 7829, 7841, 7853, 7867, 7873, 7877, 7879, 7883, 7901, 7907, 7919, 7927, 7933, 7937, 7949, 7951, 7963, 7993, 8009, 8011, 
+        8017, 8039, 8053, 8059, 8069, 8081, 8087, 8089, 8093, 8101, 8111, 8117, 8123, 8147, 8161, 8167, 8171, 8179, 8191, 8209, 8219, 8221, 
+        8231, 8233, 8237, 8243, 8263, 8269, 8273, 8287, 8291, 8293, 8297, 8311, 8317, 8329, 8353, 8363, 8369, 8377, 8387, 8389, 8419, 8423, 
+        8429, 8431, 8443, 8447, 8461, 8467, 8501, 8513, 8521, 8527, 8537, 8539, 8543, 8563, 8573, 8581, 8597, 8599, 8609, 8623, 8627, 8629, 
+        8641, 8647, 8663, 8669, 8677, 8681, 8689, 8693, 8699, 8707, 8713, 8719, 8731, 8737, 8741, 8747, 8753, 8761, 8779, 8783, 8803, 8807, 
+        8819, 8821, 8831, 8837, 8839, 8849, 8861, 8863, 8867, 8887, 8893, 8923, 8929, 8933, 8941, 8951, 8963, 8969, 8971, 8999, 9001, 9007, 
+        9011, 9013, 9029, 9041, 9043, 9049, 9059, 9067, 9091, 9103, 9109, 9127, 9133, 9137, 9151, 9157, 9161, 9173, 9181, 9187, 9199, 9203, 
+        9209, 9221, 9227, 9239, 9241, 9257, 9277, 9281, 9283, 9293, 9311, 9319, 9323, 9337, 9341, 9343, 9349, 9371, 9377, 9391, 9397, 9403, 
+        9413, 9419, 9421, 9431, 9433, 9437, 9439, 9461, 9463, 9467, 9473, 9479, 9491, 9497, 9511, 9521, 9533, 9539, 9547, 9551, 9587, 9601, 
+        9613, 9619, 9623, 9629, 9631, 9643, 9649, 9661, 9677, 9679, 9689, 9697, 9719, 9721, 9733, 9739, 9743, 9749, 9767, 9769, 9781, 9787, 
+        9791, 9803, 9811, 9817, 9829, 9833, 9839, 9851, 9857, 9859, 9871, 9883, 9887, 9901, 9907, 9923, 9929, 9931, 9941, 9949, 9967, 9973, 
+        10007, 10009, 10037, 10039, 10061, 10067, 10069, 10079, 10091, 10093, 
+        10099, 10103, 10111, 10133, 10139, 10141, 10151, 10159, 10163, 10169, 10177, 10181, 10193, 10211, 10223, 10243, 10247, 10253, 10259, 10267, 
+        10271, 10273, 10289, 10301, 10303, 10313, 10321, 10331, 10333, 10337, 10343, 10357, 10369, 10391, 10399, 10427, 10429, 10433, 10453, 10457, 
+        10459, 10463, 10477, 10487, 10499, 10501, 10513, 10529, 10531, 10559, 10567, 10589, 10597, 10601, 10607, 10613, 10627, 10631, 10639, 10651, 
+        10657, 10663, 10667, 10687, 10691, 10709, 10711, 10723, 10729, 10733, 10739, 10753, 10771, 10781, 10789, 10799, 10831, 10837, 10847, 10853, 
+        10859, 10861, 10867, 10883, 10889, 10891, 10903, 10909, 10937, 10939, 10949, 10957, 10973, 10979, 10987, 10993, 11003, 11027, 11047, 11057, 
+        11059, 11069, 11071, 11083, 11087, 11093, 11113, 11117, 11119, 11131, 11149, 11159, 11161, 11171, 11173, 11177, 11197, 11213, 11239, 11243, 
+        11251, 11257, 11261, 11273, 11279, 11287, 11299, 11311, 11317, 11321, 11329, 11351, 11353, 11369, 11383, 11393, 11399, 11411, 11423, 11437, 
+        11443, 11447, 11467, 11471, 11483, 11489, 11491, 11497, 11503, 11519, 11527, 11549, 11551, 11579, 11587, 11593, 11597, 11617, 11621, 11633, 
+        11657, 11677, 11681, 11689, 11699, 11701, 11717, 11719, 11731, 11743, 11777, 11779, 11783, 11789, 11801, 11807, 11813, 11821, 11827, 11831, 
+        11833, 11839, 11863, 11867, 11887, 11897, 11903, 11909, 11923, 11927, 11933, 11939, 11941, 11953, 11959, 11969, 11971, 11981, 11987, 12007, 
+        12011, 12037, 12041, 12043, 12049, 12071, 12073, 12097, 12101, 12107, 12109, 12113, 12119, 12143, 12149, 12157, 12161, 12163, 12197, 12203, 
+        12211, 12227, 12239, 12241, 12251, 12253, 12263, 12269, 12277, 12281, 12289, 12301, 12323, 12329, 12343, 12347, 12373, 12377, 12379, 12391, 
+        12401, 12409, 12413, 12421, 12433, 12437, 12451, 12457, 12473, 12479, 12487, 12491, 12497, 12503, 12511, 12517, 12527, 12539, 
+        12541, 12547, 12553, 12569, 12577, 12583, 12589, 12601, 12611, 12613, 12619, 12637, 12641, 12647, 12653, 12659, 12671, 12689, 
+        12697, 12703, 12713, 12721, 12739, 12743, 12757, 12763, 12781, 12791, 12799, 12809, 12821, 12823, 12829, 12841, 12853, 12889, 
+        12893, 12899, 12907, 12911, 12917, 12919, 12923, 12941, 12953, 12959, 12967, 12973, 12979, 12983, 13001, 13003, 13007, 13009, 
+        13033, 13037, 13043, 13049, 13063, 13093, 13099, 13103, 13109, 13121, 13127, 13147, 13151, 13159, 13163, 13171, 13177, 13183, 
+        13187, 13217, 13219, 13229, 13241, 13249, 13259, 13267, 13291, 13297, 13309, 13313, 13327, 13331, 13337, 13339, 13367, 13381, 
+        13397, 13399, 13411, 13417, 13421, 13441, 13451, 13457, 13463, 13469, 13477, 13487, 13499, 13513, 13523, 13537, 13553, 13567, 
+        13577, 13591, 13597, 13613, 13619, 13627, 13633, 13649, 13669, 13679, 13681, 13687, 13691, 13693, 13697, 13709, 13711, 13721, 13723, 
+        13729, 13751, 13757, 13759, 13763, 13781, 13789, 13799, 13807, 13829, 13831, 13841, 13859, 13873, 13877, 13879, 13883, 13901, 13903, 
+        13907, 13913, 13921, 13931, 13933, 13963, 13967, 13997, 13999, 14009, 14011, 14029, 14033, 14051, 14057, 14071, 14081, 14083, 14087, 
+        14107, 14143, 14149, 14153, 14159, 14173, 14177, 14197, 14207, 14221, 14243, 14249, 14251, 14281, 14293, 14303, 14321, 14323, 14327, 
+        14341, 14347, 14369, 14387, 14389, 14401, 14407, 14411, 14419, 14423, 14431, 14437, 14447, 14449, 14461, 14479, 14489, 14503, 14519, 
+        14533, 14537, 14543, 14549, 14551, 14557, 14561, 14563, 14591, 14593, 14621, 14627, 14629, 14633, 14639, 14653, 14657, 14669, 14683, 14699, 14713, 14717, 
+        14723, 14731, 14737, 14741, 14747, 14753, 14759, 14767, 14771, 14779, 14783, 14797, 14813, 14821, 14827, 14831, 14843, 14851, 14867, 14869, 14879, 14887, 
+        14891, 14897, 14923, 14929, 14939, 14947, 14951, 14957, 14969, 14983, 15013, 15017, 15031, 15053, 15061, 15073, 15077, 15083, 15091, 15101, 15107, 15121, 
+        15131, 15137, 15139, 15149, 15161, 15173, 15187, 15193, 15199, 15217, 15227, 15233, 15241, 15259, 15263, 15269, 15271, 15277, 15287, 15289, 15299, 15307, 
+        15313, 15319, 15329, 15331, 15349, 15359, 15361, 15373, 15377, 15383, 15391, 15401, 15413, 15427, 15439, 15443, 15451, 15461, 15467, 15473, 15493, 15497, 
+        15511, 15527, 15541, 15551, 15559, 15569, 15581, 15583, 15601, 15607, 15619, 15629, 15641, 15643, 15647, 15649, 15661, 15667, 15671, 15679, 15683, 15727, 
+        15731, 15733, 15737, 15739, 15749, 15761, 15767, 15773, 15787, 15791, 15797, 15803, 15809, 15817, 15823, 15859, 15877, 15881, 15887, 15889, 15901, 15907, 
+        15913, 15919, 15923, 15937, 15959, 15971, 15973, 15991, 16001, 16007, 16033, 16057, 16061, 16063, 16067, 16069, 16073, 16087, 16091, 16097, 16103, 16111, 
+        16127, 16139, 16141, 16183, 16187, 16189, 16193, 16217, 16223, 16229, 16231, 16249, 16253, 16267, 16273, 16301, 16319, 16333, 16339, 16349, 16361, 16363, 
+        16369, 16381, 16411, 16417, 16421, 16427, 16433, 16447, 16451, 16453, 16477, 16481, 16487, 16493, 16519, 16529, 16547, 16553, 16561, 16567, 16573, 16603, 
+        16607, 16619, 16631, 16633, 16649, 16651, 16657, 16661, 16673, 16691, 16693, 16699, 16703, 16729, 16741, 16747, 16759, 16763, 16787, 16811, 16823, 16829, 
+        16831, 16843, 16871, 16879, 16883, 16889, 16901, 16903, 16921, 16927, 16931, 16937, 16943, 16963, 16979, 16981, 16987, 16993, 17011, 17021, 17027, 17029, 
+        17033, 17041, 17047, 17053, 17077, 17093, 17099, 17107, 17117, 17123, 17137, 17159, 17167, 17183, 17189, 17191, 17203, 17207, 17209, 17231, 17239, 17257, 
+        17291, 17293, 17299, 17317, 17321, 17327, 17333, 17341, 17351, 17359, 17377, 17383, 17387, 17389, 17393, 17401, 17417, 17419, 17431, 17443, 17449, 17467, 
+        17471, 17477, 17483, 17489, 17491, 17497, 17509, 17519, 17539, 17551, 17569, 17573, 17579, 17581, 17597, 17599, 17609, 17623, 17627, 17657, 17659, 17669, 
+        17681, 17683, 17707, 17713, 17729, 17737, 17747, 17749, 17761, 17783, 17789, 17791, 17807, 17827, 17837, 17839, 17851, 17863, 17881, 17891, 17903, 17909, 
+        
+
+        '''
+        primes = sieve_of_eratosthenes(0xffff)
+        # p(primes)
+
+    def test_find_string_rabin_karp(self):
+        def rolling_hash_2(substring, next_char, hash_val):
+            prime = 65449
+            base  = 256
+            sz_s = len(substring)
+            h = 0
+            if next_char == None and hash_val == None:
+                for i in range(sz_s):
+                    h = h*base%prime
+                    h = h+ord(substring[i])
+            else:
+                v = (ord(substring[0]))*pow(base,sz_s-1)%prime
+                h = (hash_val - v)*base%prime
+                h = h+ord(next_char)
+            return h
+        def rolling_hash(substring, next_char, hash_val):
+            prime = 65449
+            base  = 256
+            sz_s = len(substring)
+            h = 0
+            if next_char == None and hash_val == None:
+                for i in range(sz_s):
+                    h = h*base%prime
+                    v = ord(substring[i])
+                    h = h+v
+            else:
+                v = ord(substring[0])
+                v = v*pow(base,sz_s-1)%prime
+                h = hash_val - v
+                h = h*base%prime
+                v = ord(next_char)
+                h = h+v
+            return h
+        def hash(s, next_char=None, hash=None):
+            return rolling_hash(s, next_char, hash)
+        def string_cmp(s1,s2):
+            sz_s1 = len(s1)
+            sz_s2 = len(s2)
+            if sz_s1 != sz_s2:
+                return False
+            for i in range(sz_s1):
+                if s1[i] != s2[i]:
+                    return False
+            return True
+        def rabin_karp(s,p):
+            ph = hash(p)
+            sz_p = len(p)
+            sz_s = len(s)
+            substr = s[:sz_p]
+            next_c = None
+            hash_v = None
+            for i in range(sz_p,sz_s,1):
+                hash_v = rolling_hash(substr,next_c,hash_v)
+                if next_c != None:
+                    substr = substr[1:] + next_c
+                next_c = s[i]
+                if hash_v == ph:
+                    if string_cmp(p,substr):
+                        return i
+            return None
+        def t_single():
+            s         = 'bbdbfccdcdbbfba'
+            p         =     'fccdc'
+            v         = rabin_karp(s,p)
+            assert v != None
+        def t_single_negative():
+            s         = 'bbdbfccdcdbbfba'
+            p         =     'fccdx'
+            v         = rabin_karp(s,p)
+            assert v == None
+        def t0():
+            num_cases = 100
+            charset   = 'abcdef'
+            utils     = self.utils
+            sz_s      = 30
+            sz_p      = 5
+            try:
+                for i in range(num_cases):
+                    s         = utils.rand_str(sz_s,charset)
+                    j         = utils.rand(0,sz_s-sz_p)
+                    p         = s[j:j+sz_p]
+                    v         = rabin_karp(s,p)
+                    if v == None:
+                        print('p:{} s:{}'.format(p,s))
+                    assert v != None
+            except Exception:
+                raise
+        t0()
+        t_single_negative()
+        t_single()
     def test_find_string_compressed_trie(self):
         class snode:
             def __init__(self,val=None):
@@ -1571,7 +2176,6 @@ class ut(unittest.TestCase):
         def get_perf_ctr():
             nonlocal pctr
             return pctr
-
         def find_string_1(s,pat):
             nonlocal pctr
             '''
@@ -1632,7 +2236,7 @@ class ut(unittest.TestCase):
                 i = i+1
             return None
 
-        def find_string_2(s,pat):
+        def find_string_2(s,p,debug=False):
             '''
             for(i = 0; i < sz_s;)
                 if first and last chars of pat match, then check
@@ -1644,27 +2248,56 @@ class ut(unittest.TestCase):
                         set i to at least +1 or where mismatch was
             '''
             nonlocal pctr
+            debug_is_double_space=True
             pctr = 0
             # have idx ptr that points to next matching first char, and skip
             sz_s = len(s)
-            sz_p = len(pat)
+            sz_p = len(p)
             i = 0
             m = 0
+
+            if debug:
+                print('p:            {}'.format(p))
+                print('s:            {}'.format(s))
+                print('')
+
             while i < sz_s:
                 pctr += 1
                 j = i
                 m = 0
                 idx_next_match_0_char_offset = None
+
+                if debug:
+                    print('j:{} m:{}'.format(j,m))
+                    print_array(s,debug_is_double_space)
+                    space   = '  ' if debug_is_double_space else ' '
+                    nospace = ' '  if debug_is_double_space else ''
+                    t = space * (j-m)
+                    print(t + nospace.join(p))
+                    arrow = '' if j == 0 else space * (j)
+                    print(arrow + '|\n')
+
                 # match the first and last char
-                if s[j] == pat[0] and (j+sz_p-1) < sz_s and s[j+sz_p-1] == pat[sz_p-1]:
+                if s[j] == p[0] and (j+sz_p-1) < sz_s and s[j+sz_p-1] == p[sz_p-1]:
                     found = True
                     for m in range(1,sz_p):
                         pctr += 1
-                        # find first char in s that matches pat[0],
+                        # find first char in s that matches p[0],
                         # which can be used to jump to next offset if fail match
-                        if s[j+m] == pat[0] and idx_next_match_0_char_offset is not None:
+
+                        if debug:
+                            print('j:{} m:{}'.format(j,m))
+                            print_array(s,debug_is_double_space)
+                            space   = '  ' if debug_is_double_space else ' '
+                            nospace = ' ' if debug_is_double_space else ''
+                            t = space * (j)
+                            print(t + nospace.join(p))
+                            arrow = '' if (j+m) == 0 else space * (j+m)
+                            print(arrow + '|\n')
+
+                        if s[j+m] == p[0] and idx_next_match_0_char_offset is not None:
                             idx_next_match_0_char_offset = m
-                        if s[j+m] != pat[m]:
+                        if s[j+m] != p[m]:
                             found = False
                             break
                     if found:
@@ -1815,8 +2448,15 @@ class ut(unittest.TestCase):
                     t = ' ' * (i_s-i_p)
                     if debug_is_double_space:
                         print(t + t + ' '.join(p))
+                        arrow = '' if i_s == 0 else '  ' * (i_s)
+                        arrow += '|'
+                        print(arrow)
                     else:
                         print(t + ''.join(p))
+                        arrow = '' if i_s == 0 else ' ' * (i_s)
+                        arrow += '|'
+                        print(arrow)
+
                     print('\n')
 
                 if s[i_s] != p[i_p]:
@@ -1999,36 +2639,27 @@ class ut(unittest.TestCase):
             debug = False
             if debug:
                 print('-------------------------------------------------')
+
             s = 'aabbaabbaabcaaabbccaabbbbcc'
             p =               'abbccb'
-            r = find_string_kmp(s,p)
+            r = find_string_kmp(s,p,False)
             assert r == None
 
-            if debug:
-                print('-------------------------------------------------')
             s = 'aabbaabbaabcaaabbccaabbbbcc'
             p =               'abbcca'
-            r = find_string_kmp(s,p)
+            r = find_string_kmp(s,p,False)
             assert r != None
 
-            if debug:
-                print('-------------------------------------------------')
             s = 'aababaabababaababbbaaabababaabaabaabababaaababaabaaabaaa'
             p =                                           'ababaabaaab'
-            r = find_string_kmp(s,p)
+            r = find_string_kmp(s,p,False)
             assert r != None
 
-            if debug:
-                print('-------------------------------------------------')
             s = 'aababaabababaababbbaaabababaabaabaabababaaababaabaaabaaa'
             p =                                           'ababaabaaabb'
-            r = find_string_kmp(s,p)
+            r = find_string_kmp(s,p,False)
             assert r == None
 
-            '''
-            adcadbabae
-            0001201010
-            '''
             s = 'abedaadcaadcadbabaedacbcedeee'
             p =          'adcadbabae'
             r = find_string_kmp(s,p,False)
@@ -2049,6 +2680,11 @@ class ut(unittest.TestCase):
             r = find_string_kmp(s,p,False)
             assert r != None
 
+            s = 'aaaaaaaaaaaaaaaaaaaaaaaabbaaaaaaaaaaaa'
+            p =             'aaaaaaaaaaaabbaaaaaa'
+            r = find_string_kmp(s,p,False)
+            assert r != None
+
             '''
             s = ''
             p =      ''
@@ -2056,6 +2692,21 @@ class ut(unittest.TestCase):
             assert r != None
             '''
 
+        def test_single_case():
+            s = 'aaaaaaaaaaaaaaaaaaaaaaaabbaaaaaaaaaaaa'
+            p =             'aaaaaaaaaaaabbaaaaaa'
+            s = 'aababaabababaababbbaaabababaabaabaabababaaababaabaaabaaa'
+            p =                                           'ababaabaaab'
+            r0 = find_string_kmp(s,p,False)
+            p0 = get_perf_ctr()
+            assert r0 != None
+            r1 = find_string_1(s,p)
+            p1 = get_perf_ctr()
+            assert r1 != None
+            r2 = find_string_2(s,p,True)
+            p2 = get_perf_ctr()
+            assert r2 != None
+            print('pctr[0,1,2] = [{},{},{}]'.format(p0,p1,p2))
 
         def test_kmp_random_positive():
             num_cases = 1000
@@ -2092,23 +2743,98 @@ class ut(unittest.TestCase):
             num_cases = 100
             pass
 
-        def test_str_random():
-            pass
+        def test_compare_performance():
+            num_cases = 1000
+            sz_s      = 100
+            sz_p      = 10
+            charset   = 'abcdef'
+            utils     = self.utils
+            res_pctr  = []
+            data_in   = []
+            for i in range(num_cases):
+                s       = utils.rand_str(sz_s,charset)
+                j       = utils.rand(0,sz_s-sz_p)
+                p       = s[j:j+sz_p]
+                tup = (s,p,j)
+                data_in.append(tup)
 
-        '''
-        test_str_1()
-        p('\n')
-        test_str_2()
-        p('\n')
-        test_str_3()
-        p('\n')
-        test_str_4()
-        p('\n')
-        '''
+            pctr_out  = []
 
-        test_kmp()
-        test_kmp_random_positive()
+            try:
+                i = 0
+                for tup in data_in:
+                    s = tup[0]
+                    p = tup[1]
+                    j = tup[2]
 
+                    r1 = find_string_kmp(s,p)
+                    p1 = get_perf_ctr()
+                    r2 = find_string_1(s,p)
+                    p2 = get_perf_ctr()
+                    r3 = find_string_1_1(s,p)
+                    p3 = get_perf_ctr()
+                    r4 = find_string_2(s,p)
+                    p4 = get_perf_ctr()
+                    r5 = find_string_3(s,p)
+                    p5 = get_perf_ctr()
+
+                    tup_pctr = (p1,p2,p3,p4,p5)
+                    res_pctr.append(tup_pctr)
+
+                    if r1 != j:
+                        print('case:{} mismatch: expected match at j:{} r:{}'.format(i,j,r1))
+                        print('')
+                        print_array(s)
+                        print('')
+                        print_array(p)
+                        print('')
+                        r = find_string_kmp(s,p,True)
+
+                    assert r1 == j
+                    print('r[1,2,3,4,5] = [{},{},{},{},{}]'.format(r1,r2,r3,r4,r5))
+                    if r1 == r2 and r1 == r3 and r1 == r4 and r1 == r5:
+                        pctr_out.append(tup_pctr)
+                    '''
+                    if not (r1 == r2 and r1 == r3 and r1 == r4 and r1 == r5):
+                        print('r[1,2,3,4,5] = [{},{},{},{},{}]'.format(r1,r2,r3,r4,r5))
+                    assert r1 == r2 and r1 == r3 and r1 == r4 and r1 == r5
+                    '''
+                    i += 1
+                # get pctr average
+                sum_list = [0,0,0,0,0]
+                avg_list = [0,0,0,0,0]
+                sz_list = len(pctr_out)
+                for tup in pctr_out:
+                    for k in range(len(tup)):
+                        sum_list[k] += tup[k]
+                for k in range(len(sum_list)):
+                    avg_list[k] = sum_list[k]/sz_list
+                    avg_list[k] = round(avg_list[k],2)
+                print('avg perfctr: {}'.format(avg_list))
+
+            except Exception as e:
+                raise e
+            #print('pctr_val {}'.format(res_pctr))
+            return
+
+        def test_main_string_find():
+            '''
+            test_str_1()
+            p('\n')
+            test_str_2()
+            p('\n')
+            test_str_3()
+            p('\n')
+            test_str_4()
+            p('\n')
+            test_kmp_random_positive()
+            test_compare_performance()
+            test_kmp()
+            '''
+            test_single_case()
+
+
+        test_main_string_find()
 
     def test_printarray(self):
         def _printarray(s):

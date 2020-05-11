@@ -29,6 +29,9 @@ import csv
 import pandas
 import types
 import copy
+import struct
+import binascii
+import codecs
 
 '''
 python3 -m unittest syntax_unittests.ut.test_method
@@ -692,6 +695,9 @@ class ut(unittest.TestCase):
         assert s == '1 2 3 4 5'
         s = ' '.join(l2)
         assert s == 'h e l l o'
+        space = ' '
+        s = space.join(l2)
+        assert s == 'h e l l o'
 
         l = []
         l.append([])
@@ -990,7 +996,277 @@ class ut(unittest.TestCase):
         assert s == 'aaa'
         s = 'a ' * 3
         assert s == 'a a a '
+
         #p('test_string')
+
+    def test_byte_binary_conversion(self):
+        '''
+        ascii table
+
+        hex     char
+        20      space
+        21      !
+        22      "
+        23      #
+        24      $
+        25      %
+        26      &
+        27      '
+        28      (
+        29      )
+        2A      *
+        2B      +
+        2C      ,
+        2D      -
+        2E      .
+        2F      /
+        30      0
+        31      1
+        32      2
+        33      3
+        34      4
+        35      5
+        36      6
+        37      7
+        38      8
+        39      9
+        3A      :
+        3B      ;
+        3C      <
+        3D      =
+        3E      >
+        3F      ?
+        40      @   `   @
+        41      A
+        42      B
+        43      C
+        44      D
+        45      E
+        46      F
+        47      G
+        48      H
+        49      I
+        4A      J
+        4B      K
+        4C      L
+        4D      M
+        4E      N
+        4F      O
+        50      P
+        51      Q
+        52      R
+        53      S
+        54      T
+        55      U
+        56      V
+        57      W
+        58      X
+        59      Y
+        5A      Z
+        5B      [
+        5C      \   ~   \
+        5D      ]
+        5E      ↑   ^
+        5F      ←   _
+        60      @   `
+        61      a
+        62      b
+        63      c
+        64      d
+        65      e
+        66      f
+        67      g
+        68      h
+        69      i
+        6A      j
+        6B      k
+        6C      l
+        6D      m
+        6E      n
+        6F      o
+        70      p
+        71      q
+        72      r
+        73      s
+        74      t
+        75      u
+        76      v
+        77      w
+        78      x
+        79      y
+        7A      z
+        7B      {
+        7C      ACK   ¬   |
+        7D      }
+        7E      ESC   |   ~
+        '''
+
+        # byte array, string to byte, ascii, int byte
+
+        # test char to ascii decimal and ascii to char
+        s = 'hello'
+        l = []
+        for i in range(len(s)):
+            c = s[i]
+            vascii = ord(c)
+            vchar  = chr(vascii)
+            l.append(vascii)
+            assert vchar == c
+        assert l == [104,101,108,108,111]
+
+        # convert string to bytes binary and bytes to string
+        vs = 'hello'
+        lb = []
+        for i in range(len(vs)):
+            vc = s[i]
+            va = ord(vc)
+
+
+        # char to ascii, unicode encode/decode
+        s  = 'hello'
+        lc = [c for c in s]
+        la = [ord(c) for c in lc]
+        lb = bytes(la)  # bytes uses a list input
+        ba = bytearray(la)
+        lr = [chr(a) for a in la]
+        assert lc == ['h','e','l','l','o']
+        assert la == [0x68,0x65,0x6c,0x6c,0x6f]
+        assert lb == b'\x68\x65\x6c\x6c\x6f'
+        assert ba == b'\x68\x65\x6c\x6c\x6f'
+        assert ba[1] == 0x65
+        assert ba[1] != b'\x65'
+        assert 0x65 != b'\x65'
+        assert lr == ['h','e','l','l','o']
+        assert 'hello' == ''.join(lr)
+        rb = b"hello"
+        assert rb == b'\x68\x65\x6c\x6c\x6f'
+        rb = 'hello'.encode('utf-8')
+        assert rb == b'\x68\x65\x6c\x6c\x6f'
+        assert rb == bytearray(b'\x68\x65\x6c\x6c\x6f')
+        rs = rb.decode('utf-8')
+        assert rs == 'hello'
+        ba = bytearray('hello','utf-8')
+        assert ba == bytearray(b'hello')
+        assert ba == b'\x68\x65\x6c\x6c\x6f'
+
+        # int array to byte, byte to int array, length of bytearray
+        lb = bytes([6,8,10,12,14,255])              # bytes is immutable
+        assert lb == b'\x06\x08\x0a\x0c\x0e\xff'
+        assert len(lb) == 6
+        assert lb != b'\x06\x08\x0a\x0c\x0f\xfe'
+        li = [i for i in lb]
+        assert li == [6,8,10,12,14,255]
+        lb = [b for b in li]
+        assert lb == [6,8,10,12,14,255]
+        lb = bytes([255])
+        assert lb == b'\xff'
+
+        # int.from_bytes
+        r = int.from_bytes(b'\x00\x10', byteorder='big')
+        assert r == 0x10
+        r = int.from_bytes([0x30,0x20,0x00,0x10], byteorder='big')
+        assert r == 0x30200010
+        r = int.from_bytes(b'\x00\x10', byteorder='little')
+        assert r == 0x1000
+        r = int.from_bytes([0x30,0x20,0x00,0x10], byteorder='little')
+        assert r == 0x10002030
+
+
+
+        # bytearray is mutable
+        ba = bytearray()
+        ba.append(6)
+        assert ba == b'\x06'
+        ba.append(8)
+        assert ba == b'\x06\x08'
+        ba.append(16)
+        assert ba == b'\x06\x08\x10'
+        assert len(ba) == 3
+        assert ba[0] == 0x06 and ba[1] == 0x08
+        li = [i for i in ba]
+        assert li == [0x06,0x08,0x10]
+
+
+
+        # packed unpack struct binary data
+        '''
+        with open(filename,'rb') as file:
+            binary_data = file.read()
+        '''
+
+        # convert string to base64 and base64 to string
+        s = 'hello this is a sentence'
+        ba = s.encode('utf-8')
+        b64 = codecs.encode(ba,'base64')
+
+        out_ba = codecs.decode(b64,'base64')
+        out_s = out_ba.decode('utf-8')
+        assert s == out_s
+        assert ba == b'hello this is a sentence'
+        assert b64 == b'aGVsbG8gdGhpcyBpcyBhIHNlbnRlbmNl\n'
+
+        # binary to hex and hex to binary
+        bahex = binascii.hexlify(ba)
+        baunhex = binascii.unhexlify(bahex)
+        s_out = baunhex.decode('utf-8')
+        assert bahex == b'68656c6c6f207468697320697320612073656e74656e6365'
+        assert baunhex == b'hello this is a sentence'
+        assert s_out == 'hello this is a sentence'
+
+        l1 = [hex(v) for v in bahex]
+        l2 = [v for v in bahex]
+        assert bahex[0] == 0x36 # this is hex of 0x68, which is wrong
+        assert baunhex[0] == 0x68   # h
+        assert baunhex[1] == 0x65   # e
+
+        ba = bytearray()    # mutable bytearray
+        sz = 0x11
+        for i in range(sz):
+            ba.append(i)
+        assert ba == b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10'
+        bahex = binascii.hexlify(ba)
+        baunhex = binascii.unhexlify(bahex)
+        assert bahex == b'000102030405060708090a0b0c0d0e0f10'
+        assert baunhex == b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10'
+
+        # convert long (> 4 bytes) binary data to string of 0 and 1 and convert back for equivalence
+        s1 = 'njfwehr32jrnkw'
+        ba = s1.encode('utf-8')
+        b64 = codecs.encode(ba,'base64')
+        assert b64 == b'bmpmd2VocjMyanJua3c=\n'
+        lbi = [i for i in ba]
+        assert lbi == [110, 106, 102, 119, 101, 104, 114, 51, 50, 106, 114, 110, 107, 119]
+        lh = [hex(i) for i in lbi]
+        assert lh == ['0x6e', '0x6a', '0x66', '0x77', '0x65', '0x68', '0x72', '0x33', '0x32', '0x6a', '0x72', '0x6e', '0x6b', '0x77']
+        sz_s1 = len(s1)
+        assert sz_s1 == 14
+        assert len(lh) == sz_s1
+        assert len(lbi) == sz_s1
+        lbinarystring = []
+        for i in lbi:
+            for j in range(7,-1,-1):
+                v = (i >> j) & 0x1
+                lbinarystring.append(str(v))
+        sbin = ''.join(lbinarystring)
+        assert sbin == '0110111001101010011001100111011101100101011010000111001000110011001100100110101001110010011011100110101101110111'
+        sz_sbin = len(sbin)
+        assert sz_sbin == (sz_s1*8)
+        # now convert string binary 1 and 0 to string
+        ctr = 0
+        b = 0x00
+        out_ba = bytearray()
+        for c in sbin:
+            i = 0 if c == '0' else 1
+            b = (b << 1) | (i & 0x1)
+            ctr += 1
+            if ctr % 8 == 0:
+                out_ba.append(b)
+                b = 0x00
+                ctr = 0
+        assert out_ba == ba
+
+        pass
+
 
     def test_set_vs_map_vs_list(self):
         vset = set()
@@ -1847,6 +2123,39 @@ class ut(unittest.TestCase):
         assert l == [('k0',('k0','y4','z2')),('k1',('k1','y3','z3')),('k2',('k2','y2','z0')),('k3',('k3','y1','z4')),('k4',('k4','y0','z1'))]
         l = list(x[1] for x in l)
         assert l == [('k0','y4','z2'),('k1','y3','z3'),('k2','y2','z0'),('k3','y1','z4'),('k4','y0','z1')]
+
+        # sort tuple by lambda key
+        lunsorted = [('k4','y0','z1'),('k0','y4','z2'),('k2','y2','z0'),('k3','y1','z4'),('k1','y3','z3')]
+        lsorted = sorted(lunsorted, key=lambda x:x[0])
+        assert lsorted == [('k0','y4','z2'),('k1','y3','z3'),('k2','y2','z0'),('k3','y1','z4'),('k4','y0','z1')]
+
+        # sort numeric keys ALPHABETICAL ORDER
+        lunsorted = [(3,3,3),(5,4,2),(12,1,20),(4,5,1),(2,1,5),(1,2,4)]
+        lsorted = sorted(lunsorted, key=lambda x:str(x[0]))
+        assert lsorted == [(1,2,4),(12,1,20),(2,1,5),(3,3,3),(4,5,1),(5,4,2)]
+        lsorted = sorted(lunsorted, key=lambda x:str(x[1]))
+        assert lsorted == [(12,1,20),(2,1,5),(1,2,4),(3,3,3),(5,4,2),(4,5,1)]
+        lsorted = sorted(lunsorted, key=lambda x:str(x[2]))
+        assert lsorted == [(4,5,1),(5,4,2),(12,1,20),(3,3,3),(1,2,4),(2,1,5)]
+
+        # sort numeric keys NATURAL ORDER
+        lunsorted = [(3,3,3),(5,4,2),(12,1,20),(4,5,1),(2,1,5),(1,2,4)]
+        lsorted = sorted(lunsorted, key=lambda x:int(x[0]))
+        assert lsorted == [(1,2,4),(2,1,5),(3,3,3),(4,5,1),(5,4,2),(12,1,20)]
+        lsorted = sorted(lunsorted, key=lambda x:int(x[1]))
+        assert lsorted == [(12,1,20),(2,1,5),(1,2,4),(3,3,3),(5,4,2),(4,5,1)]
+        lsorted = sorted(lunsorted, key=lambda x:int(x[2]))
+        assert lsorted == [(4,5,1),(5,4,2),(3,3,3),(1,2,4),(2,1,5),(12,1,20)]
+
+        # sort numeric keys ALPHABETICAL ORDER but why does it execute as NATURAL ORDER??
+        lunsorted = [(3,3,3),(5,4,2),(12,1,20),(4,5,1),(2,1,5),(1,2,4)]
+        lsorted = sorted(lunsorted, key=lambda x:x[0])
+        assert lsorted == [(1,2,4),(2,1,5),(3,3,3),(4,5,1),(5,4,2),(12,1,20)]
+        lsorted = sorted(lunsorted, key=lambda x:x[1])
+        assert lsorted == [(12,1,20),(2,1,5),(1,2,4),(3,3,3),(5,4,2),(4,5,1)]
+        lsorted = sorted(lunsorted, key=lambda x:x[2])
+        assert lsorted == [(4,5,1),(5,4,2),(3,3,3),(1,2,4),(2,1,5),(12,1,20)]
+
 
         hq = []
         for t in li:
