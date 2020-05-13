@@ -1277,32 +1277,305 @@ class ut(unittest.TestCase):
 
         '''
         class node:
+            ID = 0
             def __init__(self,k,v):
-                self.k = k
-                self.v = v
-            def getk(self):
-                return self.k
-            def getv(self):
-                return self.v
-        def huffman_encode(s):
+                self.id_ = node.ID
+                self.k_ = k
+                self.v_ = v
+                self.l_ = None
+                self.r_ = None
+                node.ID += 1
+            def reset(self):
+                node.ID = 0
+            def l(self,n=None):
+                if n != None:
+                    self.l_ = n
+                return self.l_
+            def r(self,n=None):
+                if n != None:
+                    self.r_ = n
+                return self.r_
+            def k(self):
+                return self.k_
+            def v(self):
+                return self.v_
+            '''
+            the __lt__,__eq__,__gt__ are needed for tiebreaker values
+            the use case is when insert into heapq, the key value is equal, and so
+            node needs to be compared. if node needs to be compared, then comparison
+            method is needed. 
+            
+            only __lt__ needs to be implemented
+            def __eq__(self, other):
+                if other == None:
+                    return False
+                if self.k() == None:
+                    return True
+                return self.k() == other.k()
+            def __gt__(self, other):
+                if other == None:
+                    return True
+                if self.k() == None:
+                    return False
+                return self.k() > other.k()
+
+            '''
+            def __lt__(self, other):
+                if other == None:
+                    return False
+                if self.k() == None:
+                    return True
+                return self.k() < other.k()
+
+        def intarray_to_bytearray(ia):
+            ba = bytearray()
+            ctr = 0
+            b = 0
+            cnt_total = 0
+            for i in ia:
+                assert (i == 0 or i == 1)
+                ctr += 1
+                b = (b << 0x1) | (i & 0x1)
+                if ctr % 8 == 0:
+                    ba.append(b)
+                    ctr = 0
+                cnt_total += 1
+            if ctr != 0:
+                ba.append(b)
+            return (cnt_total,ba)
+        def bytearray_to_intarray(ba,cnt_total):
+            ia = []
+            ctr = 0
+            for b in ba:
+                for i in range(8):
+                    if ctr >= cnt_total:
+                        break
+                    i = b & 0x1
+                    ia.append(i)
+                    b = b >> 1
+                    ctr += 1
+                if ctr >= cnt_total:
+                    break
+            return ia
+
+        def huffman_build_tree(s):
             d = {}
+
             for c in s:
                 if c not in d:
                     d[c] = 0
                 d[c] += 1
-            hq = []
-            li = [(v,k) for k,v in d.items()]
-            lo = sorted(li,key=lambda x:int(x[0]))
 
+            ln = [node(k,v) for k,v in d.items()]       # make a node of each k,v
+
+            hq = []
+            for n in ln:
+                heapq.heappush(hq,(int(n.v()),n))
+
+            while(len(hq) > 0):
+                n1 = heapq.heappop(hq)[1]
+                if len(hq) == 0:
+                    nr = n1
+                    break
+                n2 = heapq.heappop(hq)[1]
+                n = node(None,n1.v()+n2.v())
+                n.l(n1 if n1.v() < n2.v() else n2)
+                n.r(n1 if n1.v() >= n2.v() else n2)
+                heapq.heappush(hq,(int(n.v()),n))
+
+            return nr
+
+        def huffman_build_tree_2(s):
+            d = {}
+
+            for c in s:
+                if c not in d:
+                    d[c] = 0
+                d[c] += 1
+
+            ln = [node(k,v) for k,v in d.items()]       # make a node of each k,v
+
+            hqleaves = []
+            for n in ln:
+                heapq.heappush(hqleaves,(int(n.v(),n)))
+
+            hq = []
+
+            while(len(hqleaves) > 0):
+                n1 = heapq.heappop(hqleaves)[1]
+                if len(hqleaves) == 0:
+                    n = node(None,n1.v())
+                    n.l(n1)
+                    heapq.heappush(hq,(int(n.v()),n))
+                    break
+                n2 = heapq.heappop(hqleaves)[1]
+                n = node(None,n1.v()+n2.v())
+                n.l(n1 if n1.v() < n2.v() else n2)
+                n.r(n1 if n1.v() >= n2.v() else n2)
+                heapq.heappush(hq,(int(n.v()),n))
+
+            nr = None
+            while(len(hq) > 0):
+                n1 = heapq.heappop(hq)
+                if len(hq) == 0:
+                    nr = n1
+                    break
+                n2 = heapq.heappop(hq)
+                n  = node(None,n1.v()+n2.v())
+                n.l(n1 if n1.v() < n2.v() else n2)
+                n.r(n1 if n1.v() >= n2.v() else n2)
+                heapq.heappush(hq,(int(n.v()),n))
+
+            return nr
+
+        def huffman_build_dict_char_to_bin_array(n,d,s,v):
+            if n == None:
+                return
+            if v != None:
+                s += v
+            if n.k() != None:
+                d[n.k()] = s
+            else:
+                huffman_build_dict_char_to_bin_array(n.l(),d,s,'0')
+                huffman_build_dict_char_to_bin_array(n.r(),d,s,'1')
+
+        # returns string of 1s and 0s, which can be passed to binary converter
+        def huffman_encode_from_tree(s,d,nr):
+            result = ''
+            for c in s:
+                result += d[c]
+            return result
+
+        def huffman_decode_from_binary_string(s,root):
+            if s == None or len(s) == 0:
+                return
+
+            sz_s = len(s)
+            l = []
+            i = 0
+
+            while i < sz_s:
+                last_i = i
+                cnt = 0
+                n = root
+                while True:
+                    if n.k() != None:
+                        l.append(n.k())
+                        break
+                    b = s[i]
+                    n = n.l() if b == '0' else n.r()
+                    cnt += 1
+                    i += 1
+                    if cnt > 1000:
+                        raise Exception('max_depth for char decode {}'.format(last_i))
+                if i >= sz_s:
+                    break
+
+            result = ''.join(l)
+            return result
+
+        def bytearray_to_str_binary(ba):
+            # reserve first 4 bytes for length of string, max of 4G
+            ctr = 0
+            ctr = ba[0]
+            ctr = (ctr << 8) | ba[1]
+            ctr = (ctr << 16) | ba[2]
+            ctr = (ctr << 24) | ba[3]
+
+
+            ctr_max = ctr
+            bctr = 4
+            s = ''
+            i = 0
+            while i < ctr_max:
+                b = ba[bctr]
+                for j in range(8):
+                    v = (b >> (7-j)) & 0x1
+                    v = '0' if v == 0 else '1'
+                    s += v
+                    i += 1
+                    if i >= ctr_max:
+                        break
+                bctr += 1
+            return s
+
+        def str_binary_to_bytearray(s):
+            # reserve first 4 bytes for length of string, max of 4G
+            ba = bytearray()
+            ba.append(0)
+            ba.append(0)
+            ba.append(0)
+            ba.append(0)
+            ctr = 0
+            bctr = 0
+            b = 0
+            for c in s:
+                v = 0 if c == '0' else 1
+                b = (b << 1) | (v & 1)
+                ctr += 1
+                bctr += 1
+                if bctr % 8 == 0:
+                    ba.append(b)
+                    b = 0
+                    bctr = 0
+            ba[0] = (ctr >> 24) & 0xff
+            ba[1] = (ctr >> 16) & 0xff
+            ba[2] = (ctr >> 8) & 0xff
+            ba[3] = (ctr >> 0) & 0xff
+            return ba
+
+        def serialize_huffman_tree_node(nr):
             pass
-        def huffman_decode(s):
+
+        def deserialize_huffman_tree_string(s):
             pass
+
+        def huffman_encode(s):
+            nr = huffman_build_tree(s)
+            d  = {}
+            huffman_build_dict_char_to_bin_array(nr,d,'',None)
+            encoded_string = huffman_encode_from_tree(s,d,nr)
+            ba = str_binary_to_bytearray(encoded_string)
+            return (d,nr,ba)
+
+        def huffman_decode(s,nr):
+            decoded_s = huffman_decode_from_binary_string(encoded_string,nr)
+            return decoded_s
+
         def t0():
             s = 'abcbababcabcabcabbcabcabacbababc'
             #s = 'abcbababcabcabcabbcabcabacbabcbacbabcabcbaccccabc'
             huffman_encode(s)
             pass
-        t0()
+
+        def t1():
+            '''
+            s   = abcbababcabcabcabbca
+            b   = 0
+            c   = 10
+            a   = 11
+            s   =  a b  c b  a b  a b  c  a b  c  a b  c  a b b  c  a
+            sb  = 11 0 10 0 11 0 11 0 10 11 0 10 11 0 10 11 0 0 10 11
+                 '11 0 10 0 11 0 11 0 10 11 0 10 11 0 10 11 0 0 10 11'
+            '''
+            s = 'abcbababcabcabcabbca'
+            s = 'abnassbnabnbababasbabababbansabnabna'
+            s = 'abnassbnabnbababasbabababbansabnabnasbasnbanwbansbanabnabnbanabnasbb'+\
+                'ansbansbnabsnabnsbnanbsnabsnabsnabnbababanbanabnababababbbabababbnsbansban'+\
+                'ansbansbnabsnabnsbnanbsnabsnabsnabnbababanbanabnababababbbabababbnsbansban'
+            nr = huffman_build_tree(s)
+            d  = {}
+            huffman_build_dict_char_to_bin_array(nr,d,'',None)
+            encoded_string = huffman_encode_from_tree(s,d,nr)
+            decoded_s = huffman_decode_from_binary_string(encoded_string,nr)
+            assert decoded_s == s
+            sz_s = len(s)
+            sz_b = int(len(encoded_string)/8)+1
+            print('encoded bytes: {} string bytes:{}'.format(sz_b,sz_s))
+        try:
+            t1()
+        except Exception as e:
+            raise e
 
     def test_hash(self):
         def rolling_hash_1(substring, next_char, hash_val):

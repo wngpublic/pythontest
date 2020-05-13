@@ -90,6 +90,32 @@ logger.setLevel(logging.INFO)
 logger.addHandler(fh)
 v_global = 100
 
+class bnode:
+    ID = 0
+    def __init__(self,k,v,l=None,r=None):
+        self.k_ = k
+        self.v_ = v
+        self.l_ = l
+        self.r_ = r
+        self.id_ = bnode.ID
+        bnode.ID += 1
+    def reset_id(self):
+        bnode.ID = 0
+    def id(self):
+        return self.id_
+    def l(self,n=None):
+        if n != None:
+            self.l_ = n
+        return self.l_
+    def r(self,n=None):
+        if n != None:
+            self.r_ = n
+        return self.r_
+    def k(self):
+        return self.k_
+    def v(self):
+        return self.v_
+
 class ut(unittest.TestCase):
     v_class = 200
     def __init__(self, *args, **kwargs):
@@ -1149,6 +1175,21 @@ class ut(unittest.TestCase):
         assert ba == bytearray(b'hello')
         assert ba == b'\x68\x65\x6c\x6c\x6f'
 
+        # modify bytearray
+        ba[0] = 0x20
+        assert ba == b'\x20\x65\x6c\x6c\x6f'
+        ba[3] = 0x21
+        assert ba == b'\x20\x65\x6c\x21\x6f'
+        flag = False
+        try:
+            # ValueError because must be byte
+            ba[3] = 0x2222
+        except Exception as e:
+            flag = True
+        assert flag
+        assert ba == b'\x20\x65\x6c\x21\x6f'
+
+
         # int array to byte, byte to int array, length of bytearray
         lb = bytes([6,8,10,12,14,255])              # bytes is immutable
         assert lb == b'\x06\x08\x0a\x0c\x0e\xff'
@@ -2189,6 +2230,79 @@ class ut(unittest.TestCase):
         l = list(x for x in hq)
         assert l != [('k0','y4','z2'),('k1','y3','z3'),('k2','y2','z0'),('k3','y1','z4'),('k4','y0','z1')]
 
+        bn0 = bnode(6,18)
+        bn1 = bnode(10,20)
+        bn2 = bnode(1,11)
+        bn3 = bnode(13,2)
+        bn4 = bnode(7,12)
+        bn5 = bnode(5,7)
+
+        ln = [bn0,bn1,bn2,bn3,bn4,bn5]
+        lnid = [n.id() for n in ln]
+        lnk = [(n.id(),n.k()) for n in ln]
+        assert bn0.k() == 6
+
+        # heapq of bnode by key by natural int order
+        #hq = ln.copy()
+        #heapq.heapify(hq)
+        #lo = list(x for x in hq)
+        #lok = [(n[1].id(),n[1].k()) for n in lo]
+
+        # this works
+        hq = []
+        for n in ln:
+            heapq.heappush(hq,(int(n.k()),n))
+        lo = []
+        while len(hq) != 0:
+            t = heapq.heappop(hq)
+            n = t[1]
+            lo.append(n)
+        lnk = [n.k() for n in lo]
+        assert len(lo) == 6
+        assert lo == [bn2,bn5,bn0,bn4,bn1,bn3]
+        assert lnk == [1,5,6,7,10,13]
+
+        # this does not output in sorted order!
+        hq = []
+        for n in ln:
+            heapq.heappush(hq,(int(n.k()),n))
+        lo = list(x[1] for x in hq)
+        lnk = [n.k() for n in lo]
+        assert len(lo) == 6
+        assert lnk != [1,5,6,7,10,13]
+
+        # this works heapq min in sorted order
+        hq = []
+        for n in ln:
+            heapq.heappush(hq,(int(n.k()),n))
+        sz_hq = len(hq)
+        lo = [heapq.heappop(hq)[1] for i in range(sz_hq)]
+        lnk = [n.k() for n in lo]
+        assert lnk == [1,5,6,7,10,13]
+
+        # heapq of bnode by key by string order
+        hq = []
+        for n in ln:
+            heapq.heappush(hq,(str(n.k()),n))
+        sz_hq = len(hq)
+        lo = [heapq.heappop(hq)[1] for i in range(sz_hq)]
+        lnk = [n.k() for n in lo]
+        assert lnk == [1,10,13,5,6,7]
+
+        # this works
+        lo = sorted(ln, key=lambda x:int(x.k()))
+        lnk = [n.k() for n in lo]
+        assert lo == [bn2,bn5,bn0,bn4,bn1,bn3]
+        assert ln == [bn0,bn1,bn2,bn3,bn4,bn5]
+        assert lnk == [1,5,6,7,10,13]
+
+        # heapq of bnode by key by string order
+        lo = sorted(ln, key=lambda x:str(x.k()))
+        lnk = [n.k() for n in lo]
+        assert lo == [bn2,bn1,bn3,bn5,bn0,bn4]
+        assert ln == [bn0,bn1,bn2,bn3,bn4,bn5]
+        assert lnk == [1,10,13,5,6,7]
+
         pass
 
 
@@ -2450,6 +2564,8 @@ class ut(unittest.TestCase):
             return (j,k)
         def ret_tuple_2(i:int,j:int,k:int) -> typing.Tuple[int,int]:
             return (j,k)
+
+        # return multiple return tuple
 
         assert ret_tuple_1(1,2,3) == (2,3)
         assert ret_tuple_1(1,2,3) != [2,3]
