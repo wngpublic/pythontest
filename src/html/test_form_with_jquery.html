@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Test Form with JQuery</title>
+<script src="../../output/jquery-3.4.1.js"></script>
+</head>
+
+<body>
+
+<table border="1">
+    <thead>
+    <tr>
+        <th colspan="4">
+            Table Header
+        </th>
+    </tr>
+    </thead>
+    <tbody>
+
+    <form>
+        <tr>
+            <td>
+                <fieldset>
+                    <input type="radio" id="radio11" name="name_radio_1" value="radioval11"><label for="radio11">Radio 11</label><br>
+                    <input type="radio" id="radio12" name="name_radio_1" value="radioval12"><label for="radio12">Radio 12</label><br>
+                    <input type="radio" id="radio13" name="name_radio_1" value="radioval13"><label for="radio13">Radio 13</label><br>
+                </fieldset>
+            </td>
+            <td id="idr0c1" name="r0c1">
+            </td>
+            <td id="idr0c2" name="r0c2">
+                <input type="hidden" id="idhidden" name="hidden11">
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <fieldset>
+                    <input type="radio" id="radio21" name="name_radio_2" value="radioval21"><label for="radio21">Radio 21</label>
+                    <input type="radio" id="radio22" name="name_radio_2" value="radioval22"><label for="radio22">Radio 22</label>
+                    <input type="radio" id="radio23" name="name_radio_2" value="radioval23"><label for="radio23">Radio 23</label>
+                </fieldset>
+            </td>
+            <td id="idr1c2" name="r1c2" style="width:300px">
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+
+                <input type="checkbox" id="idcb11" name="cb1name" value="CB1-val"/><label for="idcb11">checkbox1</label><br>
+
+                <!-- label for idcb13 is deliberate -->
+                <input type="checkbox" id="idcb12" name="cb2name" value="CB2-val"/><label for="idcb13">checkbox2</label><br>
+
+                <!-- should not be using name for checkbox, the value is on for checked -->
+                <input type="checkbox" id="idcb13" name="cb3name"/><label for="idcb13">checkbox3</label><br>
+            </td>
+            <td id="idr2c1" name="r2c1">
+                <input type="textbox" id="idtextbox11" name="textbox11" value="NA" style="width:300px; height:100px"><br>textbox
+            </td>
+            <td id="idr2c2" name="r2c2">
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <input type="text" name="text11" id="textid11" value="NA1"><br><label>Text11</label><br>
+            </td>
+            <td>
+                <input type="text" name="text12" id="textid12" value="NA2"><br><label>Text12</label><br>
+            </td>
+            <td id="idr3c2" name="r3c2">
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <input type="button" name="button11" id="buttonid11" value="Button 1">
+            </td>
+            <td>
+                <input type="button" name="button12" id="buttonid12" value="Button 2">
+            </td>
+            <td>
+                <input type="button" name="button13" id="buttonid13" value="ProcessFields">
+            </td>
+        </tr>
+        <tr>
+            <td id="idr41" name="r41">
+                <input type="button" name="button41" id="buttonid41" value="Render41">
+            </td>
+            <td id="idr42" name="r42">
+            </td>
+            <td id="idr43" name="r43">
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <fieldset>
+                    <input type="radio" id="radio51" name="name_radio_5" value="radioval51" checked="1"><label for="radio51">Required</label><br>
+                    <input type="radio" id="radio52" name="name_radio_5" value="radioval52"><label for="radio52">Not Required</label><br>
+                </fieldset>
+            </td>
+            <td>
+                <div id="dividr5">
+                    <input type="text" name="text51" id="textid51" value="" required="1"><label>*Required Field 51*</label><br>
+                    <input type="text" name="text52" id="textid52" value=""><label>Not Required 52</label><br>
+                </div>
+                <input type="button" name="button52" id="buttonid52" value="Process Row">
+            </td>
+            <td id="idr5c2" name="r5c2">
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3" id="idr5" name="r5">
+                <div id="idr5div1"></div>
+                <div id="idr5div2"></div>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3" id="idr6" name="r6">
+                <div id="idr6div1"></div>
+                <div id="idr6div2"></div>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3" id="idr7" name="r7">
+                <div id="idr7div"></div>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="3" id="idr8" name="r8">
+            </td>
+        </tr>
+    </form>
+    </tbody>
+</table>
+
+<script type="text/javascript">
+
+    $('#buttonid11').click(function(){
+        console.log("pushed buttonid11\n");
+        $('#idr3c2').text('pushed button id 11\n');
+    });
+
+    $('#buttonid12').click(function(){
+        console.log("pushed buttonid12\n");
+        // #id1,#id2 notation
+        $('#idr3c2,#idr5').text('pushed button id 12\n');
+    });
+
+    $('#buttonid13').click(function(){
+        console.log("pushed buttonid13\n");
+        $('#idr3c2').text('pushed button id 13\n');
+
+        // get textbox val
+        textid11 = $('#textid11').val();
+        textid12 = $('#textid12').val();
+
+        // radio value must be specified
+        radio_1 = $('input[name=name_radio_1]:checked').val();
+        radio_2 = $('input[name=name_radio_2]:checked').val();
+        //radio_21 = $('input[id=radio21]:checked').val(); // does not work
+
+        checkbox_1 = $('#idcb11').is(':checked');
+        checkbox_1_1 = $('#idcb11').val();
+        checkbox_2 = $('#idcb12').val();
+        checkbox_3 = $('#idcb13').val();
+
+        rendered_text71 = $('#textid71').val();
+
+        // this is created with the button41 render
+        if(rendered_text71 === undefined) {
+            buf1 = 't1:' + textid11 + '\nt2:' + textid12 + '\nradio1:' + radio_1 + '\n';
+        } else {
+            buf1 = 't1:' + textid11 + '\nt2:' + textid12 + '\nradio1:' + radio_1 + '\ntext71:' + rendered_text71 + '\n';
+        }
+        buf2 = '\nradio2:' + radio_2 + '\n';
+        buf2 += '\ncb1:' + checkbox_1 + '\ncb_11:' + checkbox_1_1 + '\ncb2:' + checkbox_2 + '\ncb3:' + checkbox_3 + '\n';
+
+        $('#idr5').text(buf1);
+        $('#idr6').text(buf2);
+    });
+
+    $('#buttonid41').click(function(){
+        // render new form fields on button click
+        $('#idr7').html('<input type="text" name="text71" id="textid71" value="NA71"><br><label>Text71</label><br>');
+        $('#buttonid41').val('Rendered 41');
+        console.log("buttonid41 clicked\n");
+    });
+
+    $('#textid11').focus(function(){
+        console.log("textid11 focus called\n");
+    });
+
+    $('#textid11').click(function(){
+        $('#textid11').val('Changed on click');
+        console.log("textid11 click called\n");
+    });
+
+    $('#textid12').focus(function(){
+        $('#textid12').val('');
+        console.log("textid12 focus called\n");
+    });
+
+    $('#idr3c2').text('hello there\n');
+
+    $('input[name=name_radio_5]').change(function(){
+        radio_checked = $('input[name=name_radio_5]:checked').val();
+        console.log('radio_5 checked is ' + radio_checked + '\n');
+
+        valtextid51 = $('#textid51').val();
+        valtextid52 = $('#textid52').val();
+        if(radio_checked == 'radioval51') {
+            console.log('radioval51 string match\n');
+            new_val = '<input type="text" name="text51" id="textid51" value="' + valtextid51 + '" required="1"><label>*Required Field 51*</label><br>' +
+                      '<input type="text" name="text52" id="textid52" value="' + valtextid52 + '"><label>Not Required 52</label><br>';
+            $('#dividr5').html(new_val);
+        }
+        else if(radio_checked == 'radioval52') {
+            console.log('radioval52 string match\n');
+            new_val = '<input type="text" name="text51" id="textid51" value="' + valtextid51 + '"><label>Not Required Field 51</label><br>' +
+                      '<input type="text" name="text52" id="textid52" value="' + valtextid52 + '" required="1"><label>*Required 52*</label><br>';
+            $('#dividr5').html(new_val);
+        }
+        $('#idr5c2').text(null);
+
+    });
+
+    $('#buttonid52').click(function(){
+        console.log("pushed buttonid52\n");
+        radio_checked = $('input[name=name_radio_5]:checked').val();
+        valtextid51 = $('#textid51').val().trim();
+        valtextid52 = $('#textid52').val().trim();
+        output = '';
+        if(radio_checked == 'radioval51'){
+            if(valtextid51 == ''){
+                output = 'valtextid51 is blank';
+            }
+            else {
+                output = 'valtextid51 is not blank:' + valtextid51;
+            }
+        }
+        else if(radio_checked == 'radioval52'){
+            if(valtextid52 == ''){
+                output = 'valtextid52 is blank';
+            }
+            else {
+                output = 'valtextid52 is not blank:' + valtextid52;
+            }
+        }
+        console.log(output);
+        $('#idr5c2').text(output);
+    });
+
+
+</script>
+
+</body>
+
+
+</html>

@@ -13,7 +13,6 @@ import os
 import json
 import time
 import random
-import hashlib
 import datetime
 import numpy
 import calendar
@@ -32,6 +31,11 @@ import copy
 import struct
 import binascii
 import codecs
+import base64
+# install pycrypto
+import Crypto.Hash.SHA256 # from Crypto.Hash import SHA256
+import Crypto.Cipher.AES # from Crypto.Cipher import AES
+import Crypto.Random
 
 '''
 python3 -m unittest syntax_unittests.ut.test_method
@@ -274,6 +278,7 @@ class ut(unittest.TestCase):
         l = []
         l.append(1)
         l.append(2)
+
         assert len(l) == 2
 
         v = l.pop()
@@ -382,6 +387,9 @@ class ut(unittest.TestCase):
         l = [i for i in range(3)]
         assert l == [0,1,2]
 
+        l = [i*2 for i in l]
+        assert l == [0,2,4]
+
         l = [[2] * 3]
         assert l == [[2,2,2]]
 
@@ -393,6 +401,32 @@ class ut(unittest.TestCase):
 
         l = [[0] * 3,[1] * 3]
         assert l == [[0,0,0],[1,1,1]]
+
+        l = [[] for i in range(3)]
+        assert l == [[],[],[]]
+        l[0].append([0,1,2])
+        assert l == [[[0,1,2]],[],[]]
+        l[1].extend([2,3,4])
+        assert l == [[[0,1,2]],[2,3,4],[]]
+        del l[0][0]         # delete from array
+        assert l == [[],[2,3,4],[]]
+
+        l = [
+            [1,2],
+            [3,4],
+            [5,6],
+            [7,8]
+        ]
+        assert l == [[1,2],[3,4],[5,6],[7,8]]
+        assert l != [[1,2],[3,4],[5,6],[7,9]]
+        assert l != [[1,2],[3,4],[4,6],[7,8]]
+        del l[2]
+        assert l == [[1,2],[3,4],[7,8]]
+        del l[0]
+        assert l == [[3,4],[7,8]]
+        del l[0]
+        assert l == [[7,8]]
+
 
         l = [1,2,3]
         assert l == [1,2,3]
@@ -715,6 +749,44 @@ class ut(unittest.TestCase):
         assert l3 == None
         #p('pass test_list')
 
+        l = [
+                [
+                    [1,2],
+                    [3,4]
+                ],
+                [
+                    [5,6],
+                    [7,8]
+                ]
+            ]
+
+        l1 = l.copy()               # this is not a deep copy, so arrays are still by reference
+        assert l[0][0] == [1,2]
+        assert l[0][1] == [3,4]
+        assert l[0][1][0] == 3
+        assert l[1][1] == [7,8]
+
+        l[0][1][0] = 33
+        assert l[0][1] == [33,4]    # original got modified and the copy
+        assert l1[0][1] == [33,4]
+
+        l = [
+                [
+                    [1,2],
+                    [3,4]
+                ],
+                [
+                    [5,6],
+                    [7,8]
+                ]
+            ]
+
+        l2 = copy.deepcopy(l)       # this is a deep copy
+        assert l[0][1][0] == 3
+        l[0][1][0] = 33
+        assert l[0][1] == [33,4]    # original got modified but not the copy
+        assert l2[0][1] == [3,4]
+
         l1 = [1,2,3,4,5]
         l2 = 'hello'
         s = ' '.join([str(i) for i in l1])
@@ -735,7 +807,25 @@ class ut(unittest.TestCase):
         l.append([1,2,3,4,5])
         assert l == [[1,[2,3,4,5]],[1,2,3,4,5],[1,2,3,4,5]]
 
-        pass
+        # stack ops push and pop queue LIFO
+        l = [1,2,3,4]
+        l.append(5)
+        l.append(6)
+        v = l.pop()
+        assert l == [1,2,3,4,5]
+        assert v == 6
+
+        # queue ops FIFO
+        l = [1,2,3,4]
+        l.append(5)
+        l.append(6)
+        v = l.pop(0)
+        assert v == 1
+        assert l == [2,3,4,5,6]
+        v = l.pop()
+        assert v == 6
+
+        return
 
     '''
     test priority queue, heap, queue
@@ -1306,7 +1396,82 @@ class ut(unittest.TestCase):
                 ctr = 0
         assert out_ba == ba
 
-        pass
+        # int to bytes and bytes to int
+        i = 0x12_34_56_78
+        # b = bytes([i]) # not allowed because i is not a byte 0-255
+        # b1 = (i).to_bytes(4) # must specify endian
+        b2 = (i).to_bytes(4,byteorder='little')
+        b3 = (i).to_bytes(4,byteorder='big')
+        i21 = int.from_bytes(b2,byteorder='little')
+        i22 = int.from_bytes(b2,byteorder='big')
+        i31 = int.from_bytes(b3,byteorder='little')
+        i32 = int.from_bytes(b3,byteorder='big')
+        s2 = b2.hex()
+        s3 = b3.hex()
+        s21 = hex(i21)
+        s22 = hex(i22)
+        s31 = hex(i31)
+        s32 = hex(i32)
+
+        assert len(b2) == 4
+        assert len(b3) == 4
+        assert b3 != b'\x12345678'
+        assert b3 == b'\x12\x34\x56\x78'
+        assert i == 0x12345678
+        assert i21 == 0x12345678
+        assert i22 == 0x78563412
+        assert i31 == 0x78563412
+        assert i32 == 0x12345678
+        assert s2 == '78563412'
+        assert s3 == '12345678'
+        assert s21 == '0x12345678'
+        assert s22 == '0x78563412'
+        assert s31 == '0x78563412'
+        assert s32 == '0x12345678'
+
+        l = [
+            0x12345678,
+            0x23456789,
+            0x3456789a,
+            0x456789ab,
+            0x56789abc
+        ]
+
+        lb = [(i).to_bytes(4,byteorder='big') for i in l]
+
+        for bval in lb:
+            assert len(bval) == 4
+
+        li = [int.from_bytes(b,byteorder='big') for b in lb]
+        assert li == l
+
+        lb = [(i).to_bytes(8,byteorder='big') for i in l]
+
+        for bval in lb:
+            assert len(bval) == 8
+
+        # string to bytearray and bytearray to string byte to string
+
+        s1 = 'hello there '
+        s2 = 'cat dog'
+
+        ba = bytearray()
+        ba.extend(s1.encode('utf-8'))
+        ba.extend(s2.encode('utf-8'))
+        sa = ba.decode("utf-8")
+        assert sa == 'hello there cat dog'
+
+        ba2 = bytearray(s1,encoding="utf-8")
+        sa2 = ba2.decode('utf-8')
+        assert sa2 == 'hello there '
+
+        h1 = ba.hex()   # bytearray to hex string
+        assert h1 == '68656c6c6f2074686572652063617420646f67'
+
+        h2 = ba2.hex()
+        assert h2 == '68656c6c6f20746865726520'
+
+        return
 
 
     def test_set_vs_map_vs_list(self):
@@ -1776,6 +1941,74 @@ class ut(unittest.TestCase):
         assert set_keys != ('k1','k2','k3','k4','k5','k6','k7','k8')
         assert set_vals == {'v1','v2','v3','v5','v7','v8'}
         assert set_vals != ('v1','v2','v3','v5','v7','v8')
+
+    def test_struct_pack_unpack(self):
+        '''
+        c = 1B
+        b = signed 1B
+        B = unsigned 1B
+        h = 2B signed
+        H = 2B unsigned
+        i = 4B
+        I = 4B unsigned
+        l = 4B
+        L = 4B unsigned
+        q = 8B long long
+        Q = 8B unsigned long long
+        f = float 4B
+        d = double 8B
+        s = char []
+        p = char []
+
+
+        = native
+        < little endian
+        > big endian
+
+        pack(format,v1,v2,...)
+        pack_into(format,buf,offset,v1,v2,...)
+        unpack(format,buf)
+        unpack_from(format,buf,offset=0)
+        calcsize(format)
+
+        '''
+
+        a1 = [
+            [
+                0x12,
+                0x23,
+                0x34
+            ],
+            [
+                0x12_34,
+                0x23_45,
+                0x34_56
+            ],
+            [
+                0x12_34_56_78,
+                0x23_45_67_89,
+                0x34_56_78_90
+            ]
+        ]
+
+        v1 = struct.pack('BBB',a1[0][0],a1[0][1],a1[0][2])
+        v2 = struct.pack('hhh',a1[0][0],a1[0][1],a1[0][2])
+        v3 = struct.pack('hhh',a1[1][0],a1[1][1],a1[1][2])
+        v4 = struct.pack('iii',a1[2][0],a1[2][1],a1[2][2])
+        s  = 'the cat in the hat'
+        v5 = s.encode('utf-8')
+
+        (uv01,uv02,uv03) = struct.unpack('BBB',v1)
+        (uv11,uv12,uv13) = struct.unpack('hhh',v2)
+        (uv21,uv22,uv23) = struct.unpack('hhh',v3)
+        (uv31,uv32,uv33) = struct.unpack('iii',v4)
+        s1 = v5.decode('utf-8')
+        assert (uv01,uv02,uv03) == (0x12,0x23,0x34)
+        assert (uv21,uv22,uv23) == (0x1234,0x2345,0x3456)
+        assert (uv31,uv32,uv33) == (0x12345678,0x23456789,0x34567890)
+        assert s1 == 'the cat in the hat'
+
+        return
 
     def test_built_in_functions(self):
         assert max(4,10,8,3) == 10  # max(a1,a2,*args[,key])
@@ -2553,11 +2786,84 @@ class ut(unittest.TestCase):
         assert cnt == 20
 
     def testHash(self):
-        m = hashlib.sha1()
-        m.update(b"{aval=123 anotherval='null'}")
-        val = m.hexdigest()
-        #p(val)
-        pass
+        m1 = hashlib.sha1()
+        m2 = hashlib.sha1()
+
+        b1 = b"hello"
+        b2 = b'hello'
+        assert b1 == b2
+        m1.update(b1)
+        m2.update(b2)
+        val1 = m1.hexdigest()
+        val2 = m2.hexdigest()
+        assert isinstance(val1,str)
+        assert val1 == val2
+
+        b1 = b"i am a cat"
+        b2 = b'i am a cat'
+        assert b1 == b2
+        m1.update(b1)
+        m2.update(b2)
+        val3 = m1.hexdigest()
+        val4 = m2.hexdigest()
+        assert isinstance(val1,str)
+        assert val1 == val2
+        assert val1 != val3
+
+        m1.update(b"{aval=123 anotherval='null'}")  # these are not the same
+        m2.update(b'{aval=123 anotherval="null"}')
+        val1 = m1.hexdigest()
+        val2 = m2.hexdigest()
+        assert val1 != val2
+
+        ll = [
+            [1,2,3],
+            [4,5,6],
+            [7,8,9]
+        ]
+
+        m256 = hashlib.sha256()
+        for row in ll:
+            for i in row:
+                m256.update((i).to_bytes(4,byteorder='big'))
+        val5 = m256.hexdigest()
+
+
+        # AES crypto encrypt/decrypt
+        # ivt must be 16 bytes long
+        # key must be 16,24,32 bytes long
+        # input string must be multiple of 16 in length
+        iv16 = Crypto.Random.new().read(Crypto.Cipher.AES.block_size)
+        iv16 = 'whatisiv must16b'
+        key16 = '0123456789abcdef'
+        key32 = '0123456789abcdef0123456789abcdef'  # this is AES 256? 32*8 = 256
+
+        aes_cbc_1 = Crypto.Cipher.AES.new(key16,Crypto.Cipher.AES.MODE_CBC,iv16)
+        b_encrypted_1 = aes_cbc_1.encrypt('hello there bye ') # this is 16B
+        b_encrypted_2 = aes_cbc_1.encrypt('this is another ') # this is 16B
+        b_encrypted_3 = aes_cbc_1.encrypt('hello there bye ') # this is 16B
+        aes_cbc_2 = Crypto.Cipher.AES.new(key16,Crypto.Cipher.AES.MODE_CBC,'whatisiv must16b')
+        b_decrypted_1 = aes_cbc_1.decrypt(b_encrypted_1)
+        b_decrypted_2 = aes_cbc_1.decrypt(b_encrypted_2)
+        b_decrypted_3 = aes_cbc_1.decrypt(b_encrypted_3)
+        b_decrypted_4 = aes_cbc_2.decrypt(b_encrypted_1)
+        b_decrypted_5 = aes_cbc_2.decrypt(b_encrypted_2)
+        b_decrypted_6 = aes_cbc_2.decrypt(b_encrypted_3)
+
+        aes_cbc_32_1 = Crypto.Cipher.AES.new(key32,Crypto.Cipher.AES.MODE_CBC,iv16)
+        b_encrypted_32_1 = aes_cbc_32_1.encrypt('hello there bye ') # this is 16B
+        b_encrypted_32_2 = aes_cbc_32_1.encrypt('hello there bye ') # this is 16B
+        b_encrypted_32_3 = aes_cbc_32_1.encrypt('hello there bye ') # this is 16B
+        aes_cbc_32_2 = Crypto.Cipher.AES.new(key32,Crypto.Cipher.AES.MODE_CBC,iv16)
+        b_decrypted_32_1_1 = aes_cbc_32_1.decrypt(b_encrypted_32_1)
+        b_decrypted_32_1_2 = aes_cbc_32_1.decrypt(b_encrypted_32_2)
+        b_decrypted_32_1_3 = aes_cbc_32_1.decrypt(b_encrypted_32_3)
+        b_decrypted_32_2_1 = aes_cbc_32_2.decrypt(b_encrypted_32_1)
+        b_decrypted_32_2_2 = aes_cbc_32_2.decrypt(b_encrypted_32_2)
+        b_decrypted_32_2_3 = aes_cbc_32_2.decrypt(b_encrypted_32_3)
+
+
+        return
 
     def test_hints(self):
         def ret_tuple_1(i:int,j:int,k:int) -> tuple:
