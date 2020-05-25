@@ -4,11 +4,64 @@
 <meta charset="UTF-8">
 <title>Test Form with JQuery</title>
 <script src="../../output/jquery-3.4.1.js"></script>
+<script type="text/javascript">
+
+</script>
+<style type="text/css">
+
+
+#canvas-id-1 {
+    height: 300px;
+    width: 700px;
+    border: 1px solid black;
+}
+
+body {
+    margin-left: 20%;
+    margin-right: 10%;
+    font-size: 100%;
+}
+
+ul.navbar-1 {
+    margin-left: -20%;
+    position: absolute;
+    top:1em;
+    font-family: Verdana, sans-serif;
+    font-size: 90%;
+}
+
+ol.navbar-2 {
+    margin-left: -20%;
+    position: absolute;
+    top:10em;
+    font-family: Verdana, sans-serif;
+    font-size: 90%;
+}
+
+#pid-table-1 {
+    text-align: center;
+    font-size: 100%;
+}
+
+</style>
 </head>
 
 <body>
 
-<table border="1">
+<ul class="navbar-1" id="id-navbar-1">
+    <li><a href="ublank1">UBlank 1</a></li>
+    <li><a href="ublank2">UBlank 2</a></li>
+    <li><a href="ublank3">UBlank 3</a></li>
+</ul>
+<ol class="navbar-2" id="id-navbar-2">
+    <li><a href="oblank1">OBlank 1</a></li>
+    <li><a href="oblank2">OBlank 2</a></li>
+    <li><a href="oblank3">OBlank 3</a></li>
+</ol>
+
+<br>
+<p id="pid-table-1">Table 1</p>
+<table id="table1" border="1">
     <thead>
     <tr>
         <th colspan="4">
@@ -55,9 +108,18 @@
 
                 <!-- should not be using name for checkbox, the value is on for checked -->
                 <input type="checkbox" id="idcb13" name="cb3name"/><label for="idcb13">checkbox3</label><br>
+
+                <input type="checkbox" id="id-cb-use-mousemove" name="cb-use-mousemove" value="cb-use-mousemove-val" checked="1"/><label for="id-cb-use-mousemove">Use Page MouseMove</label><br>
+                <input type="checkbox" id="id-cb-use-keyboard" name="cb-use-keyboard" value="cb-use-keyboard-val" checked="1"/><label for="id-cb-use-keyboard">Use Page Keyboard</label><br>
+
             </td>
             <td id="idr2c1" name="r2c1">
-                <input type="textbox" id="idtextbox11" name="textbox11" value="NA" style="width:300px; height:100px"><br>textbox
+                <!--<input type="textarea" id="idtextarea11" name="textarea11" wrap="soft" value="" placeholder="default text here" rows="8" cols="50" style="width:300px; height:100px">-->
+                <textarea id="idtexarea11" name="textarea11" placeholder="default text here" rows="8" cols="60"></textarea>
+                <br>
+                <a href="#" download="tmp.output_file.txt" id="idtextarea-save-link" onClick="saveFileToDisk()">Save File</a>
+                <!--<input type="submit" id="idtextarea-save-button" onclick="window.open('tmp.output_file.txt')" action="tmp.output_file.txt" name="textarea-save-button" value="Save To File">-->
+                <input type="button" id="idtextarea-save-button"  name="textarea-save-button" value="Save To File">
             </td>
             <td id="idr2c2" name="r2c2">
 
@@ -80,9 +142,14 @@
             </td>
             <td>
                 <input type="button" name="button12" id="buttonid12" value="Button 2">
+                <input type="file" name="button-sel-file" id="buttonid-sel-file" value="Select File" accept=".txt"><label for="buttonid-sel-file"></label>
+                <input type="button" name="button-read-file" id="buttonid-read-file" value="Read File">
             </td>
             <td>
                 <input type="button" name="button13" id="buttonid13" value="ProcessFields">
+            </td>
+            <td>
+                <div id="r5c4"></div>
             </td>
         </tr>
         <tr>
@@ -118,25 +185,104 @@
             </td>
         </tr>
         <tr>
-            <td colspan="3" id="idr6" name="r6">
+            <td colspan="4" id="idr6" name="r6">
                 <div id="idr6div1"></div>
                 <div id="idr6div2"></div>
             </td>
         </tr>
         <tr>
-            <td colspan="3" id="idr7" name="r7">
+            <td colspan="4" id="idr7" name="r7">
                 <div id="idr7div"></div>
             </td>
         </tr>
         <tr>
-            <td colspan="3" id="idr8" name="r8">
+            <td colspan="4" id="idr8" name="r8">
+            </td>
+        </tr>
+        <tr>
+            <td colspan="4" id="idr9" name="r9">
+            </td>
+        </tr>
+        <tr>
+            <td colspan="4" id="idr10" name="r10">
             </td>
         </tr>
     </form>
     </tbody>
 </table>
 
+<br><br><br>
+
+<div id="div-in-between-tables-1">
+
+</div>
+
+<br><p id="pid-table-2">Table 2</p>
+<table id="table2" border="1">
+    <thead>
+    <tr>
+        <th colspan="4">
+            Table Header for Dynamic Table
+        </th>
+    </tr>
+    </thead>
+    <tbody>
+        <div id="dynamictable1">
+        </div>
+    </tbody>
+</table>
+
+<br><br><br>
+
+<div id="div-in-between-tables-2">
+</div>
+
+<br><p id="pid-canvas-1">Canvas 1</p><br>
+<canvas id="canvas-id-1" title="canvas-title-1">
+Javascript Canvas not supported.
+</canvas>
+<br><br><br>
+<br><br><br>
+
 <script type="text/javascript">
+    /*
+     * if you put this body javascript in the header section, a lot of stuff doesnt work...
+     *
+     */
+
+    /*
+     * [name=nameval]
+     * [name=nameval1][name=nameval2] // multiple selector
+     * $("*")   // all elements
+     * $("#idval")
+     * $(".classnameval")
+     * $(".classname1,.classname2")
+     * $("document")
+     * $("p") // all <p
+     * $("p,div")
+     * $("table:div") // all div in all table
+     * $(":text") // all text
+     * $(":checked") // all checke
+     *
+     */
+
+    enableMouseMoveCheckbox = true;
+
+    $('#id-cb-use-mousemove').click(function(){
+        isChecked = $('#id-cb-use-mousemove:checked').val();
+        if(isChecked == null) {
+            isChecked = "notChecked";
+            enableMouseMoveCheckbox = false;
+        } else {
+            enableMouseMoveCheckbox = true;
+        }
+        console.log("id-cb-use-mousemove checked value: " + isChecked);
+    });
+
+    $('[name=name_radio_1]').click(function(){
+        radioId = $('[name=name_radio_1]:checked').val();
+        $('#idr0c2').text('clicked radio ' + radioId);
+    });
 
     $('#buttonid11').click(function(){
         console.log("pushed buttonid11\n");
@@ -227,6 +373,56 @@
 
     });
 
+    function readFileToConsole(filename) {
+        if(!(window.File && window.FileReader && window.FileList && window.Blob)) {
+            $('#r5c4').text('file reading not supported');
+            return;
+        }
+        if(!filename.type) {
+            $('#r5c4').text('not a file: ' + filename.type);
+            return;
+        }
+        reader = new FileReader();
+        reader.addEventListener('load',(e)=>{
+            console.log('FILE BEGIN-----------');
+            console.log(e.target.result);
+            console.log('FILE END-------------');
+        });
+        reader.readAsText(filename);
+    }
+
+    $('#buttonid-read-file').click(function() {
+        //filename = $('#buttonid-sel-file').val();
+        filename = $('#buttonid-sel-file').prop('files')[0];
+        console.log('selected file ' + filename);
+        readFileToConsole(filename);
+    });
+
+    function saveFileToDisk() {
+        textValue = $('#idtexarea11').val();
+        filename = "tmp.output_file.txt";
+        //console.log('idtextarea-save-link textvalue:\n' + textValue);
+        file = new Blob([textValue],{type:'text/plain'});
+        fileObj = URL.createObjectURL(file);
+        $('<a/>').attr({
+            download:filename,
+            href:fileObj
+        })[0].click();
+    }
+
+    $('#idtextarea-save-button').click(function(){
+        textValue = $('#idtexarea11').val();
+        filename = "tmp.output_file.txt";
+        file = new Blob([textValue],{type:'text/plain'});
+        fileObj = URL.createObjectURL(file);
+        a = document.createElement('a');
+        a.href = fileObj;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    });
+
     $('#buttonid52').click(function(){
         console.log("pushed buttonid52\n");
         radio_checked = $('input[name=name_radio_5]:checked').val();
@@ -253,10 +449,151 @@
         $('#idr5c2').text(output);
     });
 
+    let buf = '';
+
+    function handleKeypress1(e) {
+        /*
+         * for multi key, keep an array of keydown, and process then delete on keyup
+         */
+        keyCode = e.which;
+        key = String.fromCharCode(keyCode);
+        maybeMultiKey = '';
+        if(e.metaKey) {
+            maybeMultiKey += 'meta ';
+        }
+        if(e.ctrlKey) {
+            maybeMultiKey += 'ctrl ';
+        }
+        if(e.altKey) {
+            maybeMultiKey += 'alt ';
+        }
+        //if(e.shiftKey) {
+        //    maybeMultiKey += 'shift ';
+        //}
+        if(maybeMultiKey != '') {
+            maybeMultiKey += key;
+            //console.log('keypress multi: ' + maybeMultiKey);
+        }
+
+        if(keyCode == 13) {
+            console.log('keypress:' + buf);
+            buf = '';
+        } else {
+            buf += key;
+        }
+    }
+
+    $(document).keypress(handleKeypress1); // this is enabled in initialization, but can be disabled below
+
+    enKeyboardCheckbox = true;
+
+    $('#id-cb-use-keyboard').click(function(){
+        isChecked = $('#id-cb-use-keyboard:checked').val();
+        if(isChecked == null) {
+            isChecked = "notChecked";
+            enKeyboardCheckbox = false;
+            buf = '';
+            $(document).off("keypress",handleKeypress1);
+        } else {
+            enKeyboardCheckbox = true;
+            $(document).on("keypress",handleKeypress1);
+        }
+        console.log("id-cb-use-keyboard checked value: " + isChecked);
+    });
+
+    function handleMouse(e) {
+        x = e.offsetX;
+        y = e.offsetY;
+        console.log('mouse      x:' + x + ' y:' + y);
+    }
+
+    $(document).click(function(e) {
+        // offsets are mouseup coordinates, not mousedown
+        x = e.offsetX;
+        y = e.offsetY;
+        console.log('click1     x:' + x + ' y:' + y);
+    });
+
+    $(document).mousedown(function(e) {
+        x = e.offsetX;
+        y = e.offsetY;
+        console.log('mousedown  x:' + x + ' y:' + y);
+        if(enableMouseMoveCheckbox) {
+            $(document).on("mousemove",handleMouse); // bind mousemove to handler and unbind when mouseup or click.
+        }
+    });
+
+    $(document).mouseup(function(e) {
+        x = e.offsetX;
+        y = e.offsetY;
+        console.log('mouseup    x:' + x + ' y:' + y);
+        $(document).off("mousemove");
+    });
+
+    class CanvasProcessor {
+        canvasObj = null;
+        canvasContext = null;
+        setCanvasObj(canvasObj) {
+            this.canvasObj = canvasObj;
+        }
+        setCanvasContext(canvasContext) {
+            this.canvasContext = canvasContext;
+        }
+        getCanvasObj(){
+            return this.canvasObj;
+        }
+        getCanvasContext(){
+            return this.canvasContext;
+        }
+        handleCanvasMouseDrag(e) {
+            var x = e.offsetX;
+            var y = e.offsetY;
+            console.log('canvasmouse x:' + x + ' y:' + y);
+        }
+
+    }
+
+    let canvasProcessor = null;
+
+    function initCanvas() {
+        if(canvasProcessor == null) {
+            canvasObj = $('#canvas-id-1').get(0);
+            canvasContext = canvasObj.getContext('2d');
+            canvasProcessor = new CanvasProcessor();
+            canvasProcessor.setCanvasObj(canvasObj);
+            canvasProcessor.setCanvasContext(canvasContext);
+        }
+    }
+
+    function handleCanvasMouse(e) {
+        canvasProcessor.handleCanvasMouseDrag(e);
+    }
+
+    $('#canvas-id-1').mousedown(function(e) {
+        x = e.offsetX;
+        y = e.offsetY;
+        console.log('canvas-id-1 mousedown x:' + x + ' y:' + y);
+        initCanvas();
+        $('#canvas-id-1').on("mousemove",handleCanvasMouse);
+    });
+
+    $('#canvas-id-1').mouseup(function(e) {
+        x = e.offsetX;
+        y = e.offsetY;
+        console.log('canvas-id-1 mouseup    x:' + x + ' y:' + y);
+        $('#canvas-id-1').off("mousemove");
+    });
+
+    $('#canvas-id-1').click(function(e) {
+        x = e.offsetX;
+        y = e.offsetY;
+        console.log('canvas-id-1 click x:' + x + ' y:' + y);
+    });
 
 </script>
 
 </body>
 
-
 </html>
+
+

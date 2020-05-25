@@ -1,6 +1,8 @@
 <?php
 
 # run as php test.php
+assert_options(ASSERT_ACTIVE, 1);
+assert_options(ASSERT_BAIL,1);
 
 class Test {
     public $dbg = true;
@@ -34,6 +36,8 @@ class Test {
     }
     function test_array() {
         $amain = array();
+
+        // iterate array
         $a0 = array();
         for($i = 0; $i < 2; $i++) {
             $a0["k0.$i"] = "v0.$i";
@@ -47,12 +51,32 @@ class Test {
             $a2["k2.$i"] = "v2.$i";
         }
 
+        // push array into array, not flat
         array_push($amain, $a0);
         array_push($amain, $a1);
         array_push($amain, $a2);
 
         assert(is_array($amain));
         assert(count($amain) == 3);
+
+        // array merge, flatten
+        $a10 = array();
+        for($i = 0; $i < 2; $i++) {
+            $a10["k0.$i"] = "v0.$i";
+        }
+        $a11 = array();
+        for($i = 0; $i < 3; $i++) {
+            $a11["k1.$i"] = "v1.$i";
+        }
+        $a12 = array();
+        for($i = 0; $i < 4; $i++) {
+            $a12["k2.$i"] = "v2.$i";
+        }
+
+        $amerge = array_merge($a10,$a11);
+        $amerge = array_merge($a12,$amerge);
+        assert(count($amerge) == 9);
+
 
         $collect = array();
         foreach($amain as $a) {
@@ -183,6 +207,32 @@ class Test {
         $a3 = array_diff($a2,$a1);  // returns only values in a2 not in a1
         assert(count($a3) == 1);
         assert(in_array(6,$a3));
+
+        // copy array methods
+        $acopy = array();
+        foreach($a1 as $v) {
+            $acopy[] = $v;
+        }
+        $cmp = array_diff([1,2,3,4,5],$acopy);
+        assert(count($cmp) == 0);
+
+        $acopy = array();
+        foreach($a1 as $v) {
+            array_push($acopy,$v);
+        }
+
+        $cmp = array_diff([1,2,3,4,5],$acopy);
+        assert(count($cmp) == 0);
+        $cmp = array_diff([5,4,3,2,1],$acopy);  // ordering doesnt matter!
+        assert(count($cmp) == 0);
+        $cmp = array_diff([6,5,4,3,2,1],$acopy);  // a1 - a2
+        assert(count($cmp) == 1);
+        $cmp = array_diff([6,5,4,3,2],$acopy); // a1 - a2 missing 6 but not 1
+        assert(count($cmp) == 1);
+        $cmp = array_diff([5,4,3,2],$acopy); // a1 - a2 == 0
+        assert(count($cmp) == 0);
+        $cmp = array_diff($acopy,[5,4,3,2]); // a2 - a1 == 1
+        assert(count($cmp) == 1);
 
         $a1 = [1,2,3,4,5];
         $a2 = [2,3,4];
@@ -370,7 +420,43 @@ class Test {
         //echo "\n------chunks_of_5:\n " . var_export($chunks_of_5,true) . "\n";
         //assert(count($chunks_of_20) == 50);
 
-        $this->dbg("test_structures",$this->dbg_lvl_end);
+        $a1 = array('k8'=>'v8','k2'=>'v2','k4'=>'v4','k3'=>'v7','k1'=>'v1');
+        $a2 = array('k2'=>'v2','k4'=>'v4','k8'=>'v8','k1'=>'v1');
+        $a3 = array('k4'=>'v4','k3'=>'v7','k8'=>'v8','k2'=>'v2','k5'=>'v2','k1'=>'v1');
+        $a4 = array('k4'=>'v4','k2'=>'v2','k3'=>'v7','k8'=>'v8','k1'=>'v1');
+        $a5 = array('k8'=>'v8','k2'=>'v2','k4'=>'v4','k3'=>'v7','k1'=>'v1');
+
+        // compare arrays
+        $cmp = array_intersect($a1,$a2);
+        assert(count($cmp) == 4);
+
+        $cmp = array_diff_assoc($a1,$a2);
+        assert(count($cmp) == 1);
+
+        $cmp1 = array_diff_assoc($a1,$a3); // $a1 - $a3 == 0
+        assert(count($cmp1) == 0);
+
+        $cmp2 = array_diff_assoc($a3,$a1); // $a3 - $a1 == 1
+        assert(count($cmp2) == 1);
+
+        assert($cmp1 != $cmp2);
+
+        $cmp = array_diff_assoc($a1,$a4);
+        assert(count($cmp) == 0);
+
+        $cmp = array_intersect($a1,$a5);
+        assert(count($cmp) == 5);
+
+        // iterate associative array
+        $acopy = array();
+        foreach($a1 as $k=>$v) {
+            $acopy[$k] = $v;
+        }
+        $cmp = array_diff_assoc($a1,$acopy);
+        assert(count($cmp) == 0);
+
+        $v = $this->dbg_lvl_end;
+        $this->dbg("test_structures",$v);
     }
 
     function is_filtered($string, &$patterns, $filter_match_include=true) {
@@ -672,6 +758,17 @@ class Test {
         }
         assert($e == 1);
 
+        $v = 5;
+        $e = 0;
+        if($v < 0) {
+            $e = 0;
+        } elseif($v < 10) {  // elseif not else if
+            $e = 1;
+        } else {
+            $e = 2;
+        }
+        assert($e == 1);
+
     }
 
     function test_json() {
@@ -724,6 +821,69 @@ class Test {
         $time_i1 = strtotime($time_s1);
         //echo "time s1: $time_s1 i:$time_i1\n";
 
+        $date_current = date("Y-m-d H:i");
+
+        $time_1 = time();
+        $date_1 = date("Y-m-d H:i", $time_1);
+        $date_2 = date("Y-m-d H:i", $time_1-(30*60));   // add 30 min to time seconds
+        //var_export($time_1,false);
+
+        assert($date_1 > $date_2); // compare string of times
+        assert('2020-05-01 09:00' < '2020-05-01 10:00');
+
+        $time_now = time();
+        $time_15m = "15";
+        $time_fut = $time_now + intval($time_15m) * 60 + 10;
+        assert($time_now < $time_fut);
+        $time_diff_min = ($time_fut - $time_now)/60;
+        assert($time_diff_min != 15);
+        $time_diff_min = intval($time_diff_min);
+        assert($time_diff_min == 15);
+
+        //echo "\n";
+        //var_export($date_1,false);
+        //echo "\n";
+        //var_export($date_2,false);
+        //echo "\n";
+
+        //$date_1 = date("Y-m-d H:i", "2020-03-10 18:40"); # this doesnt work, accepts only seconds
+        //var_export($date_1, false);
+    }
+
+    function test_args($arg1,$arg2,$arg3=null,$arg4=null) {
+        if($arg3 == null && $arg4 == null)
+            return array('arg1'=>$arg1,'arg2'=>$arg2);
+        if($arg3 == null && $arg4 != null)
+            return array('arg1'=>$arg1,'arg2'=>$arg2,'arg4'=>$arg4);
+        if($arg3 != null && $arg4 == null)
+            return array('arg1'=>$arg1,'arg2'=>$arg2,'arg3'=>$arg3);
+        return array('arg1'=>$arg1,'arg2'=>$arg2,'arg3'=>$arg3,'arg4'=>$arg4);
+    }
+
+    function test_args_case() {
+        # compare associative arrays
+
+        $a1 = $this->test_args(1,2,3,4);
+        $a2 = $this->test_args(1,2,$arg4=3);
+        $a3 = $this->test_args(1,2,$arg4=3,$arg3=6);
+        $a4 = $this->test_args(1,2);
+
+        assert(count($a1) == 4);
+        assert(count($a2) == 3);
+        assert(count($a3) == 4);
+        assert(count($a4) == 2);
+
+        $cmp = array_diff_assoc($a2,array('arg3'=>3,'arg2'=>2,'arg1'=>1));
+        assert(count($cmp) == 0);
+
+        $cmp = array_diff_assoc($a2,array('arg4'=>3,'arg2'=>2,'arg1'=>1));
+        assert(count($cmp) == 1);
+
+        // ordering of args is not preserved!
+        $cmp = array_diff_assoc($a3,array('arg4'=>6,'arg3'=>3,'arg2'=>2,'arg1'=>1));
+        assert(count($cmp) == 0);
+
+        return;
     }
 }
 
@@ -736,6 +896,7 @@ $t->test_strings();
 $t->test_json();
 $t->test_url();
 $t->test_time();
+$t->test_args_case();
 closelog();
 
 ?>
