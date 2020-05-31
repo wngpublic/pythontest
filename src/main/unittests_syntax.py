@@ -1032,6 +1032,8 @@ class ut(unittest.TestCase):
         assert len(s[6:]) == 0
         assert s[6:] is not None
         assert s[7:] == ''
+        assert s[0] == 'a'
+        assert s[-1] == 'f'
 
         s = '111 111\n' + \
             '222  222 \n' + \
@@ -1113,7 +1115,124 @@ class ut(unittest.TestCase):
         s = 'a ' * 3
         assert s == 'a a a '
 
+        s = """
+        this is a multiline
+        string where there
+        should be three.
+        """
+
+        assert s == "\n        this is a multiline\n        string where there\n        should be three.\n        "
+        #p(s)
+
+        s = \
+"""this is a multiline
+string where there
+should be three."""
+        assert s == "this is a multiline\nstring where there\nshould be three."
+
+        s = "this is a multiline\n" \
+            "string where there\n" \
+            "should be three."
+        assert s == "this is a multiline\nstring where there\nshould be three."
+
+        s = "this is a multiline\n" + \
+            "string where there\n" + \
+            "should be three."
+        assert s == "this is a multiline\nstring where there\nshould be three."
+
+        s = "this is a multiline\n" + "string where there\n" + "should be three."
+        assert s == "this is a multiline\nstring where there\nshould be three."
+
+        vdog = "dog"
+        vcat = "cat"
+        s = \
+"""this is a multiline {}
+string where there {}
+should be three.""".format(vdog,vcat)
+        assert s == "this is a multiline dog\nstring where there cat\nshould be three."
+
+
         #p('test_string')
+
+        s = 'abc'
+        assert s.isalpha()
+        assert not s.isdecimal()
+        s = 'abc ?'
+        assert not s.isalpha()
+        s = '123'
+        assert s.isdecimal()
+        s = '12.3'
+        assert not s.isdecimal()
+        s = ''
+        assert not s.isspace()
+        s = '  '
+        assert s.isspace()
+        s = 'hello little big world!'
+        assert s.startswith('hello ')
+        assert s.endswith('rld!')
+        a = s.split()
+        assert a == ['hello','little','big','world!']
+
+        #    0 0 0 0 0 1 1 1 1 1 2
+        #    0 2 4 6 8 0 2 4 6 8 0
+        s = 'hello there'
+
+        #             0 0 0 0 0 1 1 1 1 1 2
+        #             0 2 4 6 8 0 2 4 6 8 0
+        s1 = s.rjust(20)
+        assert s1 == '         hello there'
+        s1 = s.rjust(20,'-')
+        assert s1 == '---------hello there'
+        s1 = s.ljust(20)
+        assert s1 == 'hello there         '
+        s1 = s.ljust(20,'-')
+        assert s1 == 'hello there---------'
+        s1 = s.center(20,'-')
+        assert s1 == '----hello there-----' # centered with 1 off left
+
+        vcat = "cat"
+        vdog = "dog"
+        vint = 123
+        s = f"hello {vcat}, you are a {vdog}, and you are {vint} years old"
+        assert s == "hello cat, you are a dog, and you are 123 years old"
+        s = "hello {}, you are a {}, and you are {} years old".format(vcat,vdog,vint)
+        assert s == "hello cat, you are a dog, and you are 123 years old"
+
+        # templates used for html output and stuff
+        d = {
+            'k1s':'v1',
+            'k2i':22,
+            'k3i':33,
+            'k4s':'v4'
+        }
+        st1 = string.Template("""
+var:  $k1s and $k2i
+esc:  $$
+str:  var${k1s}end with ${k2i} and ${k4s}blah
+""")
+
+        # the variables must have data type appended s,d,f,x
+        st2 = """
+var:  %(k1s)s and %(k2i)d
+esc:  %%
+str:  var%(k1s)send with %(k2i)d and %(k4s)sblah
+"""
+
+        st3 = """
+var:  {k1s} and {k2i}
+esc:  {{}}
+str:  var{k1s}end with {k2i} and {k4s}blah
+"""
+
+        s = st1.substitute(d)
+        assert s == "\nvar:  v1 and 22\nesc:  $\nstr:  varv1end with 22 and v4blah\n"
+
+        s = st2 % d
+        assert s == "\nvar:  v1 and 22\nesc:  %\nstr:  varv1end with 22 and v4blah\n"
+
+        s = st3.format(**d)
+        assert s == "\nvar:  v1 and 22\nesc:  {}\nstr:  varv1end with 22 and v4blah\n"
+
 
     def test_byte_binary_conversion(self):
         '''
@@ -2751,6 +2870,28 @@ class ut(unittest.TestCase):
         is_currently_dst = time.localtime().tm_isdst    # this is currently 03/08-11/01 and non_dst is 11/01-03/08
 
         s = time.gmtime()   # gmtime in epoch
+        # time.struct_time(tm_year=2020, tm_mon=1, tm_mday=1, tm_hour=0, tm_min=0, tm_sec=0, tm_wday=1, tm_yday=0, tm_isdst=1)
+        #p('gmtime:       {}'.format(s))
+
+        # YYYY-MM-DD HH:MM:SS.micro
+        t = datetime.datetime.now()
+        #p('now:          {}'.format(t))
+
+        # YYYY-MM-DD HH:MM:SS
+        t = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        #p('now format:   {}'.format(t))
+
+        # YYYY-MM-DD
+        t = datetime.datetime.date(datetime.datetime.now())
+        #p('date:         {}'.format(t))
+
+        # HH:MM:SS.micro
+        t = datetime.datetime.time(datetime.datetime.now())
+        #p('time:         {}'.format(t))
+
+        #t = datetime.datetime(time.gmtime())
+        #p('datetime:     {}'.format(t))
+
         #p('pass test_time')
 
     @staticmethod

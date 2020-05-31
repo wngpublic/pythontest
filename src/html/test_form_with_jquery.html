@@ -73,6 +73,14 @@ ol.navbar-2 {
 
     <form>
         <tr>
+            <div id="iddivr0">
+                <td id="idr0a"></td>
+                <td id="idr0b"></td>
+                <td id="idr0c"></td>
+                <td id="idr0d"></td>
+            </div>
+        </tr>
+        <tr>
             <td>
                 <fieldset>
                     <input type="radio" id="radio11" name="name_radio_1" value="radioval11"><label for="radio11">Radio 11</label><br>
@@ -111,7 +119,8 @@ ol.navbar-2 {
 
                 <input type="checkbox" id="id-cb-use-mousemove" name="cb-use-mousemove" value="cb-use-mousemove-val" checked="1"/><label for="id-cb-use-mousemove">Use Page MouseMove</label><br>
                 <input type="checkbox" id="id-cb-use-keyboard" name="cb-use-keyboard" value="cb-use-keyboard-val" checked="1"/><label for="id-cb-use-keyboard">Use Page Keyboard</label><br>
-
+                <input type="checkbox" id="id-cb-en-interval-1" checked="1"/><label for="id-cb-en-interval-1">Enable Interval</label><br>
+                <input type="checkbox" id="id-cb-toggle-set-timer-1" /><label for="id-cb-toggle-set-timer-1">Toggle Delayed Interval</label>
             </td>
             <td id="idr2c1" name="r2c1">
                 <!--<input type="textarea" id="idtextarea11" name="textarea11" wrap="soft" value="" placeholder="default text here" rows="8" cols="50" style="width:300px; height:100px">-->
@@ -588,6 +597,43 @@ Javascript Canvas not supported.
         x = e.offsetX;
         y = e.offsetY;
         console.log('canvas-id-1 click x:' + x + ' y:' + y);
+    });
+
+    function intervalTimerClockDisplay(id) {
+        let cdate = new Date();
+        let cdate_string = cdate.toLocaleString();
+        $(id).text(cdate_string);
+        //console.log('intervalTimerClockDisplay id: ' + id + ' time: ' + cdate_string);
+    }
+
+    let delayedCtrVal = 0;
+    let intervalTimeVal1Sec = 1000;
+    let intervalTimeVal = 2000;
+
+    // this is a delayed start, not immediate, upon binding
+    let hInterval = setInterval(intervalTimerClockDisplay.bind(null,'#idr0a'),intervalTimeVal1Sec);
+
+    $('#id-cb-en-interval-1').click(function(){
+        isChecked = $('#id-cb-en-interval-1:checked').val();
+        if(isChecked == null) {
+            clearInterval(hInterval);
+        } else {
+            hInterval = setInterval(intervalTimerClockDisplay.bind(null,'#idr0a'),intervalTimeVal1Sec);
+        }
+        console.log('id-cb-en-interval-1 checked value: ' + isChecked);
+    });
+
+    $('#id-cb-toggle-set-timer-1').click(function(){
+        isChecked = $('#id-cb-toggle-set-timer-1:checked').val();
+        if(isChecked != null) {
+            // timeout is called once, unlike setInterval/clearInterval, but can be
+            // continuously called again within a loop.
+            setTimeout(function(){
+                delayedCtrVal += 1;
+                $('#idr0b').text('delayed ctr val: ' + delayedCtrVal);
+            },intervalTimeVal);
+        }
+        console.log('id-cb-toggle-set-timer-1 checked value: ' + isChecked);
     });
 
 </script>

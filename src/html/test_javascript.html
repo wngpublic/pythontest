@@ -10,6 +10,18 @@
 </body>
 <script type="text/javascript">
 
+class MyClass1 {
+}
+
+class MyClass2 {
+}
+
+class TestMyClasses {
+    /*
+     * every object has [[Prototype]], where [[x]] means internal property
+     */
+}
+
 class TestBasic {
 
     classv1;
@@ -57,12 +69,18 @@ class TestBasic {
     test_date() {
         var cdate = new Date();
         var cdate_epoch = parseInt(cdate.getTime()/1000);
+        console.log("current date epoch      " + cdate_epoch + "\n");  // seconds
+
         var cdate_string = cdate.toString(); // WDAY M D YYYY HH:MM:SS GMT-X (PST)
-        //var cdate_form =
+
         cdate_string = cdate.toISOString();
+        console.log("current date ISOString  " + cdate_string + "\n"); // 2020-01-01T08:00:00.000Z
+
         cdate_string = cdate.toTimeString();
+        console.log("current date TimeString " + cdate_string + "\n"); // 12:34:56 GMT-0700 (Pacific Daylight Time)
+
         cdate_string = cdate.toString();
-        //console.log("current date " + cdate_string + "\n");
+        console.log("current date String     " + cdate_string + "\n"); // Wed Jan 01 2020 00:00:00 GMT-0800 (Pacific Standard Time)
 
         var yyyy = cdate.getFullYear();
         var m = cdate.getMonth() + 1;

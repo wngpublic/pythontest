@@ -2,14 +2,8 @@ import flask
 import sqlalchemy
 import json
 import time
-import json
-import random
-import datetime
-import numpy
-import calendar
 
 '''
-run as python3 test_flask_endpoints.py
 
 - dir structure
 -- templates
@@ -27,63 +21,35 @@ app = flask.Flask(__name__)
 def p(s):
     print(s)
 
-@app.route('/')
+@app.route('/b/')
 def index():
     return 'Hello world'
 
-@app.route('/index')
-def load_template_javascript():
-    t = get_time()
-    d = {}
-    d['time'] = t
-    return flask.render_template("test_template_javascript.html",date=d)
-
-@app.route('/time_call')
-def get_time():
-    t = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    return t
-
-@app.route('/test_html')
-def test_html():
-    d = {
-        'v1':'v1value',
-        'v2':'v2value'
-    }
-    app.logger.debug("test_html")
-    # passing in a dict does not work, use v1,v2
-    #return flask.render_template("test_html.html",d)
-    return flask.render_template("test_html.html",v1='v1value',v2='v2value')
-
-@app.route('/test_template_html')
-def test_template_html():
-    app.logger.debug("test_template_html")
-    return flask.render_template("test_template.html",name='joe',v1='not sure')
-
-@app.route('/test_sql')
+@app.route('/b/test_sql')
 def test():
     return 'Test SQL'
 
-@app.route('/timeout-endpoint')
+@app.route('/b/timeout-endpoint')
 def timeout_endpoint():
     time.sleep(0.5) # sleep 500 ms
     return 'slept for 500 ms'
 
-@app.route('/echo/<string:val>/')
+@app.route('/b/echo/<string:val>/')
 def get_string_echo(val):
     app.logger.debug('get_string_echo {}'.format(val))
-    return "0: " + val
+    return "2: " + val
 
-@app.route('/echo/<string:val>/path2')
+@app.route('/b/echo/<string:val>/path2')
 def get_string_echo_2(val):
-    return "0: " + val
+    return "2: " + val
 
-@app.route('/read-cookie')
+@app.route('/b/read-cookie')
 def get_read_cookie():
     d = flask.request.cookies
     p('read-cookie:{}'.format(d))
     return flask.jsonify(d)
 
-@app.route('/set-cookie')
+@app.route('/b/set-cookie')
 def get_set_cookie():
     d = flask.request.cookies
     p('set-cookie:{}'.format(d))
@@ -98,22 +64,22 @@ def get_set_cookie():
     return response
 
 
-@app.route('/post-params-echo', methods=['POST'])
+@app.route('/b/post-params-echo', methods=['POST'])
 def post_params_echo():
     params = flask.request.args
     result = json.dumps(params)
     #p('post-params {}'.format(result))
     return flask.jsonify(params)
 
-@app.route('/post-json-echo', methods=['POST'])
+@app.route('/b/post-json-echo', methods=['POST'])
 def post_json_echo():
     return flask.jsonify(flask.request.json)
 
-@app.route('/get-json-echo', methods=['GET'])
+@app.route('/b/get-json-echo', methods=['GET'])
 def get_json_echo():
     return flask.jsonify(flask.request.json)
 
-@app.route('/get-or-post-json-echo', methods=['GET','POST'])
+@app.route('/b/get-or-post-json-echo', methods=['GET','POST'])
 def get_or_post_json_echo():
     if flask.request.method == 'GET':
         #p('get_or_post_json_echo GET {}'.format(flask.request.json))
@@ -123,6 +89,6 @@ def get_or_post_json_echo():
         return flask.jsonify(flask.request.json)
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8123) # default is port 5000
+    app.run(debug=True, port=8125) # default is port 5000
 
 # run as python3 test_flask_endpoints.py and go to http://localhost:8123

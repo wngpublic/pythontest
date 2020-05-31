@@ -5,3 +5,8 @@
 {% else %}
 <h1>Hello, World!</h1>
 {% endif %}
+{% if v1 == "something" %}
+<p>you got specifically something</p>
+{% else %}
+<p>you got {{v1}} instead</p>
+{% endif %}
