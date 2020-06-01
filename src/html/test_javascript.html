@@ -14,6 +14,10 @@ class MyClass1 {
 }
 
 class MyClass2 {
+    /*
+     * prototype saves memory because new objects refer to prototype
+     * method as single instance and not copy, it is static equivalent
+     */
 }
 
 class TestMyClasses {
@@ -69,18 +73,18 @@ class TestBasic {
     test_date() {
         var cdate = new Date();
         var cdate_epoch = parseInt(cdate.getTime()/1000);
-        console.log("current date epoch      " + cdate_epoch + "\n");  // seconds
+        //console.log("current date epoch      " + cdate_epoch + "\n");  // seconds
 
         var cdate_string = cdate.toString(); // WDAY M D YYYY HH:MM:SS GMT-X (PST)
 
         cdate_string = cdate.toISOString();
-        console.log("current date ISOString  " + cdate_string + "\n"); // 2020-01-01T08:00:00.000Z
+        //console.log("current date ISOString  " + cdate_string + "\n"); // 2020-01-01T08:00:00.000Z
 
         cdate_string = cdate.toTimeString();
-        console.log("current date TimeString " + cdate_string + "\n"); // 12:34:56 GMT-0700 (Pacific Daylight Time)
+        //console.log("current date TimeString " + cdate_string + "\n"); // 12:34:56 GMT-0700 (Pacific Daylight Time)
 
         cdate_string = cdate.toString();
-        console.log("current date String     " + cdate_string + "\n"); // Wed Jan 01 2020 00:00:00 GMT-0800 (Pacific Standard Time)
+        //console.log("current date String     " + cdate_string + "\n"); // Wed Jan 01 2020 00:00:00 GMT-0800 (Pacific Standard Time)
 
         var yyyy = cdate.getFullYear();
         var m = cdate.getMonth() + 1;
@@ -362,7 +366,7 @@ class TestBasic {
         console.assert(s2 == "65");
         console.assert(s2 == 65);
 
-        console.log('pass test_string');
+        //console.log('pass test_string');
     }
     test_json() {
         // for JSON, single quotes not allowed, and no trailing comma
@@ -445,6 +449,72 @@ class TestBasic {
         for(var i = 0; i < a.length; i++) {
             console.assert(a[i] == a_exp[i]);
         }
+        a = [];
+        a.push([]);
+        a.push([]);
+        a.push([]);
+        for(var i = 0; i < 3; i++){
+            for(var j = 0; j < 2; j++) {
+                a[i].push(i*10 + j);
+            }
+        }
+        var ae = [[0,1],[10,11],[20,21]];
+        console.assert(a.length == 3);
+        console.assert(a[0].length == 2);
+        console.assert(a[1].length == 2);
+        console.assert(a[2].length == 2);
+
+        for(var i = 0; i < 3; i++){
+            for(var j = 0; j < 2; j++) {
+                console.assert(ae[i][j] == a[i][j]);
+            }
+        }
+
+        a = [1,2,3,4,5];
+        a.splice(2,1);      // [1,2,4,5]
+        console.assert(a.length == 4);
+        console.assert(a[1] == 2 && a[2] == 4 && a[3] == 5);
+
+        a = [1,2,3,4,5];
+        var v = a.pop();
+        console.assert(a.length == 4);
+        console.assert(v == 5);
+        v = a.pop();
+        console.assert(a.length == 3);
+        console.assert(v == 4);
+        v = a.shift();
+        console.assert(a.length == 2);
+        console.assert(a[0] == 2);
+        console.assert(v == 1);
+
+        a.unshift(v);
+        console.assert(a.length == 3);
+        console.assert(a[0] == 1);
+
+        a = [1,2,3,4,5];
+        a.splice(2,2);      // [1,2,5]
+        console.assert(a.length == 3);
+        console.assert(a[1] == 2 && a[2] == 5);
+
+        a = [1,2,3,4,5];
+        a.splice(0,2);      // [3,4,5]
+        console.assert(a.length == 3);
+        console.assert(a[0] == 3 && a[2] == 5);
+
+        a = [1,2,3,4,5];
+        delete a[2];
+        console.assert(a.length == 5); // [1,2,empty,4,5]
+        console.assert(a[2] == null);
+        a.length = 0;
+        console.assert(a.length == 0);
+        console.assert(a[1] == null);
+        console.assert(a[10] == null);
+
+        a = [];
+        console.assert(a.length == 0);
+        console.assert(a[1] == null);
+        console.assert(a[10] == null);
+
     }
     test_map() {
         var d1 = {};
@@ -495,6 +565,27 @@ class TestBasic {
         map.clear();
         console.assert(map.size == 0);
     }
+    test_try_catch() {
+        var flag = false;
+        var ctr = 0;
+        try {
+            var v1 = 0;
+            var v2 = 1;
+            var v3 = v2/v1;
+            if(v3 == Infinity) {
+                throw new Exception("Infinity Exception");
+            }
+        } catch(e) {
+            flag = true;
+            ctr += 1;
+        } finally {
+            console.assert(flag == true);
+            ctr += 1;
+        }
+        console.assert(ctr == 2);
+        var v = (10 == 1) ? 10 : 1;
+        console.assert(v == 1);
+    }
     test() {
         this.test_date();
         this.test_string();
@@ -502,7 +593,9 @@ class TestBasic {
         this.test_json();
         this.test_map();
         this.test_builtin_functions();
+        this.test_array();
         this.test_variables();
+        this.test_try_catch();
         console.log('ran test()');
     }
 }
