@@ -32,6 +32,7 @@ import struct
 import binascii
 import codecs
 import base64
+import site
 # install pycrypto
 import Crypto.Hash.SHA256 # from Crypto.Hash import SHA256
 import Crypto.Cipher.AES # from Crypto.Cipher import AES
@@ -3253,7 +3254,15 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         #test_out_of_memory()
         #test_not_out_of_memory()
 
-
+    def test_os_env(self):
+        p(os.environ)
+        if 'PASSWORD_TEST' in os.environ:
+            p(os.environ['PASSWORD_TEST'])
+        if 'GDMSESSION' in os.environ:
+            p(os.environ['GDMSESSION'])
+        p(sys.prefix)
+        #p(site.getpackages())   # where third party libs are placed
+        return
 
     def test_file_read(self):
         def file_reader(filename):

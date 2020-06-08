@@ -28,14 +28,13 @@ run as python3 test_flask_endpoints.py
 
 app = flask.Flask(__name__)
 app.config.from_pyfile('flask_config.py')
-
 TEST_USER = app.config.get('TEST_USER')
 TEST_PW = app.config.get('TEST_PW')
 
-if TEST_USER == None or TEST_PW == None:
-    sys.exit("no env user or pw, failed")
-else:
-    app.logger.debug('test_usr:{} and pw defined in env'.format(TEST_USER,TEST_PW))
+#if TEST_USER == None or TEST_PW == None:
+#    sys.exit("no env user or pw, failed")
+#else:
+#    app.logger.debug('test_usr:{} and pw defined in env'.format(TEST_USER,TEST_PW))
 
 #print('{}'.format(app.config))
 #print('config TESTING:{}'.format(app.config.get('TESTING')))
@@ -44,8 +43,8 @@ else:
 # you have to have test2_db with username and password enabled on mysql for this startup
 MYSQL_HOST = app.config.get('MYSQL_HOST')
 MYSQL_DBNAME = app.config.get('MYSQL_DBNAME')
-MYSQL_CONN   = mysql.connector.connect(host=MYSQL_HOST,database=MYSQL_DBNAME,user=TEST_USER,password=TEST_PW)
-MYSQL_CURSOR = MYSQL_CONN.cursor()
+#MYSQL_CONN   = None # mysql.connector.connect(host=MYSQL_HOST,database=MYSQL_DBNAME,user=TEST_USER,password=TEST_PW)
+#MYSQL_CURSOR = MYSQL_CONN.cursor()
 SQLITE_DB = app.config.get('SQLITE_DATABASE')
 #SQLITE_CONN = sqlite3.connect(SQLITE_DB)
 
@@ -252,11 +251,11 @@ def form_upload_data_mysql():
 @app.route('/query_data_mysql', methods=['GET','POST'])
 def form_query_data_to_table_mysql():
     sql_query = 'select * from test_table limit 1000'
-    MYSQL_CURSOR.execute(sql_query)
-    data = MYSQL_CURSOR.fetchall()
-    if data != None:
-        for row in data:
-            pass
+    #MYSQL_CURSOR.execute(sql_query)
+    #data = MYSQL_CURSOR.fetchall()
+    #if data != None:
+    #    for row in data:
+    #        pass
     pass
 
 @app.route('/test_query_sqlite_1', methods=['GET'])
@@ -296,6 +295,7 @@ def form_2_js():
     pass
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8123) # default is port 5000
+    #app.run(debug=True, port=8123) # default is port 5000
+    app.run(debug=True, host='0.0.0.0', port=8123) # default is port 5000
 
 # run as python3 test_flask_endpoints.py and go to http://localhost:8123

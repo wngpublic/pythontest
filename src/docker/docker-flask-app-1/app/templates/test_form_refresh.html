@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+</head>
+<body>
+<form action="/form_1" method="POST">
+<table border="1">
+    <tbody>
+        <tr><td><input type="text" name="id-textbox-1" value="{{ vid_tb1 }}">
+            <br>
+            <label for="id-textbox-1">Some Text 1</label></td></tr>
+        <tr><td><input type="text" name="id-textbox-2" value="{{ vid_tb2 }}">
+            <br>
+            <label for="id-textbox-2">Some Text 2</label></td></tr>
+        <tr>
+            <td>
+                {% if cb1 != None %}
+                <input type="checkbox" name="name-cb-1" id="id-cb-1" value="cb1" checked>
+                <label for="id-cb-1">Checkbox Test 1</label>
+                {% else %}
+                <input type="checkbox" name="name-cb-1" id="id-cb-1" value="cb1">
+                <label for="id-cb-1">Checkbox Test 1</label>
+                {% endif %}
+                <br>
+                <input type="checkbox" name="name-cb-1" id="id-cb-2" value="cb2" {{ 'checked' if cb2 != None else '' }}>
+                <label for="id-cb-2">Checkbox Test 2</label>
+                <br>
+                <input type="checkbox" name="name-cb-3" id="id-cb-3" value="cb3" {{ 'checked' if cb3 != None else '' }}>
+                <label for="id-cb-3">Refresh With Values</label>
+                <br>
+                <input type="checkbox" name="name-cb-redirect" id="id-cb-redirect">
+                <label for="id-cb-redirect">Redirect on POST</label>
+            </td>
+        </tr>
+        <tr><td><input type="submit" value="Send"></td></tr>
+        <tr><td id="idstatus">{{ result_text }}</td></tr>
+    </tbody>
+</table>
+</form>
+</body>
+</html>

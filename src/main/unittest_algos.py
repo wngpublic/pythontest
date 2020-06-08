@@ -4350,7 +4350,7 @@ class ut(unittest.TestCase):
 
         def edit_distance_recursive(s1,s2):
             # not verified yet
-            def edrec(s1,s2,i1,s2,cost,mem):
+            def edrec(s1,s2,i1,i2,cost,mem):
 
                 key = '{},{}'.format(i1,i2)
                 #if key in mem:
@@ -5298,6 +5298,278 @@ class ut(unittest.TestCase):
             #test_uniform_dist()
             test_uniform_concat()
         test()
+
+    def test_min_window_substring(self):
+        '''
+        given string s and pattern t, find min window in s where all chars of t appear,
+        in complexity O(s)
+
+        if no such window, return ''
+        '''
+        def algos(s,t):
+            szs = len(s)
+            szt = len(t)
+            d = { }
+            count_uniques = 0
+            idxs = 0
+            minpair = None
+            for c in t:
+                d[c] = 0
+            for i in range(szs):
+                c = s[i]
+                if c not in d:
+                    continue
+                d[c] += 1
+                if d[c] == 1:
+                    count_uniques += 1
+                else:
+                    # can this be trimmed?
+                    while idxs <= i:
+                        c1 = s[idxs]
+                        if c1 not in d:
+                            idxs += 1
+                        elif d[c1] > 1:
+                            idxs += 1
+                            d[c1] -= 1
+                        else:
+                            break
+                if count_uniques == szt:
+                    if minpair == None:
+                        minpair = [idxs,i]
+                    else:
+                        szcur = i - idxs + 1
+                        szmin = minpair[1] - minpair[0] + 1
+                        if szcur < szmin:
+                            minpair = [idxs,i]
+            if minpair == None or minpair[0] == minpair[1]:
+                return ''
+            return minpair
+        def t():
+            #    0         1
+            #    0 2 4 6 8 0 2
+            s = 'ADOBECODEBANC'
+            t = 'ABC'
+            v = algos(s,t)
+            assert v == [9,12]
+            pass
+        t()
+    def test_integer_to_roman(self):
+
+        def i2r(ival):
+            '''
+            I       1
+            V       5
+            X       10
+            L       50
+            C       100
+            D       500
+            M       1000
+
+            valid 1-3999
+
+            1   I
+            2   II
+            3   III
+            4   IV
+            5   V
+            6   VI
+            7   VII
+            8   VIII
+            9   IX
+            10  X
+            11  XI
+            12  XII
+            13  XIII
+            14  XIV
+            15  XV
+            16  XVI
+            17  XVII
+            18  XVIII
+            19  XIX
+            20  XX
+            - evaluate 9
+                IX
+            - evaluate 78
+                LXXVIII
+            - evaluate 99
+                XCIX    99 = (100-10) + (10-1)
+            - evaluate 3999
+                3999 = MMMCMXCIX
+                     = 3000 + (1000-100) + (100-10) + (10-1)
+                     = 3000 + 900        + 90       + 9
+
+            eval left to right or right to left?
+            '''
+
+            def long_calculate(ival):
+                s = ''
+                base10 = 10
+                while ival != 0:
+                    mval = ival % base10
+                    ival = ival - mval
+                    if base10 == 10:
+                        if mval == 1: s = 'I'
+                        if mval == 2: s = 'II'
+                        if mval == 3: s = 'III'
+                        if mval == 4: s = 'IV'
+                        if mval == 5: s = 'V'
+                        if mval == 6: s = 'VI'
+                        if mval == 7: s = 'VII'
+                        if mval == 8: s = 'VIII'
+                        if mval == 9: s = 'IX'
+                    elif base10 == 100:
+                        if mval == 10: s = 'X' + s
+                        if mval == 20: s = 'XX' + s
+                        if mval == 30: s = 'XXX' + s
+                        if mval == 40: s = 'XL' + s
+                        if mval == 50: s = 'L' + s
+                        if mval == 60: s = 'LX' + s
+                        if mval == 70: s = 'LXX' + s
+                        if mval == 80: s = 'LXXX' + s
+                        if mval == 90: s = 'XC' + s
+                    elif base10 == 1000:
+                        if mval == 100: s = 'C' + s
+                        if mval == 200: s = 'CC' + s
+                        if mval == 300: s = 'CCC' + s
+                        if mval == 400: s = 'CD' + s
+                        if mval == 500: s = 'D' + s
+                        if mval == 600: s = 'DC' + s
+                        if mval == 700: s = 'DCC' + s
+                        if mval == 800: s = 'DCCC' + s
+                        if mval == 900: s = 'CM' + s
+                    elif base10 == 10000:
+                        if mval == 1000: s = 'M' + s
+                        if mval == 2000: s = 'MM' + s
+                        if mval == 3000: s = 'MMM' + s
+                    base10 = base10 * 10
+                return s
+            def short_calc(ival):
+                def base10_to_r(mval,i,j,k):
+                    if mval == 1: return '{}'.format(i)
+                    if mval == 2: return '{}{}'.format(i,i)
+                    if mval == 3: return '{}{}{}'.format(i,i,i)
+                    if mval == 4: return '{}{}'.format(i,j)
+                    if mval == 5: return '{}'.format(j)
+                    if mval == 6: return '{}{}'.format(j,i)
+                    if mval == 7: return '{}{}{}'.format(j,i,i)
+                    if mval == 8: return '{}{}{}{}'.format(j,i,i,i)
+                    if mval == 9: return '{}{}'.format(i,k)
+                    return ''
+                s = ''
+                base10 = 10
+                while ival != 0:
+                    mval = ival % base10
+                    ival = ival - mval
+                    if base10 == 10:
+                        s = base10_to_r(mval,'I','V','X')
+                    elif base10 == 100:
+                        mval = mval / 10
+                        s = base10_to_r(mval,'X','L','C') + s
+                    elif base10 == 1000:
+                        mval = mval / 100
+                        s = base10_to_r(mval,'C','D','M') + s
+                    elif base10 == 10000:
+                        mval = mval / 1000
+                        s = base10_to_r(mval,'M','','') + s
+                    base10 = base10 * 10
+                return s
+            s = short_calc(ival)
+            return s
+        def r2i(s):
+            '''
+            I       1
+            V       5
+            X       10
+            L       50
+            C       100
+            D       500
+            M       1000
+
+            valid 1-3999
+
+            1   I
+            2   II
+            3   III
+            4   IV
+            5   V
+            6   VI
+            7   VII
+            8   VIII
+            9   IX
+            10  X
+            11  XI
+            12  XII
+            13  XIII
+            14  XIV
+            15  XV
+            16  XVI
+            17  XVII
+            18  XVIII
+            19  XIX
+            20  XX
+            - evaluate 9
+                IX
+            - evaluate 78
+                LXXVIII
+            - evaluate 99
+                XCIX    99 = (100-10) + (10-1)
+            - evaluate 3999
+                3999 = MMMCMXCIX
+                     = 3000 + (1000-100) + (100-10) + (10-1)
+                     = 3000 + 900        + 90       + 9
+
+            eval left to right or right to left?
+            '''
+            d = {
+                'I':1,
+                'V':5,
+                'X':10,
+                'L':50,
+                'C':100,
+                'D':500,
+                'M':1000
+            }
+            ival = 0
+            p = None
+            sz = len(s)
+            # no rules validation here!
+            for i in range(sz):
+                c = s[i]
+                if (p != None):
+                    if d[p] < d[c]:
+                        v = d[c] - d[p]
+                        ival += v
+                        p = None
+                    else:
+                        ival += d[p]
+                        if (i == (sz-1)):
+                            ival += d[c]
+                        p = c
+                else:
+                    if (i == (sz-1)):
+                        ival += d[c]
+                    p = c
+            return ival
+        def t():
+            v = i2r(3999)
+            assert v == 'MMMCMXCIX'
+            v = i2r(78)
+            assert v == 'LXXVIII'
+            v = i2r(1991)
+            assert v == 'MCMXCI'
+            v = i2r(1994)
+            assert v == 'MCMXCIV'
+            i = r2i('MMMCMXCIX')
+            assert i == 3999
+            i = r2i('LXXVIII')
+            assert i == 78
+            i = r2i('CXLI')
+            assert i == 141
+            i = r2i('MCMXCI')
+            assert i == 1991
+            i = r2i('MCMXCIV')
+            assert i == 1994
+        t()
 
     def main(self):
         p('main passed')

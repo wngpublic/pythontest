@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Javascript Template</title>
+    <script src="{{url_for('static', filename='jquery-3.4.1.js')}}"></script>
+    <script type="text/javascript">
+
+    </script>
+    <style type="text/css">
+
+
+        #canvas-id-1 {
+            height: 300px;
+            width: 700px;
+            border: 1px solid black;
+        }
+
+        body {
+            margin-left: 20%;
+            margin-right: 10%;
+            font-size: 100%;
+        }
+
+        ul.navbar-1 {
+            margin-left: -20%;
+            position: absolute;
+            top:1em;
+            font-family: Verdana, sans-serif;
+            font-size: 90%;
+        }
+
+        ol.navbar-2 {
+            margin-left: -20%;
+            position: absolute;
+            top:10em;
+            font-family: Verdana, sans-serif;
+            font-size: 90%;
+        }
+
+        #pid-table-1 {
+            text-align: center;
+            font-size: 100%;
+        }
+
+    </style>
+
+</head>
+<body>
+<table id="table1" border="1">
+    <thead>
+    <tr><th colspan="4">Table Header</th></tr>
+    </thead>
+    <tbody>
+    <div id="dynamictable1">
+        <tr>
+            <td id="idrcbc0cb">
+                <input type="checkbox" id="idcb-en-ajax-1"><label for="idcb-en-ajax-1">Enable AJAX Timer</label>
+            </td>
+        </tr>
+        <tr>
+            <td id="idrstats1c0">
+                Hi, the time is: {{date}}
+            </td>
+        </tr>
+        <tr>
+            <td id="idrstats2c0">
+            </td>
+        </tr>
+    </div>
+    </tbody>
+</table>
+
+<script type="text/javascript">
+
+    let hInterval = null;
+
+    function intervalGetTimeAJAX(id) {
+        $.ajax({
+            url:"/time_call",
+            success: function(result) {
+                $(id).text(result);
+                console.log('intervalGetTimeAJAX called ' + id + ' result ' + result);
+            }
+        });
+    }
+
+    function getDataAJAX(id) {
+        $.ajax({
+            url:"/process_data",
+            data: $('form').serialize(), // or manually construct json payload
+            type: 'POST',
+            success: function(result) {
+                console.log('getDataAJAX success');
+            },
+            error: function(error) {
+                console.log('getDataAJAX error');
+            }
+        });
+    }
+
+    $('#idcb-en-ajax-1').click(function(){
+        isChecked = $('#idcb-en-ajax-1:checked').val();
+        if(isChecked == null) {
+            clearInterval(hInterval);
+        } else {
+            hInterval = setInterval(intervalGetTimeAJAX.bind(null,'#idrstats1c0'),5000);
+        }
+        console.log('idcb-en-ajax-1 isChecked: ' + isChecked);
+    });
+
+</script>
+</body>
+</html>
