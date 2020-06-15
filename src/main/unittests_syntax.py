@@ -1595,7 +1595,7 @@ str:  var{k1s}end with {k2i} and {k4s}blah
 
 
     def test_set_vs_map_vs_list(self):
-        vset = set()
+        vset = set() # there is no literal for empty set, use this
         vm1 = dict()
         vm2 = {}
 
@@ -1634,8 +1634,19 @@ str:  var{k1s}end with {k2i} and {k4s}blah
 
         s1 = {1,2,3,4,5}
         s2 = {3,2,4,5,1}
+        s4 = {} # there is no literal for empty set
+        assert isinstance(s1,set)
+        assert not isinstance(s1,dict)
+        assert not isinstance(s4,set)
+        assert isinstance(s4,dict)
         s3 = s1.difference(s2)
         assert len(s3) == 0
+        s1 = {1,2,3,4,5}            # delete set
+        assert 3 in s1
+        assert len(s1) == 5
+        s1.remove(3)
+        assert len(s1) == 4
+        assert 3 not in s1
 
         s2 = {3,2,4,5,1,6}
         s3 = s1.difference(s2)
@@ -2216,6 +2227,25 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         #p('pass test_math_functions')
 
     def test_control_statements(self):
+
+        # if else single line and effects of parentheses
+
+        v = 1
+        s = 'a ' + ('b ' if v == 1 else 'c ') + 'd'
+        assert s == 'a b d'
+
+        v = 1
+        s = 'a ' + 'b ' if v == 1 else 'c ' + 'd'
+        assert s == 'a b '
+
+        v = 2
+        s = 'a ' + ('b ' if v == 1 else 'c ') + 'd'
+        assert s == 'a c d'
+
+        v = 2
+        s = 'a ' + 'b ' if v == 1 else 'c ' + 'd'
+        assert s == 'c d'
+
         l = []
         for i in range(5,0,-1): # [5,0)
             l.append(i)

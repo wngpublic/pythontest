@@ -17,6 +17,7 @@ import numpy
 import random
 import scipy
 import copy
+#from __future__ import annotations
 
 '''
 python3 -m unittest unittests.ut.test_list
@@ -163,7 +164,7 @@ class Utils:
         sz = len(result)
         for cnt in range(num_shuffles):
             for i in range(sz):
-                self.swap(result, i, rand(0,sz))
+                self.swap(result, i, random.randint(0,sz-1))
         return result
     def rand_str(self, num:int, charset:str=None) -> str:
         if charset is None:
@@ -214,12 +215,314 @@ class Container:
     def set(self,obj):
         self.obj = obj
 
-'''
-GNode is generic class for
-binary tree ops with lc,rc, parent
-also for generic nodes with weighted edges
-'''
+class LLN:
+    ID = 0
+    def __init__(self,v = None, pp = None, np = None, lp=None, rp=None, parentp=None, lo=None, hi=None, min=None, max=None):
+        self.v = v
+        self.np = np
+        self.pp = pp
+        self.lp = lp
+        self.rp = rp
+        self.parentp = parentp
+        self.lo = lo
+        self.hi = hi
+        self.min = min
+        self.max = max
+        self.id = LLN.ID
+        LLN.ID += 1
+    def get_id(self):
+        return self.id
+    def set_lo(self,lo):
+        self.lo = lo
+        return self
+    def set_hi(self,hi):
+        self.hi = hi
+        return self
+    def set_max(self,max):
+        self.max = max
+        return self
+    def set_min(self,min):
+        self.min = min
+        return self
+    def set_lp(self,lp):
+        self.lp = lp
+        return self
+    def set_rp(self,rp):
+        self.rp = rp
+        return self
+    def set_np(self,np):
+        self.np = np
+        return self
+    def set_pp(self,pp):
+        self.pp = pp
+        return self
+    def set_v(self,v):
+        self.v = v
+        return self
+    def get_lo(self):
+        return self.lo
+    def get_hi(self):
+        return self.hi
+    def get_max(self):
+        return self.max
+    def get_min(self):
+        return self.min
+    def get_lp(self):
+        return self.lp
+    def get_rp(self):
+        return self.rp
+    def get_np(self):
+        return self.np
+    def get_pp(self):
+        return self.pp
+    def get_v(self):
+        return self.v
+    def print_vals(self,id=False,v=False,lo=False,hi=False,min=False,max=False):
+        s = self.get_print_vals(id,v,lo,hi,min,max)
+        print(s)
+    def get_print_vals(self,id=False,v=False,lo=False,hi=False,min=False,max=False):
+        s = '{'
+        populated = False
+        if id:
+            s += 'id:{}'.format(self.id)
+            populated = True
+        if v:
+            s = s + (',' if populated else '') + 'v:{}'.format(self.v)
+            populated = True
+        if lo:
+            s = s + (',' if populated else '') + 'lo:{}'.format(self.lo)
+            populated = True
+        if hi:
+            s = s + (',' if populated else '') + 'hi:{}'.format(self.hi)
+            populated = True
+        if min:
+            s = s + (',' if populated else '') + 'min:{}'.format(self.min)
+            populated = True
+        if max:
+            s = s + (',' if populated else '') + 'max:{}'.format(self.max)
+            populated = True
+        s += '}'
+        return s
+
+    @staticmethod
+    def convert_num_2_lln(v): # -> LLN: cannot return self type in 3.6
+        h = LLN()
+        n = h
+        t = v
+        while t != 0:
+            m = t % 10
+            n.set_v(m)
+            t = int((t - m)/10)
+            if t != 0:
+                newN = LLN()
+                n.set_np(newN)
+                n = newN
+        return h
+    @staticmethod
+    def convert_lln_2_num(n) -> int:
+        t = n
+        s = 0
+        b10 = 1
+        while t != None:
+            v = t.get_v() * b10
+            s += v
+            b10 = b10 * 10
+            t = t.get_np()
+        return s
+    @staticmethod
+    def reverse_lln(n): # -> LLN: cannot return self type in 3.6
+        '''
+        a->b->c->d
+        d->c->b->a
+
+        a->b
+        a->N
+        t = b->n
+        b->a
+        '''
+        tmp = n
+        pp = None
+        while tmp != None:
+            np = tmp.get_np()
+            tmp.set_np(pp)
+            pp = tmp
+            tmp = np
+        return pp
+
+
+class IntervalTree:
+    '''
+    i:lo/hi input lo/hi
+    n:lo/hi node  lo/hi
+
+    -   no merge
+                      ilo------ihi
+        nlo------nhi
+    -   merge candidate
+                 ilo------ihi
+        nlo------nhi
+    -   merge candidate
+            ilo------ihi
+        nlo------nhi
+    -   merge candidate
+            ilo------ihi
+        nlo--------------nhi
+    -   merge candidate
+        ilo--------------ihi
+            nlo------nhi
+    -   merge candidate
+        ilo------ihi
+            nlo------nhi
+    -   merge candidate
+        ilo------ihi
+                 nlo------nhi
+    -   no merge
+        ilo------ihi
+                     nlo------nhi
+    '''
+
+    def __init__(self):
+        self.r = None
+
+    def get_root(self):
+        return self.r
+
+    def get_preorder(self):
+        def get_preorder_(n,l):
+            if n != None:
+                l.append(n)
+                get_preorder_(n.get_lp(),l)
+                get_preorder_(n.get_rp(),l)
+        l = []
+        get_preorder_(self.r,l)
+        return l
+
+    def get_inorder(self):
+        def get_inorder_(n,l):
+            if n != None:
+                get_inorder_(n.get_lp(),l)
+                l.append(n)
+                get_inorder_(n.get_rp(),l)
+        l = []
+        get_inorder_(self.r,l)
+        return l
+
+    def get_postorder(self):
+        def get_postorder_(n,l):
+            if n != None:
+                get_postorder_(n.get_lp(),l)
+                get_postorder_(n.get_rp(),l)
+                l.append(n)
+        l = []
+        get_postorder_(self.r,l)
+        return l
+
+    def add(self,lo,hi,do_merge=False):
+        def add_merge_(lo,hi,n):
+            if n == None:
+                return
+            if n.get_lo() == lo and n.get_hi() == hi:
+                return
+            if n.get_max() < hi:
+                n.set_max(hi)
+            if n.get_min() > lo:
+                n.set_min(lo)
+            if (hi+1) < n.get_lo() or n.get_hi() < (lo-1):
+                if hi < n.get_lo():
+                    if n.get_lp() == None:
+                        nn = LLN(lo=lo,hi=hi,min=lo,max=hi)
+                        n.set_lp(nn)
+                    else:
+                        add_merge_(lo,hi,n.get_lp())
+                if n.get_hi() < lo:
+                    if n.get_rp() == None:
+                        nn = LLN(lo=lo,hi=hi,min=lo,max=hi)
+                        n.set_rp(nn)
+                    else:
+                        add_merge_(lo,hi,n.get_rp())
+            else:
+                if lo < n.get_lo():
+                    n.set_lo(lo)
+                if n.get_hi() < hi:
+                    n.set_hi(hi)
+        def add_(lo,hi,n):
+            if n == None:
+                return
+            if n.get_lo() == lo and n.get_hi() == hi:
+                return
+            if n.get_max() < hi:
+                n.set_max(hi)
+            if n.get_min() > lo:
+                n.set_min(lo)
+            if   n.get_lo() <= lo:
+                if n.get_rp() == None:
+                    nn = LLN(lo=lo,hi=hi,min=lo,max=hi)
+                    n.set_rp(nn)
+                else:
+                    add_(lo,hi,n.get_rp())
+            else:
+                if n.get_lp() == None:
+                    nn = LLN(lo=lo,hi=hi,min=lo,max=hi)
+                    n.set_lp(nn)
+                else:
+                    add_(lo,hi,n.get_lp())
+        if self.r == None:
+            self.r = LLN(lo=lo,hi=hi,min=lo,max=hi)
+            return
+        if do_merge:
+            add_merge_(lo,hi,self.r)
+        else:
+            add_(lo,hi,self.r)
+
+    def find_first_overlap(self,v):
+        def find_first_overlap_(self,v,n):
+            if n == None:
+                return None
+            if n.get_lo() <= v and v <= n.get_hi():
+                return n
+            if n.get_lo() < lo:
+                return find_first_overlap_(v,n.get_rp())
+            return find_first_overlap_(v,n.get_lp())
+        if self.r == None:
+            return None
+        return find_first_overlap_(v,self.r)
+
+    def find_all_overlap(self,v):
+        def find_all_overlap_(self,v,n,l):
+            if n == None:
+                return
+            if n.get_lo() <= v and v <= n.get_hi():
+                l.append(n)
+            if n.get_min() <= v:
+                find_all_overlap_(v,n.get_lp(),l)
+            if v <= n.get_max():
+                find_all_overlap_(v,n.get_rp(),l)
+        l = []
+        if self.r != None:
+            find_all_overlap_(v,self.r,l)
+        return l
+
+    def find_range_all_overlap(self,lo,hi):
+        def find_range_all_overlap_(self,lo,hi,n,l):
+            if n == None:
+                return
+            if not (n.get_hi() < lo or hi < n.get_lo()):
+                l.append(n)
+            if n.get_min() <= lo:
+                find_range_all_overlap_(lo,hi,n.get_lp(),l)
+            if hi <= n.get_max():
+                find_range_all_overlap_(lo,hi,n.get_rp(),l)
+        l = []
+        if self.r != None:
+            find_range_all_overlap_(lo,hi,self.r,l)
+        return l
+
 class GNode:
+    '''
+    GNode is generic class for
+    binary tree ops with lc,rc, parent
+    also for generic nodes with weighted edges
+    '''
     ID = 0
     def __init__(self,v=None):
         self.id = GNode.ID
@@ -228,8 +531,8 @@ class GNode:
         self.lc = None
         self.rc = None
         self.p = None
-        self.vertices = {}  # dst_id:weight vertices to node ids
-        self.vertices2nodes = {}    # vertices to nodes instead to of node ids
+        self.vertices = {}          # dst_id:weight dst_id and weight
+        self.vertices2nodes = {}    # dst_id:node   dst_id and node
         GNode.ID += 1
     def get_k(self):
         return self.k
@@ -262,17 +565,23 @@ class GNode:
         if is_copy:
             return self.vertices.copy()
         return self.vertices
-    def add_edge(self,dst_id:int,weight=0):
+    def get_vertices2nodes(self,is_copy=False): # returns dict[node]=weight
+        if is_copy:
+            return self.vertices2nodes.copy()
+        return self.vertices2nodes
+    def add_edge(self,dst_node,weight=1):
+        self.add_edge_to_node(dst_node,weight)
         self.vertices[dst_id] = weight
         return self
-    def add_edge_to_node(self,dst_node,weight=0):
+    def add_edge_to_node(self,dst_node,weight=1):
         self.vertices2nodes[dst_node] = weight
+        self.vertices[dst_node.get_id()] = weight
         return self
     def get_edge_to_node(self,dst_node):
         if dst_node in self.vertices2nodes:
             return self.vertices2nodes[dst_node]
         return None
-    def add_edge_to_node_bilateral(self,dst_node,weight=0):
+    def add_edge_to_node_bilateral(self,dst_node,weight=1):
         self.add_edge_to_node(dst_node,weight)
         dst_node.add_edge_to_node(self,weight)
         return self
@@ -281,6 +590,30 @@ class GNode:
     @staticmethod
     def reset_id(v:int=0):
         GNode.ID = v
+    def print_node(self,id=False,k=False,v=False,vertex_id=False,vertex_weight=False):
+        s = self.get_print_node(id,k,v,vertex_id,vertex_weight)
+        print(s)
+    def get_print_node(self,id=False,k=False,v=False,vertex_id=False,vertex_weight=False):
+        s = '{'
+        populated = False
+        if id:
+            s += 'id:{}'.format(self.id)
+            populated = True
+        if k:
+            s = s + (',' if populated else '') + 'k:{}'.format(self.k)
+            populated = True
+        if v:
+            s = s + (',' if populated else '') + 'v:{}'.format(self.v)
+            populated = True
+        if vertex_id:
+            s = s + (',' if populated else '') + 'vertex_id:{}'.format(self.vertices.keys())
+            populated = True
+        if vertex_weight:
+            s = s + (',' if populated else '') + 'vertex_weight:{}'.format(self.vertices.values())
+            populated = True
+        s += '}'
+        return s
+
 class gnode(GNode):
     def __init__(self,v=None):
         super.__init__(v)
@@ -291,6 +624,24 @@ class GraphNode(GNode):
         self.name = name
 
 class Graph:
+    '''
+    Graph is a collection of GNode. Each node knows about connections
+    to peer nodes; Graph does not know about all the connections, only the existing GNodes
+
+    Here are methods
+
+    Graph.DType: DIRECTED, UNDIRECTED, MIXED
+    add_node(node)
+    get_all_nodes_map(is_copy=False)->{node_id:GNode}
+    add_edge_to_ids(src_id,dst_id,weight=1,is_directed=True)
+    add_edge_to_nodes(src_node,dst_node,weight=1,is_directed=True)
+    get_all_sources()
+    is_cyclic(nsrc=None,ndst=None)
+    make_random_graph(num_nodes,directed_type,min_edges,max_edges,min_weight,max_weight)->{id:GNode}
+    set_graph(dict)
+    print_graph_summary()
+    run_prims_mst()
+    '''
     class DType(enum.Enum):
         DIRECTED = 0
         UNDIRECTED = 1
@@ -300,26 +651,37 @@ class Graph:
         self.all_nodes = {} # map of all_nodes[id] = GNode
         self.u = Utils()
 
+    def add_node(self,node=None):
+        if node == None:
+            node = GNode()
+        if node.get_id() not in self.all_nodes:
+            self.all_nodes[node.get_id()] = node
+
     def get_all_nodes_map(self,is_copy=False):
         if is_copy:
             return self.all_nodes.copy()
         return self.all_nodes
 
-    def add_edge_to_ids(self, src_id:int, dst_id:int, weight=0, is_directed=True):
+    def add_edge_to_ids(self, src_id:int, dst_id:int, weight=1, is_directed=True):
         nodes = self.get_all_nodes_map()
         if src_id not in nodes or dst_id not in nodes:
             return
         self.add_edge_to_nodes(nodes[src_id],nodes[dst_id],weight,is_directed)
-        pass
 
-    def add_edge_to_nodes(self, src_node: GNode, dst_node: GNode, weight=0, is_directed=True):
+    def add_edge_to_nodes(self, src_node: GNode, dst_node: GNode, weight=1, is_directed=True):
         if src_node is None or dst_node is None:
             return
-        src_node.add_edge(dst_node.get_id(),weight)
+        src_node.add_edge_to_node(dst_node,weight)
         if not is_directed:
-            dst_node.add_edge(src_node.get_id(),weight)
+            dst_node.add_edge_to_node(src_node,weight)
 
-    def make_random_graph(self, num_nodes:int, directed_type:DType, min_edges:int, max_edges:int, min_weight:int, max_weight:int) -> dict:
+    def make_random_graph(self,
+                          num_nodes:int,
+                          directed_type:DType,
+                          min_edges:int,
+                          max_edges:int,
+                          min_weight:int,
+                          max_weight:int) -> dict:
         '''
         directed_type:
             0 directed only
@@ -342,19 +704,104 @@ class Graph:
             dst_ids = u.get_random_from_set(set_target, set([src_id]), num_edges)
             for dst_id in dst_ids:
                 w = u.randint(min_weight,max_weight)
-                src_node.add_edge(dst_id,w)
+                src_node.add_edge_to_node(nodes[dst_id],w)
                 dst_node = nodes[dst_id]
                 if directed_type == Graph.DType.UNDIRECTED:
-                    dst_node.add_edge(src_id,w)
+                    dst_node.add_edge_to_node(nodes[src_id],w)
                     pass
                 elif directed_type == Graph.DType.MIXED:
                     if u.randint(0,1) == 1:
                         w = u.randint(min_weight,max_weight)
-                        dst_node.add_edge(src_id,w)
+                        dst_node.add_edge_to_node(nodes[src_id],w)
         return nodes
 
     def set_graph(self, nodes:dict):    # nodes must be nodes[id] = GNode map
         self.all_nodes = nodes.copy()
+
+    def get_all_sources(self):
+        dictNodeInboundNodes = {}   # node:set
+
+        for id,n in self.all_nodes.items():
+            if n not in dictNodeInboundNodes:
+                dictNodeInboundNodes[n] = set()
+            for dstnode,weight in n.get_vertices2nodes(False).items():
+                if dstnode not in dictNodeInboundNodes:
+                    dictNodeInboundNodes[dstnode] = set()
+                dictNodeInboundNodes[dstnode].add(n)
+
+        sourceNodes = set()
+        for n,inbound in dictNodeInboundNodes.items():
+            if len(inbound) == 0:
+                sourceNodes.add(n)
+
+        return sourceNodes
+
+    def is_cyclic(self):
+        def is_cyclic_(nsrc,ndst,set_visited):
+            if nsrc == None:
+                return None
+            if nsrc in set_visited:
+                return nsrc
+            if nsrc == ndst:
+                return None
+            set_visited.add(nsrc)
+            for n,weight in nsrc.get_vertices2nodes(False).items():
+                cyclic_node = is_cyclic_(n,ndst,set_visited)
+                if cyclic_node != None:
+                    return cyclic_node
+            set_visited.remove(nsrc)
+
+            return None
+        '''
+        for each source node
+            is a node revisited for a single path?
+            is a node revisited from any source path?
+        '''
+        sourceNodes = self.get_all_sources()
+        for nsrc in sourceNodes:
+            set_visited = set()
+            ndst = None
+            cyclic_node = is_cyclic_(nsrc,ndst,set_visited)
+            if cyclic_node != None:
+                return cyclic_node
+        return None
+
+    def get_all_topologies(self) -> list:
+        '''
+        return list of list of paths from any source to any sink,
+        return list[list[GNode]]
+        '''
+        def get_all_topologies_(nsrc,visited,ll,l):
+            if nsrc == None:
+                return False
+            if nsrc in visited:
+                return True
+            visited.add(nsrc)
+            l.append(nsrc)
+            dst_nodes = nsrc.get_vertices2nodes(False)
+            if len(dst_nodes) == 0:
+                ll.append(l.copy())
+            else:
+                for ndst in dst_nodes.keys():
+                    if get_all_topologies_(ndst,visited,ll,l):
+                        return True
+            l.pop()
+            visited.remove(nsrc)
+
+        ll = []
+        srcnodes = self.get_all_sources()
+        for src in srcnodes:
+            visited = set()
+            l = []
+            if get_all_topologies_(src,visited,ll,l):
+                return None
+        debug = False
+        if debug:
+            for l in ll:
+                print('-------------------------')
+                for n in l:
+                    n.print_node(id=True)
+        return ll
 
     def print_graph_summary(self):
         '''
@@ -421,6 +868,142 @@ class Graph:
         non_visited_node_ids = nodes.keys()
         for node_id,node in nodes.items():
             pass
+
+class GraphSamples:
+    def __init__(self):
+        pass
+    @staticmethod
+    def get_graph_0():
+        '''
+        0     4
+        |     |
+        +-+-+ |
+        | +-+-+
+        1 2 3
+        | | |
+        +-+ +-+
+          | | |
+          5 6 7
+          | | |
+          +-+ |
+          | | |
+          8 9 A
+        '''
+        g = Graph()
+        GNode.reset_id(0)
+        num_nodes = 11
+        d = {}
+        for i in range(num_nodes):
+            n = GNode()
+            d[n.get_id()] = n
+            g.add_node(n)
+        g.add_edge_to_nodes(d[0],d[1])
+        g.add_edge_to_nodes(d[0],d[2])
+        g.add_edge_to_nodes(d[0],d[3])
+        g.add_edge_to_nodes(d[4],d[2])
+        g.add_edge_to_nodes(d[4],d[3])
+        g.add_edge_to_nodes(d[1],d[5])
+        g.add_edge_to_nodes(d[2],d[5])
+        g.add_edge_to_nodes(d[3],d[6])
+        g.add_edge_to_nodes(d[3],d[7])
+        g.add_edge_to_nodes(d[5],d[8])
+        g.add_edge_to_nodes(d[5],d[9])
+        g.add_edge_to_nodes(d[6],d[8])
+        g.add_edge_to_nodes(d[6],d[9])
+        g.add_edge_to_nodes(d[7],d[10])
+        return g
+
+    @staticmethod
+    def get_graph_1():
+        '''
+        0     4
+        |     |
+        +-+-+ |
+        | +-+-+
+        | | +---+
+        1 2 3   |
+        | | |   |
+        +-+ +-+ |
+          | | | |
+          5 6 7 |
+          | +---+
+          +-+
+          | |
+          8 9
+        '''
+        g = Graph()
+        GNode.reset_id(0)
+        num_nodes = 10
+        d = {}
+        for i in range(num_nodes):
+            n = GNode()
+            d[n.get_id()] = n
+            g.add_node(n)
+        g.add_edge_to_nodes(d[0],d[1])
+        g.add_edge_to_nodes(d[0],d[2])
+        g.add_edge_to_nodes(d[0],d[3])
+        g.add_edge_to_nodes(d[4],d[2])
+        g.add_edge_to_nodes(d[4],d[3])
+        g.add_edge_to_nodes(d[1],d[5])
+        g.add_edge_to_nodes(d[2],d[5])
+        g.add_edge_to_nodes(d[3],d[6])
+        g.add_edge_to_nodes(d[3],d[7])
+        g.add_edge_to_nodes(d[5],d[8])
+        g.add_edge_to_nodes(d[5],d[9])
+        g.add_edge_to_nodes(d[6],d[8])
+        g.add_edge_to_nodes(d[6],d[9])
+        g.add_edge_to_nodes(d[6],d[3])
+        return g
+
+    @staticmethod
+    def get_graph_2():
+        '''
+
+        0           4
+        |           |
+        +---+---+   |
+        |   +---+---+
+        1   2   3
+        |   |   |
+        +---+   +---+
+            |   |   |
+            5   6   7
+            |   |   |
+            | +-+ +-+
+            | | | | |
+            8 | 9 | A
+            | |   |
+            +-+   |
+            |     |
+            |     |
+            B     C
+
+        '''
+        g = Graph()
+        GNode.reset_id(0)
+        num_nodes = 13
+        d = {}
+        for i in range(num_nodes):
+            n = GNode()
+            d[n.get_id()] = n
+            g.add_node(n)
+        g.add_edge_to_nodes(d[0],d[1])
+        g.add_edge_to_nodes(d[0],d[2])
+        g.add_edge_to_nodes(d[0],d[3])
+        g.add_edge_to_nodes(d[4],d[2])
+        g.add_edge_to_nodes(d[4],d[3])
+        g.add_edge_to_nodes(d[1],d[5])
+        g.add_edge_to_nodes(d[2],d[5])
+        g.add_edge_to_nodes(d[3],d[6])
+        g.add_edge_to_nodes(d[3],d[7])
+        g.add_edge_to_nodes(d[5],d[8])
+        g.add_edge_to_nodes(d[6],d[9])
+        g.add_edge_to_nodes(d[6],d[11])
+        g.add_edge_to_nodes(d[7],d[10])
+        g.add_edge_to_nodes(d[7],d[12])
+        g.add_edge_to_nodes(d[8],d[11])
+        return g
+
 
 
 class ut(unittest.TestCase):
@@ -5570,6 +6153,441 @@ class ut(unittest.TestCase):
             i = r2i('MCMXCIV')
             assert i == 1994
         t()
+
+    def test_interval_tree(self):
+        def t0():
+            bst = IntervalTree()
+            lp = [[5,8],[15,18],[1,3],[7,9],[1,3],[19,23],[3,4],[2,6]]
+            for p in lp:
+                lo = p[0]
+                hi = p[1]
+                bst.add(lo,hi,do_merge=False)
+            l = bst.get_inorder()
+            for i in range(len(l)):
+                n = l[i]
+                n.print_vals(lo=True,hi=True)
+        def t1():
+            bst = IntervalTree()
+            lp = [[5,8],[15,18],[1,3],[7,9],[1,3],[19,23],[3,4],[2,6]]
+            lpsorted = [[1,3],[1,3],[2,6],[3,4],[5,8],[7,9],[15,18],[19,23]]
+            lpmerged = [[1,9],[15,23]]
+            for p in lp:
+                lo = p[0]
+                hi = p[1]
+                bst.add(lo,hi,do_merge=True)
+            l = bst.get_inorder()
+            for i in range(len(l)):
+                n = l[i]
+                n.print_vals(lo=True,hi=True)
+        t0()
+        p('---------')
+        t1()
+
+    def test_intersecting_lines(self):
+        def get_intersecting_lines_sweep_lines(n):
+            pass
+        def t0():
+            pass
+        t0()
+
+    def test_binary_search(self):
+        def binary_search_recursive(v,listval,l,r):
+            if l > r:
+                return None
+            m = int((l+r+1)/2)
+            if listval[m] == v:
+                return m
+            if listval[m] < v:
+                return binary_search_recursive(v,listval,m+1,r)
+            return binary_search_recursive(v,listval,l,m-1)
+        def binary_search_iterative(v,listval):
+            l = 0
+            r = len(listval)
+
+            while(l <= r):
+                pass
+            return None
+        def t0():
+            pass
+        pass
+
+    def test_basic_sort(self):
+        '''
+        put valmid at right edge
+        then iterate idxleft:idxright. whenever val > valmid,
+        shift valmid leftward and put val to val's place.
+        at end of iteration, all elements smaller than valmid should be left
+        and all elements bigger than valmid should be right. to
+        handle equal values, then there has to be a group shift left for
+        midval
+        '''
+        def swap(l,src,dst):
+            v = l[src]
+            l[src] = l[dst]
+            l[dst] = v
+        def partition_elements(l,il,ir):
+            if ir <= il:
+                return
+            im = int((ir+il+1)/2)
+            vm = l[im]
+            swap(l,im,ir)
+            til = il
+            tir = ir
+            while til < tir:
+                if l[til] > vm:
+                    l[tir] = l[til]
+                    tir -= 1
+                    l[til] = l[tir]
+                    l[tir] = vm
+                else:
+                    til += 1
+            partition_elements(l,il,tir-1)
+            partition_elements(l,tir,ir)
+        def partition_elements_with_duplicates(l,il,ir):
+            '''
+                0 0 0 0 0 1 1 1 1 1 2 2 2 2 2 3
+                0 2 4 6 8 0 2 4 6 8 0 2 4 6 8 0
+                -------------------------------
+                11122333456667889
+                39431626835781621
+                [3,9,4,3,1,6,2,6,8,3,5,7,8,1,6,2,1]
+
+                partition and swap repeated starting from bottom up
+
+                0 0 0 0 0 1 1 1 1 1 2 2 2 2 2 3
+                0 2 4 6 8 0 2 4 6 8 0 2 4 6 8 0
+                -------------------------------
+                39431626835781621
+                L       M       R   calculate M and swap all elements left and right with 3 groups
+                                    X<VM,X==VM,X>VM
+                39431626835781621   orig -> swap VM to R
+                        |       |
+                39431626135781628   now do X<VM,X==VM,X>VM
+                3               8   cmp no change
+                 9              8   start shift swap
+                 2             89   end shift swap
+                  4            8    cmp no change
+                   3           8    cmp no change
+                    1          8    cmp no change
+                     6         8    cmp no change
+                      2        8    cmp no change
+                       6       8    cmp no change
+                        1      8    cmp no change
+                         3     8    cmp no change
+                          5    8    cmp no change
+                           7   8    cmp no change
+                            8  8    start shift swap
+                            6 88    end shift swap
+                             188    cmp no change
+                32431626135761889   end this iteration, split evaluate
+                0 0 0 0 0 1 1 1 1 1 2 2 2 2 2 3
+                0 2 4 6 8 0 2 4 6 8 0 2 4 6 8 0
+                -------------------------------
+                L       RL      R
+                324316261           partition 0
+                         35761889   partition 1
+                |   M   |           got midpoint, now swap to R and do X<VM,X==VM,X>VM
+                324316261
+                3       1           cmp start shift swap
+                6      13           end shift swap, cmp start swap
+                2     163           cmp end shift swap, cmp start swap
+                6    1263           cmp end shift swap, cmp start swap
+                1   16263           cmp end shift swap, cmp start swap
+                3  116263           cmp end shift swap, cmp start swap
+                4 1146263           cmp end shift swap, cmp start swap
+                211446263           cmp start shift swap
+
+
+                this method is wrong because you have to again sort partition 1
+                you were supposed to recursively go down by the partition value, not midpoint
+
+                and the mistake was doing split, eval partition 0 by partition. the right thing was
+                1. get top level midpoint, and do comparison with VM, then split recursively at
+                   resulting V as R and L+1 for recursive partitions. let's try this again
+
+
+                0 0 0 0 0 1 1 1 1
+                0 2 4 6 8 0 2 4 6
+                -----------------
+                11122333456667889
+
+                39431626835781621
+                L       M       R   start cmp swap now instead of earlier partition then cmp
+                        1       8   swap VM to right and start iterative cmp
+                3               8   cmp no change
+                 9              8   cmp start swap
+                 2             89   cmp end swap
+                 24316261357   89   cmp no changes
+                            8  89   cmp start swap
+                            6 889   cmp end swap
+                             1889   cmp no change
+                32431626135761889   complete sequence, now recurse at VM begin
+                L            RL R   partition 0 and partition 1
+                32431626135761      (0+13+1)/2 = 7 midpoint, do swap and start cmp
+                L      M     R
+                       6     1      start cmp, VM = 6
+                32431621135766
+                32431               cmp no change
+                     6       6      start swap
+                     6      66      end swap, start swap
+                     7     666      end swap, start swap
+                     5    6667      end swap
+                     52113          complete sequence, no recurse at VM begin
+                32431521136667
+                L        RL  R      (0+9+1)/2 = 5 midpoint idx = VM 5
+                3243152113
+                     5   3          swap and start with VM = 5
+                3243132115
+                324313211           cmp no changes, recurse, so R partition is not recursable
+                0 0 0 0 0 1 1 1 1
+                0 2 4 6 8 0 2 4 6
+                -----------------
+                L       R           (0+8+1)/2=4
+                L   M   R           VM = 1, swap and start cmp
+                324313211
+                    1   1
+                3       1           swap start
+                1      13           swap end, swap start
+                2     113           swap end, swap start
+                3    1123           swap end, swap start
+                1   11323           swap end, swap start
+                3  111323           swap end, swap start
+                4 1113323           swap end, swap start
+                211143323           swap end, swap start
+                111243323           complete sequence, recurse at VM 1, so no left recurse
+                   243323
+                0 0 0 0 0 1 1 1 1
+                0 2 4 6 8 0 2 4 6
+                -----------------
+                   L    R           (3+8+1)/2 = 6, VM = 3
+                   243323
+                      3 3           start cmp
+                   2    3
+                    4   3           start swap
+                    2  34           end swap
+                     3 3            start swap
+                     3334           end swap, end sequence, recurse
+                   223334           at this point, when recursing to the others, they are sorted
+                  |      |   |889
+                  |      |6667
+                  |      5
+                111
+                11122333456667889   here is end result of merging each of the partitions
+            '''
+            if ir <= il:
+                return
+            im = int((il+ir+1)/2)
+            vm = l[im]
+            tl = il
+            tr = ir
+            idxMEnd = tr
+            duplicate_detected = False
+
+            #p('VMI = {} VM = {}'.format(im,vm))
+            #p('VMI SWAP BEFORE: {}'.format(l))
+            swap(l,im,ir)
+            #p('VMI SWAP AFTER : {}'.format(l))
+            while tl < tr:
+                if l[tl] < l[tr]:
+                    tl += 1
+                elif l[tl] == l[tr]:
+                    tr -= 1
+                    #p('before =:        {}'.format(l))
+                    swap(l,tl,tr)
+                    #p('after  =:        {}'.format(l))
+                    duplicate_detected = True
+                else:
+                    #p('before >:        {}'.format(l))
+                    if duplicate_detected:
+                        tr -= 1
+                        swap(l,tl,tr)
+                        swap(l,tr,idxMEnd)
+                        idxMEnd -= 1
+                    else:
+                        swap(l,tl,tr-1)
+                        swap(l,tr-1,tr)
+                        tr -= 1
+                        idxMEnd = tr
+                    #p('after  >:        {}'.format(l))
+            if duplicate_detected:
+                partition_elements_with_duplicates(l,il,tr-1)
+                partition_elements_with_duplicates(l,idxMEnd+1,ir)
+            else:
+                partition_elements_with_duplicates(l,il,tr-1)
+                partition_elements_with_duplicates(l,tr,ir)
+
+        def t_noduplicates():
+            lo = [i for i in range(10)]
+            lo = self.utils.shuffle(lo)
+            li = lo.copy()
+            partition_elements(li,0,len(li)-1)
+            assert li == [0,1,2,3,4,5,6,7,8,9]
+
+            li = lo.copy()
+            partition_elements_with_duplicates(li,0,len(li)-1)
+            assert li == [0,1,2,3,4,5,6,7,8,9]
+
+        def t_duplicates():
+            l = [3,9,4,3,1,6,2,6,8,3,5,7,8,1,6,2,1]
+            partition_elements_with_duplicates(l,0,len(l)-1)
+            assert l == [1,1,1,2,2,3,3,3,4,5,6,6,6,7,8,8,9]
+        t_noduplicates()
+        t_duplicates()
+
+    def test_sort_quicksort(self):
+        pass
+
+    def test_k_sort(self):
+        pass
+
+    def test_graph_acyclic_vs_cyclic(self):
+        def test_cyclic_0():
+            g = GraphSamples.get_graph_0()
+            set_src_nodes = g.get_all_sources()
+            cyclic_node   = g.is_cyclic()
+            assert cyclic_node == None
+
+        def test_cyclic_1():
+            g = GraphSamples.get_graph_1()
+            set_src_nodes = g.get_all_sources()
+            cyclic_node   = g.is_cyclic()
+            assert cyclic_node != None
+
+
+        test_cyclic_0()
+        test_cyclic_1()
+
+    def test_topological_sort(self):
+        def t0():
+            g = GraphSamples.get_graph_0()
+            ll = g.get_all_topologies()
+            assert len(ll) == 12
+
+            '''
+            12 possible paths
+            0 1 5 8
+            0 1 5 9
+            0 2 5 8
+            0 2 5 9
+            0 3 6 8
+            0 3 6 9
+            0 3 7 10
+            4 2 5 8
+            4 2 5 9
+            4 3 6 8
+            4 3 6 9
+            4 3 7 10
+            '''
+        def t1():
+            g = GraphSamples.get_graph_2()
+            ll = g.get_all_topologies()
+            assert len(ll) == 11
+            '''
+            0 1 5 8 11
+            0 2 5 8 11
+            0 3 6 11
+            0 3 6 9
+            0 3 7 10
+            0 3 7 12
+            4 2 5 8 11
+            4 3 6 11
+            4 3 6 9
+            4 3 7 10
+            4 3 7 12
+            '''
+        t0()
+        t1()
+
+    def test_merge_intervals(self):
+        def merge_intervals_bst(lpairs):
+            '''
+            given list of pair segments [x,y), merge overlapping segments
+
+            you cannot use interval tree to merge intervals because the pairs
+            are unsorted. this means you might update the parent node with merge,
+            but children node that should have merged, did not merge
+
+            you still have to use a sorted list to merge
+            '''
+            bst = IntervalTree()
+            for pair in lpairs:
+                lo = pair[0]
+                hi = pair[1]
+                bst.add(lo,hi,do_merge=True)
+            l = bst.get_inorder()
+            return l
+        def merge_intervals_list(lpairs):
+            lsorted = sorted(lpairs,key = lambda x: x[0]) # sort by lo
+            prv = None
+            lmerged = []
+            for pair in lsorted:
+                if prv == None:
+                    lmerged.append([pair[0],pair[1]])
+                    prv = pair
+                else:
+                    if prv[0] <= pair[0] and pair[0] <= (prv[1]+1):
+                        lmerged[len(lmerged)-1][1] = pair[1]
+                        prv = lmerged[len(lmerged)-1]
+                    else:
+                        lmerged.append([pair[0],pair[1]])
+                        prv = pair
+            return lmerged
+        def t0():
+            lpairs = [[1,3],[2,6],[8,10],[15,18]]
+            l = merge_intervals_bst(lpairs)
+            for i in range(len(l)):
+                n = l[i]
+                n.print_vals(lo=True,hi=True)
+        def t1():
+            lpairs = [[1,3],[2,6],[8,10],[15,18]]
+            l = merge_intervals_list(lpairs)
+            for i in range(len(l)):
+                print(l[i])
+        t1()
+
+    def test_LLN_functions(self):
+        e = 12345
+        n = LLN.convert_num_2_lln(e)
+        a = LLN.convert_lln_2_num(n)
+        assert a == 12345
+        nr = LLN.reverse_lln(n)
+        ar = LLN.convert_lln_2_num(nr)
+        assert ar == 54321
+        nrr = LLN.reverse_lln(nr)
+        arr = LLN.convert_lln_2_num(nrr)
+        assert a == 12345
+
+
+    def test_add_two_numbers_reverse_linked(self):
+        def add_xy_reverse_linked_list(ll0:LLN, ll1:LLN) -> LLN:
+            '''
+            input: ll0, ll1 where ll0/1 are reverse linked lists. add ll0 + ll1
+            out:  ll2
+                    eg 6->5->4 + 4->5->6->1 => 456 + 1654 = 2110 => 0->1->1->2
+            '''
+            ll2 = LLN()
+            t0 = ll0
+            t1 = ll1
+            t2 = ll2
+            carry = 0
+            while t0 != None or t1 != None:
+                v = carry
+                if t0 != None:
+                    v += t0.get_v()
+                    t0 = t0.get_np()
+                if t1 != None:
+                    v += t1.get_v()
+                    t1 = t1.get_np()
+                carry = 1 if v >= 10 else 0
+                t2.set_v(v)
+                if carry != 0 or t0 != None or t1 != None:
+                    tmp = LLN()
+                    t2.set_np(tmp)
+                    t2 = tmp
+            return ll2
+        def t0():
+            pass
+        t0()
 
     def main(self):
         p('main passed')
