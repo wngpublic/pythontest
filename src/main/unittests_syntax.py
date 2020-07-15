@@ -285,6 +285,7 @@ class ut(unittest.TestCase):
         v = l.pop()
         assert v == 2
         assert len(l) == 1
+        assert l == [1]
 
         l2 = []                 # empty list operations
         assert l2[-1:] == []    # empty list, no exception
@@ -561,6 +562,21 @@ class ut(unittest.TestCase):
         l[0][1] = 2
         assert l == [[0,2,0],[0,0,0]]
 
+        l = [[0 for y in range(3)] for x in range(2)]
+        assert l == [[0,0,0],[0,0,0]]
+        l[0][1] = 1
+        l[1][0] = 2
+        assert l == [[0,1,0],[2,0,0]]
+
+        s1 = '1234'
+        s2 = '123'
+        l = [[0 for c in range(len(s2)+1)] for r in range(len(s1)+1)]
+        assert l == [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
+        l[0][3] = 3
+        l[3][0] = 30
+        l[4][3] = 43
+        assert l == [[0,0,0,3],[0,0,0,0],[0,0,0,0],[30,0,0,0],[0,0,0,43]]
+
         cols = 3
         rows = 2
         l = [[(i*cols+j) for j in range(cols)] for i in range(rows)]
@@ -675,6 +691,11 @@ class ut(unittest.TestCase):
                 a[i].append(i*10 + j)
         assert len(a) == 3 and len(a[0]) == 4
         assert a[0][0] == 0 and a[1][0] == 10 and a[0][1] == 1 and a[2][3] == (2*10+3)
+
+        #    0 1 2 3 4 5 6
+        l = [0,1,2,3,4,5,6]
+        r = [l[i] for i in range(1,4)]      # range of values of index
+        assert r == [1,2,3]
 
         '''
         a = [[]]    # doesnt work
@@ -971,16 +992,16 @@ class ut(unittest.TestCase):
         s = ','.join(l)
         assert s == 'ab,cd,ef'
 
-        s = ','.join(l) * 3
+        s = ','.join(['ab','cd','ef']) * 3
         assert s == 'ab,cd,efab,cd,efab,cd,ef'
 
-        s = ','.join(l * 3)
+        s = ','.join(['ab','cd','ef'] * 3)
         assert s == 'ab,cd,ef,ab,cd,ef,ab,cd,ef'
 
-        s = ''.join(l) * 3
+        s = ''.join(['ab','cd','ef']) * 3
         assert s == 'abcdefabcdefabcdef'
 
-        s = ''.join(l * 3)
+        s = ''.join(['ab','cd','ef'] * 3)
         assert s == 'abcdefabcdefabcdef'
 
         s = ','.join([''.join(l) * 3])
@@ -1000,6 +1021,11 @@ class ut(unittest.TestCase):
 
         s = ','.join('abcdef')
         assert s == 'a,b,c,d,e,f'
+
+        s = ''.join(reversed('abcdef'))
+        assert s == 'fedcba'
+        s = 'abcdef'[::-1]
+        assert s == 'fedcba'
 
         s = ','.join(['abcdef'])
         assert s == 'abcdef'
@@ -1069,7 +1095,7 @@ class ut(unittest.TestCase):
         s = "hello\n\n\nhi\n\n\nbye\n"
         s1 = re.sub(r"\n+","\n",s)
         assert s1 == "hello\nhi\nbye\n"
-        idx = s.find('hi')
+        idx = s.find('hi')              # string search
         assert idx != 0
         idx = s.find('badstring')
         assert idx == -1
@@ -1868,6 +1894,8 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         assert d2 != d3
 
         j1 = json.dumps(d1)
+        json_pretty = json.dumps(d1,indent=4,sort_keys=True)
+        #print(json_pretty)
         d4 = json.loads(j1)
 
         assert d1 == d4
@@ -2043,6 +2071,7 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         s2 = {4,5,6}
         s3 = s1 | s2
         s4 = set([1,2,3,4,5,6])
+        assert len(s2) == 3
         assert s3 == s4
         s4 |= s3
         assert s3 == s4
@@ -2454,8 +2483,15 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         l = [o1_1,o1_2,o1_3,o1_4,o1_5]
         lsorted = sorted(l)
         lexp = [3,1,5,2,4]
+
         lact = list(map(lambda x: x.a, lsorted))
         assert lact == lexp
+
+        lact = []
+        for o in lsorted:       # same thing as above
+            lact.append(o.a)
+        assert lact == lexp
+
 
         l = [o2_1,o2_2,o2_3,o2_4,o2_5]
         lsorted = l.copy()
@@ -2513,16 +2549,126 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         l = sorted(dictv.values())
         assert l == ['k0','k1','k2','k3.1','k4']    # k3 was overwritten because duplicate key
 
+        # minheap with ints
+        # maxheap with ints
+        hqmin = []
+        hqmax = []
+
+        ctr = 0
+        while hqmin:
+            heapq.heappop(hqmin)
+            heapq.heappop(hqmax)
+            ctr += 1
+        assert ctr == 0
+
+        li = [11,15,22,2,8,5,1,3,7]
+        lc = li.copy()
+
+        ls = sorted(lc)
+        assert ls == [1,2,3,5,7,8,11,15,22]
+        ls = list(reversed(sorted(lc)))
+        assert ls == [22,15,11,8,7,5,3,2,1]
+
+        ctr = 0
+        for i in li:
+            heapq.heappush(hqmin,i)         # default is minheap
+            heapq.heappush(hqmax,i*-1)      # have to do -1 for maxheap or define class for _lt_
+            ctr += 1
+        assert ctr == len(li)
+        lmin = []
+        lmax = []
+        while hqmin:
+            lmin.append(heapq.heappop(hqmin))
+        while hqmax:
+            lmax.append(heapq.heappop(hqmax) * -1) # have to do -1 for maxheap
+        assert lmin == [1,2,3,5,7,8,11,15,22]
+        assert lmax == [22,15,11,8,7,5,3,2,1]
+        lrev = list(reversed(lmax))
+        assert lmin == list(reversed(lmax))
+
+        # minheap with ints using priority queue
+        # maxheap with ints using priority queue
+        hqmin = queue.PriorityQueue()
+        hqmax = queue.PriorityQueue()
+        ctr = 0
+        li = [11,15,22,2,8,5,1,3,7]
+        for i in li:
+            hqmin.put(i)
+            hqmax.put(i*-1)
+        lmin = []
+        lmax = []
+        while not hqmin.empty():
+            lmin.append(hqmin.get())
+        while not hqmax.empty():
+            lmax.append(hqmax.get()*-1)
+        assert lmin == [1,2,3,5,7,8,11,15,22]
+        assert lmax == [22,15,11,8,7,5,3,2,1]
+
+        # minheap tuple with ints using priority queue
+        # maxheap tuple with ints using priority queue
+        hqmin = queue.PriorityQueue()       # default is minheap
+        hqmax = queue.PriorityQueue()
+        ctr = 0
+        li = [11,15,22,2,8,5,1,3,7]
+        lj = [ 9, 8, 7,6,5,4,3,2,1]
+        for i,j in zip(li,lj):
+            hqmin.put((i,j))
+            hqmax.put((i*-1,j))
+        lmin = []
+        lmax = []
+        while not hqmin.empty():
+            lmin.append(hqmin.get())
+        while not hqmax.empty():
+            t = hqmax.get()
+            lmax.append((t[0]*-1,t[1]))
+        assert lmin == [(1,3),(2,6),(3,2),(5,4),(7,1),(8,5),(11,9),(15,8),(22,7)]
+        assert lmax == list(reversed(lmin))
+
+        # minheap tuple with class override of comparator for string
+        class TMIN:
+            def __init__(self,k,v):
+                self.k = k
+                self.v = v
+            def __lt__(self,other):
+                return self.k < other.k
+        l = [TMIN('k12','vx'),TMIN('k23','v11'),TMIN('k1','vy'),TMIN('k2','v2'),TMIN('k21','v32')]
+        hqmin = queue.PriorityQueue()
+        for o in l:
+            hqmin.put(o)
+        lmin = []
+        while not hqmin.empty():
+            o = hqmin.get()
+            lmin.append(o.k)
+        assert lmin == ['k1','k12','k2','k21','k23']
+
+        # max priority queue, just create class where __lt__ self.k > other.k
+        class TMAX:
+            def __init__(self,k,v):
+                self.k = k
+                self.v = v
+            def __lt__(self,other):
+                return self.k > other.k
+        l = [TMAX('k12','vx'),TMAX('k23','v11'),TMAX('k1','vy'),TMAX('k2','v2'),TMAX('k21','v32')]
+        hqmax = queue.PriorityQueue()
+        for o in l:
+            hqmax.put(o)
+        lmax = []
+        while not hqmax.empty():
+            o = hqmax.get()
+            lmax.append(o.k)
+        assert lmax == ['k23','k21','k2','k12','k1']
+
+
         # heapq
-        li = ['k4','k0','k3','k1','k2']
+        li = ['k4','k0','k11','k3','k1','k2']
         heapq.heapify(li)
-        assert li != ['k0','k1','k2','k3','k4'] # not sorted!
+        assert li != ['k0','k1','k11','k2','k3','k4'] # not sorted!
         l = li.copy()
 
         lo = []
         while len(l) != 0:
             lo.append(heapq.heappop(l))
-        assert lo == ['k0','k1','k2','k3','k4'] # sorted!
+        assert lo == ['k0','k1','k11','k2','k3','k4'] # sorted!
 
         # sort dict in heapq
         hq = []
@@ -3361,10 +3507,176 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         def csv_pandas(filename):
             data = pandas.read_csv(filename)
             p(data) # this layout is truncated!
-        filename = None
-        if filename is None:
-            return
-        csv_reader(filename)
+        def csv_format(f):
+            '''
+            input is    k1,k2,k3
+                        v11,v12,v13
+                        v21,v22,v23
+            output is:
+                        d1[k1]=[v11,v21]
+                        d1[k2]=[v12,v22]
+                        d1[k3]=[v13,v23]
+            output is
+                        d2[v11]={k1:v11,k2:v12,k3:v13}
+                        d2[v21]={k1:v21,k2:v22,k3:v23}
+                        make the key as one of the values and a map
+            '''
+            d1 = {}
+            d2 = {}
+            d3 = {}
+            fh = open(f,'r',encoding='utf-8-sig')
+            csvreader = csv.reader(fh)
+            keys = next(csvreader)
+            for k in keys:
+                d1[k] = []
+            assert isinstance(keys,list)
+            for line in csvreader:
+                if line is None or len(line) == 0: continue
+                # this is for 3 column table only
+                assert isinstance(line,list)
+
+                # 3 different ways of parsing
+                for i in range(len(keys)):
+                    k = keys[i]
+                    d1[k].append(line[i])
+                k = line[0]
+                d2[k] = dict(zip(keys,line))
+                d3[k] = {
+                    keys[0]:line[0],
+                    keys[1]:line[1],
+                    keys[2]:line[2]
+                }
+            fh.close()
+
+            ftmp1 = 'tmp.1.log'
+            fho = open(ftmp,'w',encoding='utf-8')
+            csvwriter = csv.DictWriter(fho,fieldnames=[keys[0],keys[1],keys[2]])
+            csvwriter.writeheader()
+            for k,v in d2.items():
+                csvwrite.writerow(v)
+            fho.close()
+
+            ftmp2 = 'tmp.2.log'
+            fho = open(ftmp2,'w',encoding='utf-8')
+            csvwriter = csv.writer(fho,delimiter=',')
+            csvwriter.writerow([keys[0],keys[1],keys[2]])
+            for k,v in d2.items():
+                csvwrite.writerow(v)
+            fho.close()
+
+            return (d1,d2)
+        def csv_format_dictreader(f):
+            d1 = {}
+            d2 = {}
+            d3 = {}
+            fh = open(f,'r')
+            reader = csv.DictReader(fh)
+            keys = reader.fieldnames
+            for k in keys:
+                d1[k] = []
+            for row in reader:
+                assert isinstance(row,dict)
+                for k,v in row.items():
+                    d1[k].append(v)
+                # same thing but this looks better
+                for k in keys:
+                    d3[k].append(row[k])
+                d2[row[keys[0]]]=row
+            fh.close()
+            return (d1,d2)
+        def t0():
+            filename = None
+            if filename is None:
+                return
+            csv_reader(filename)
+        def t1():
+            f = 'input/test1.csv'
+            d1,d2 = csv_format(f)
+            assert d1 == {'k1': ['11','12','13','14','15'],
+                          'k2': ['25','24','23','22','21'],
+                          'k3': ['31','32','33','34','35']}
+            assert d2 == {'11': {'k1':'11','k2':'25','k3':'31'},
+                          '12': {'k1':'12','k2':'24','k3':'32'},
+                          '13': {'k1':'13','k2':'23','k3':'33'},
+                          '14': {'k1':'14','k2':'22','k3':'34'},
+                          '15': {'k1':'15','k2':'21','k3':'35'}}
+            d1,d2 =csv_format_dictreader(f)
+            assert d1 == {'k1': ['11','12','13','14','15'],
+                          'k2': ['25','24','23','22','21'],
+                          'k3': ['31','32','33','34','35']}
+            assert d2 == {'11': {'k1':'11','k2':'25','k3':'31'},
+                          '12': {'k1':'12','k2':'24','k3':'32'},
+                          '13': {'k1':'13','k2':'23','k3':'33'},
+                          '14': {'k1':'14','k2':'22','k3':'34'},
+                          '15': {'k1':'15','k2':'21','k3':'35'}}
+        t1()
+    def test_zip_lists(self):
+        def t0():
+            l0 = [1,2,3,4,5]
+            l1 = [11,12,13,14,15]
+            l2 = [21,22,23,24,25]
+            z  = zip(l0,l1,l2)
+            assert isinstance(z,zip)    # zip is an iterator
+            a = list(z)
+            assert a == [(1,11,21),(2,12,22),(3,13,23),(4,14,24),(5,15,25)]
+
+            s = []
+            for i,j,k in a:
+                v = '{},{},{}'.format(i,j,k)
+                s.append(v)
+            assert s == ['1,11,21','2,12,22','3,13,23','4,14,24','5,15,25']
+
+            l0 = [11,12,13]
+            l1 = [21,22,23]
+            l2 = [31,32,33]
+            z  = zip(l0,l1,l2)
+            s = []
+            for i,j,k in z: # z is an iterator
+                v = '{},{},{}'.format(i,j,k)
+                s.append(v)
+            assert s == ['11,21,31','12,22,32','13,23,33']
+
+            z  = zip(l0,l1,l2)
+            a = list(z)
+            assert a == [(11,21,31),(12,22,32),(13,23,33)]
+            a = list(z)                 # iterator all used up!!
+            assert a == []
+
+            l0 = (11,12,13)
+            l1 = (21,22,23)
+            l2 = (31,32,33)
+            a  = list(zip(l0,l1,l2))
+            assert a == [(11,21,31),(12,22,32),(13,23,33)]
+            assert a == [(11,21,31),(12,22,32),(13,23,33)]
+
+            l0 = [11,12,13]
+            l1 = [21,22,23]
+            l2 = [31,32,33]
+            a  = list(zip(l0,l1,l2))
+            assert a == [(11,21,31),(12,22,32),(13,23,33)]
+            l0,l1,l2 = zip(*a)          # unzip
+            assert isinstance(l0,tuple)
+            assert l0 == (11,12,13) and l1 == (21,22,23) and l2 == (31,32,33)
+            l0 = list(l0)               # convert tuple to list
+            assert l0 == [11,12,13]
+            a  = [list(l) for l in zip(l0,l1,l2)]       # convert from tuple to list
+            assert a == [[11,21,31],[12,22,32],[13,23,33]]
+
+            # lists to list of tuples
+            l0 = [11,12,13]
+            l1 = [21,22]
+            l2 = [31,32,33,34]
+            a  = list(zip(l0,l1,l2))    # truncates at shortest list
+            assert a == [(11,21,31),(12,22,32)]
+
+            # list of tuples to lists
+            assert list(zip([1,2,3],[2,3,4])) == [(1,2),(2,3),(3,4)]
+            l0 = [(1,2),(2,3),(3,4)]
+            l1,l2 = zip(*[(1,2),(2,3),(3,4)])
+            assert isinstance(l1,tuple)
+            assert (l1,l2) == ((1,2,3),(2,3,4))
+
+        t0()
 
 if __name__ == "__main__":
     unittest.main() # not ut.main()!

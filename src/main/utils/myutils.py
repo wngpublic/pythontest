@@ -38,7 +38,7 @@ class my_utils:
         'u':['s'],
         'w':['e','s']
     }
-    ascii_map_hex           = {
+    ascii_map_hex       = {
         ' ':0x20,
         '!':0x21,
         '"':0x22,
@@ -145,6 +145,35 @@ class my_utils:
 
         return s
 
+
+    @staticmethod
+    def make_random_word_from_charset(consonants,vowels,num_syllables=2,enable_silent_endings=True)-> str:
+        s = ''
+        len_con = len(consonants)
+        len_vow = len(vowels)
+        last_is_vowel = False
+        for i in range(num_syllables):
+            if my_utils.rand_bool():
+                s += consonants[my_utils.rand(0,len_con)]
+                s += vowels[my_utils.rand(0,len_vow)]
+                if my_utils.rand_bool():
+                    s += vowels[my_utils.rand(0,len_vow)]
+                last_is_vowel = True
+            else:
+                if last_is_vowel:
+                    s += consonants[my_utils.rand(0,len_con)]
+                s += vowels[my_utils.rand(0,len_vow)]
+                s += consonants[my_utils.rand(0,len_con)]
+                last_is_vowel = False
+            if (i+1) == num_syllables and not last_is_vowel and enable_silent_endings:
+                if my_utils.rand_bool():
+                    c = consonants[my_utils.rand(0,len_con)]
+                    l_silent_endings = my_utils.silent_endings[c]
+                    if len(l_silent_endings) != 0:
+                        s += l_silent_endings[my_utils.rand(0,len(l_silent_endings))]
+
+        return s
+
     @staticmethod
     def inject_random_errors_string(s:str,charset:str,num_errors:int) -> str:
         result = ''.join(my_utils.inject_random_errors_list(list(s),charset,num_errors))
@@ -197,7 +226,7 @@ class my_utils:
             idx_char_0 = my_utils.rand(0,len(list_index_char_0))
             idx_char_1 = my_utils.rand(0,len(list_index_char_1))
             my_utils.swap(result,idx_char_0,idx_char_1)
-        
+
         return result
 
 
@@ -251,16 +280,41 @@ class my_utils:
         return result
 
     @staticmethod
-    def rand_bool()->bool:
-        return random.getrandbits(1)                # bool(val) also works
+    def rand_bool(weight_pct_true=50)->bool:
+        if weight_pct_true == 50:
+            return random.getrandbits(1)                # bool(val) also works
+        if weight_pct_true < 0 or weight_pct_true > 100:
+            raise Exception('weight out of bounds: {}'.format(weight_pct_true))
+        i = my_utils.rand_int_inclusive(0,100)
+        return i >= weight_pct_true
 
     @staticmethod
-    def rand_int(min:int,max:int)->int:             # randint is [min,max], randrange is [min,max)
+    def pct_is_true(pct_min):                       # if pct_min < rand[0:99] return True
+        if pct_min == 0:
+            return False
+        if pct_min == 100:
+            return True
+        if my_utils.rand_int(1,100) < pct_min:
+            return True
+        return False
+
+    @staticmethod
+    def rand_int_inclusive(min,max):
+        return my_utils.rand_int(min,max+1)
+
+    @staticmethod
+    def get_rand_pct(min,max):
+        i = my_utils.rand(min,max+1)
+        v = int(100*i/max)
+        return v
+
+    @staticmethod
+    def rand_int(min:int,max:int)->int:             # rand_int is [min,max], randrange is [min,max)
         return my_utils.rand(min,max)
 
     @staticmethod
     def rand(min:int,max:int) -> int:
-        return random.randrange(min,max)            # randint is [min,max], randrange is [min,max)
+        return random.randrange(min,max)            # rand_int is [min,max], randrange is [min,max)
 
     '''
     s can be string, list, set, tuple, etc
@@ -269,6 +323,32 @@ class my_utils:
     def rand_sample_over_sequence(s,k) -> list:
         l = random.sample(s, k)
         return l
+
+
+    @staticmethod
+    def choose_idx_from(l):
+        return random.randrange(0,len(l))
+
+    @staticmethod
+    def choose_obj_from(l):
+        if l == None or len(l) == 0:
+            raise Exception('choose_obj_from empty list: {}'.format(l))
+        return l[my_utils.choose_idx_from(l)]
+
+    @staticmethod
+    def choose_idxs_from(l,num_to_choose):
+        assert num_to_choose > 0 and num_to_choose <= len(l)
+        li = [i for i in range(len(l))]
+        my_utils.shuffle(li)
+        return li[:num_to_choose]
+
+    @staticmethod
+    def choose_objs_from(l,num_to_choose):
+        assert num_to_choose > 0 and num_to_choose <= len(l)
+        lc = l.copy()
+        my_utils.shuffle(lc)
+        return lc[:num_to_choose]
+
 
     '''
     get rand values from [min,max)

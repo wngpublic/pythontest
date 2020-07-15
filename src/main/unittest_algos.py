@@ -206,6 +206,10 @@ class Pair:
     def __init__(self, v1, v2):
         self.v1 = v1
         self.v2 = v2
+    def get_v1(self):
+        return self.v1
+    def get_v2(self):
+        return self.v2
 
 class Container:
     def __init__(self,obj=None):
@@ -3783,12 +3787,12 @@ class ut(unittest.TestCase):
                     buf[i].append(str(print_v))
                 #starting_ten = starting_ten/10 if starting_ten > 10 else 10
                 starting_ten = starting_ten/10
-            debug = True
+            debug = False
             if debug:
                 for line in buf:
                     p(' '.join(line))
                 p(' '.join(s))
-        _printarray('abcdefghijklmnopqrstuvwxyz01234567890abcdefghijklmnopqrstuvwxyz01234567890abcdefghijklmnopqrstuvwxyz01234567890abcdefghijklmnopqrstuvwxyz01234567890')
+                _printarray('abcdefghijklmnopqrstuvwxyz01234567890abcdefghijklmnopqrstuvwxyz01234567890abcdefghijklmnopqrstuvwxyz01234567890abcdefghijklmnopqrstuvwxyz01234567890')
 
     def test_k_dimension_search(self):
         class k_node:
@@ -3917,7 +3921,7 @@ class ut(unittest.TestCase):
                 dist = round(dist,1)
                 k2 = ','.join(str(v) for v in p2)
                 map[k1][k2] = str(dist)
-        debug = True
+        debug = False
         if debug:
             for k,v in map.items():
                 p('{} = {}'.format(k,json.dumps(v)))
@@ -3939,7 +3943,7 @@ class ut(unittest.TestCase):
                 dist = round(math.sqrt(dist),1)
                 k2 = ','.join(str(v) for v in p2)
                 map[k1][k2] = str(dist)
-        debug = True
+        debug = False
         if debug:
             for k,v in map.items():
                 p('{} = {}'.format(k,json.dumps(v)))
@@ -4513,38 +4517,100 @@ class ut(unittest.TestCase):
 
 
     def test_longest_common_subsequence(self):
+        '''
+        s1 feddcbedca
+        s2 aefgdbdc
+
+              f e d d c b e d c a
+            a 0 0 0 0 0 0 0 0 0 1
+            e 0 1 1 1 1 1 1 1 1 1
+            f 1 1 1 1 1 1 1 1 1 1
+            g 1 1 1 1 1 1 1 1 1 1
+            d 1 1 2 2 2 2 2 2 2 2
+            b 1 1 2 2 2 3 3 3 3 3
+            d 1 1 2 2 2 3 3 4 4 4
+            c 1 1 2 2 3 3 3 4 5 5
+
+            c->d->b->d->f = fdbdc
+
+            basically, +1 of x-1,y-1 if match.
+
+        s1 feddcbedcafhfgghefcijab
+        s2 aefgdbecfgdchfeibjhe
+
+        basically when there is match, increment from max of [i-1,j],[i-1,j-1],[i,j-1]
+        this value propagates all the way to the end of each row, and eventually
+        the last col of last row
+
+        can this be done with recursive programming?
+
+        '''
+
+        def trace_backwards(ll,s1,s2):
+            num_row = len(ll)
+            num_col = len(ll[0])
+            #for i in range(num_row-1,-1,-1):    # len-1:0,-1 step
+            s = ''
+            r = num_row-1
+            c = num_col-1
+            pval = ll[r][c]
+            cval = ll[r][c]
+            charc = ''
+            charp = ''
+            while r != 1 and c != 1:
+                if ll[r][c-1] < ll[r-1][c]:
+                    r -= 1
+                    charc = s1[r-1]
+                    charc = s2[c-1]
+                else:
+                    c -= 1
+                    charc = s2[c-1]
+                cval = ll[r][c]
+                if cval != pval:
+                    s += charp
+                pval = cval
+                charp = charc
+            rev = ''.join(reversed(s))
+            return rev
+        def lcs_dp(s1,s2):
+            ll = [[0 for c in range(len(s2)+1)] for r in range(len(s1)+1)]
+            for r in range(1,len(s1)+1):
+                for c in range(1,len(s2)+1):
+                    if s1[r-1] == s2[c-1]:
+                        ll[r][c] = ll[r-1][c-1]+1
+                    else:
+                        ll[r][c] = max(ll[r-1][c],ll[r][c-1])
+            s = trace_backwards(ll,s1,s2)
+            return s
+
+        def lcs_dp_1(s1,s2):
+            ll = [[] for i in range(len(s2))]
+            # for each row
+            for i in range(len(s1)):
+                # for each column
+                for j in range(len(s2)):
+                    if s2[j] == s1[i]:
+                        if j == 0 or i == 0:
+                            ll[i][j] = 1
+                        else:
+                            ll[i][j] = ll[i-1][j-1]+1
+                    else:
+                        if i == 0 and j == 0:
+                            ll[i][j] = 0
+                        elif i == 0:
+                            ll[i][j] = ll[i][j-1]
+                        elif j == 0:
+                            ll[i][j] = ll[i-1][j]
+                        else:
+                            if ll[i-1][j] > ll[i][j-1]:
+                                ll[i][j] = ll[i-1][j]
+                            else:
+                                ll[i][j] = ll[i][j-1]
         def t0():
-            '''
-            s1 feddcbedcafhfgghefcijab
-            s2 aefgdbecfgdchfeibjhe
-
-                f e d d c b e d c a f h f g g h e f c i j a b
-            a                     1                       1
-            e     1                             2
-            f   1                   2   2         3
-            g                             3 3
-            d       2 2       2
-            b
-            e
-            c
-            f
-            g
-            d
-            c
-            h
-            f
-            e
-            i
-            b
-            j
-            h
-            e
-
-            basically when there is match, increment from max of [i-1,j],[i-1,j-1],[i,j-1]
-            this value propagates all the way to the end of each row, and eventually
-            the last col of last row
-            '''
-            pass
+            s1 = 'feddcbedca'
+            s2 = 'aefgdbdc'
+            lchain = lcs_dp(s1,s2)
+            assert lchain != None
         t0()
 
     def test_longest_common_substring(self):
@@ -4744,7 +4810,7 @@ class ut(unittest.TestCase):
                 parent_children = parent.get_children()
                 if c not in parent_children:
                     parent_children[c] = child
-                p('s: {:20} parent: {}; root: {}'.format(s,parent.get_node_summary(),root.get_node_summary()))
+                #p('s: {:20} parent: {}; root: {}'.format(s,parent.get_node_summary(),root.get_node_summary()))
                 self.make_suffix_tree(s[1:],child)
             def is_substring(self,s:str,n:Node=None) -> bool:
                 if s is None or len(s) == 0:
@@ -5592,7 +5658,7 @@ class ut(unittest.TestCase):
 
         def t0():
             ll_collection = enumerate_list_recursive(7)
-            debug = True
+            debug = False
             if debug:
                 for collection in ll_collection:
                     p(collection)
@@ -6165,7 +6231,7 @@ class ut(unittest.TestCase):
             l = bst.get_inorder()
             for i in range(len(l)):
                 n = l[i]
-                n.print_vals(lo=True,hi=True)
+                #n.print_vals(lo=True,hi=True)
         def t1():
             bst = IntervalTree()
             lp = [[5,8],[15,18],[1,3],[7,9],[1,3],[19,23],[3,4],[2,6]]
@@ -6178,9 +6244,9 @@ class ut(unittest.TestCase):
             l = bst.get_inorder()
             for i in range(len(l)):
                 n = l[i]
-                n.print_vals(lo=True,hi=True)
+                #n.print_vals(lo=True,hi=True)
         t0()
-        p('---------')
+        #p('---------')
         t1()
 
     def test_intersecting_lines(self):
@@ -6440,7 +6506,694 @@ class ut(unittest.TestCase):
     def test_k_sort(self):
         pass
 
+    def test_radix_resolution(self):
+        '''
+        the roots support only indexing of upper bits
+        children support only partial indexing
+        leafs are never terminal. they split when they need and push the leaf to tip.
+        a branch can never have both leaf and child branch. leaf is always at leaf branch.
+        leaf branch can split but the children leaves get split into parents which are leaf branches
+
+        suppose we support 1T elements using base 10
+        1,000,000,000,000
+
+        what is radix search of 1T using base2?
+        1               1
+                        2
+                        4
+                        8
+        5              16
+                       32
+                       64
+                      128
+                      256
+        10            512
+                     1024
+                     2048
+                     4096
+                     8192
+        15          16384
+                    32768
+                    65536
+                   131072
+                   262144
+        20         524288
+                  1048576
+                  2097152
+                  4194304
+                  8388608
+        25       16777216
+                 33554432
+                 67108864
+                134217728
+                268435456
+        30      536870912
+               1073741824
+               2147483648
+               4294967296
+               8589934592
+        35    17179869184
+              34359738368
+              68719476736
+             137438953472
+             274877906944
+        40   549755813888
+            1099511627776
+
+        what is radix search of 1T using base10?
+        1               6
+                       76
+                      776
+                     7776
+        5           27776
+                   627776
+                  1627776
+                 11627776
+                511627776
+        10     9511627776
+              99511627776
+             099511627776
+        13  1099511627776
+
+
+        '''
+        pass
+
+    def test_longest_increasing_subsequence(self):
+        '''
+
+        '''
+        pass
+
+    def test_cutting_stock(self):
+        '''
+        given unlimited rods of length 1000, fulfill this sort of inventory and minimize waste when cutting
+
+        length      qty
+        150         15
+        200         20
+        250         10
+        300         12
+        500         10
+        700         20
+
+        how many rods needed to produce this inventory?
+        700 + 150 + 150
+        200 * 5
+        500 * 2
+        250 * 4
+        300 + 300 + 200 + 200
+        '''
+        '''
+        pair has (size,value).
+        bin is constrained by size.
+        - given collection of pairs(size,value), get combination for least number of bins
+        - given collection of pairs(size,value), get combination where each bin is least variation of value
+        - given collection of pairs(size,value), get combination where each bin is least variation of size
+        - given collection of pairs(size,value), get combination where each bin is value maximized
+
+        use dynamic programming
+        use combination with memory
+
+        '''
+            # create a matrix with X = num bins Y = combination of elements
+        pass
+
+        def test_bin_packing(self):
+            '''
+            pairs
+                (4,5),(3,7),(2,3),(6,4),(2,5),(7,8),(5,9),(8,1),(7,3),(3,2)
+
+            bin0
+                (4,5)
+                    (3,7)
+                    (2,3)
+                    (6,4)
+                    (2,5)
+                    (7,8)
+                    (5,9)
+                    (8,1)
+                    (7,3)
+                    (3,2)
+            bin1
+                (3,7)
+                    (2,3)
+                    (6,4)
+                    (2,5)
+                    (7,8)
+                    (5,9)
+                    (8,1)
+                    (7,3)
+                    (3,2)
+            bin2
+                (2,3)
+                    (6,4)
+                    (2,5)
+                    (7,8)
+                    (5,9)
+                    (8,1)
+                    (7,3)
+                    (3,2)
+            bin3
+                (6,4)
+                    (2,5)
+                        (7,8)
+                            (5,9)
+                                (8,1)
+                                    (7,3)
+                                        (3,2)
+                                    (3,2)
+                                (7,3)
+                                    (3,2)
+                                (3,2)
+                            (8,1)
+                                (7,3)
+                                    (3,2)
+                                (3,2)
+                            (7,3)
+                                (3,2)
+                            (3,2)
+                        (5,9)
+                            (8,1)
+                                (7,3)
+                                    (3,2)
+                                (3,2)
+                            (7,3)
+                                (3,2)
+                            (3,2)
+                        (8,1)
+                            (7,3)
+                                (3,2)
+                            (3,2)
+                        (7,3)
+                            (3,2)
+                        (3,2)
+                    (7,8)
+                        (5,9)
+                            (8,1)
+                                (7,3)
+                                    (3,2)
+                                (3,2)
+                            (7,3)
+                                (3,2)
+                            (3,2)
+                        (8,1)
+                            (7,3)
+                                (3,2)
+                            (3,2)
+                        (7,3)
+                            (3,2)
+                        (3,2)
+                    (5,9)
+                        (8,1)
+                            (7,3)
+                                (3,2)
+                            (3,2)
+                        (7,3)
+                            (3,2)
+                        (3,2)
+                    (8,1)
+                        (7,3)
+                            (3,2)
+                        (3,2)
+                    (7,3)
+                        (3,2)
+                    (3,2)
+            bin4
+                (2,5)
+                    (7,8)
+                        (5,9)
+                            (8,1)
+                                (7,3)
+                                    (3,2)
+                            (7,3)
+                                (3,2)
+                            (3,2)
+                        (8,1)
+                            (7,3)
+                                (3,2)
+                            (3,2)
+                        (7,3)
+                            (3,2)
+                        (3,2)
+                    (5,9)
+                        (8,1)
+                            (7,3)
+                                (3,2)
+                        (7,3)
+                            (3,2)
+                        (3,2)
+                    (8,1)
+                        (7,3)
+                            (3,2)
+                        (3,2)
+                    (7,3)
+                        (3,2)
+                    (3,2)
+            bin5
+                (7,8)
+                    (5,9)
+                        (8,1)
+                            (7,3)
+                                (3,2)
+                            (3,2)
+                        (7,3)
+                            (3,2)
+                        (3,2)
+                    (8,1)
+                        (7,3)
+                            (3,2)
+                        (3,2)
+                    (7,3)
+                        (3,2)
+                    (3,2)
+            bin6
+                (5,9)
+                    (8,1)
+                        (7,3)
+                            (3,2)
+                        (3,2)
+                    (7,3)
+                        (3,2)
+                    (3,2)
+            bin7
+                (8,1)
+                    (7,3)
+                        (3,2)
+                    (3,2)
+            bin8
+                (7,3)
+                    (3,2)
+            bin8
+                (3,2)
+            '''
+
+
+
+
+        def dp_binpack_minimize_bins(max_num_bins, max_vol_bin, lpairs):
+            def binpack_minimize_bin_recursive(bins, max_vol_bin, lpairs, i, index_sequence, memo):
+                '''
+                memo is comma delimited sequence of indices that gives the volume of that index sequence
+
+                every bin makes a combination.
+                then every next bin makes a combination of the remaining.
+                and so on until all elements are used up.
+
+                whenever all elements are used up, record the number of bins used,
+                and the combination of each bin. use memoization to avoid repeating calculations.
+                at the end of all combinations for all bins, find the configuration or
+                configurations that have the least number of bins.
+
+                the combinations never look backward, meaning they can never use elements prior it,
+                only after it.
+
+                how to do from bottom up?
+
+                you can still do top down construction of subsequences
+                '''
+                if i >= len(lpairs):
+                    return
+
+                for j in range(i, len(lpairs)):
+                    pair = lpairs[i]
+                    vol = pair.get_v1()
+                    val = pair.get_v2()
+
+            bins = [[] for i in range(max_num_bins)]
+            memo = {}
+            memo['min'] = max_num_bins
+            index_sequence = []
+            binpack_minimize_bin_recursive(bins, max_vol_bin, lpairs, 0, index_sequence, memo)
+            min = memo['min']
+            return min
+
+        def dp_binpack_equalize_vol(max_num_bins, max_vol_bin, lpairs):
+            bins = []
+            for pair in lpairs:
+                vol = pair.get_v1()
+                val = pair.get_v2()
+
+            pass
+
+        def dp_binpack_equalize_val(max_num_bins, max_vol_bin, lpairs):
+            bins = []
+            for pair in lpairs:
+                vol = pair.get_v1()
+                val = pair.get_v2()
+
+            pass
+
+        def t0():
+            '''
+
+            '''
+            lpairs = []
+            lpairs.append(Pair(4,5))    # pair(size,value)
+            lpairs.append(Pair(3,7))
+            lpairs.append(Pair(2,3))
+            lpairs.append(Pair(6,4))
+            lpairs.append(Pair(2,5))
+            lpairs.append(Pair(7,8))
+            lpairs.append(Pair(5,9))
+            lpairs.append(Pair(8,1))
+            lpairs.append(Pair(7,3))
+            lpairs.append(Pair(3,2))
+
+            max_num_bins = len(lpairs)
+            max_vol_bin  = 10
+            dp_binpack_minimize_bins(len(lpairs), max_vol_bin, lpairs)
+
+        t0()
+
+    def test_subsequence_maps(self):
+        '''
+        have a map that defines all subsequences to avoid repetition
+
+        say we have 4,6,8,2,3,1,5,3. here are all the combinations
+        1+2+4+8+16+32+64+128=255
+            -----
+        128 4
+                6
+                    8
+                        2
+                            3
+                                1
+                                    5
+                                        3
+                                    3
+                                5
+                                    3
+                                3
+                            1
+                                5
+                                    3
+                                3
+                            5
+                                3
+                            3
+                        3
+                            1
+                                5
+                                    3
+                                3
+                            5
+                                3
+                            3
+                        1
+                            5
+                                3
+                            3
+                        5
+                            3
+                        3
+                    2
+                        3
+                            1
+                                5
+                                    3
+                                3
+                            5
+                                3
+                            3
+                        1
+                            5
+                                3
+                            3
+                        5
+                            3
+                        3
+                    3
+                        1
+                            5
+                                3
+                            3
+                        5
+                            3
+                        3
+                    1
+                        5
+                            3
+                        3
+                    5
+                        3
+                    3
+                8
+                    2
+                        3
+                            1
+                                5
+                                    3
+                                3
+                            5
+                                3
+                            3
+                        1
+                            5
+                                3
+                            3
+                        5
+                            3
+                        3
+                    3
+                        1
+                            5
+                                3
+                            3
+                        5
+                            3
+                        3
+                    1
+                        5
+                            3
+                        3
+                    5
+                        3
+                    3
+                2
+                    3
+                        1
+                            5
+                                3
+                            3
+                        5
+                            3
+                        3
+                    1
+                        5
+                            3
+                        3
+                    5
+                        3
+                    3
+                3
+                    1
+                        5
+                            3
+                        3
+                    5
+                        3
+                    3
+                1
+                    5
+                        3
+                    3
+                5
+                    3
+                3
+            -----
+        64  6
+                8
+                    2
+                        3
+                            1
+                                5
+                                    3
+                                3
+                            5
+                                3
+                            3
+                        1
+                            5
+                                3
+                            3
+                        5
+                            3
+                        3
+                    3
+                        1
+                            5
+                                3
+                            3
+                        5
+                            3
+                        3
+                    1
+                        5
+                            3
+                        3
+                    5
+                        3
+                    3
+                2
+                    3
+                        1
+                            5
+                                3
+                            3
+                        5
+                            3
+                        3
+                    1
+                        5
+                            3
+                        3
+                    5
+                        3
+                    3
+                3
+                    1
+                        5
+                            3
+                        3
+                    5
+                        3
+                    3
+                1
+                    5
+                        3
+                    3
+                5
+                    3
+                3
+            -----
+        32  8
+                2
+                    3
+                        1
+                            5
+                                3
+                            3
+                        5
+                            3
+                        3
+                    1
+                        5
+                            3
+                        3
+                    5
+                        3
+                    3
+                3
+                    1
+                        5
+                            3
+                        3
+                    5
+                        3
+                    3
+                1
+                    5
+                        3
+                    3
+                5
+                    3
+                3
+            -----
+        16  2
+                3
+                    1
+                        5
+                            3
+                        3
+                    5
+                        3
+                    3
+                1
+                    5
+                        3
+                    3
+                5
+                    3
+                3
+            -----
+        8   3
+                1
+                    5
+                        3
+                    3
+                5
+                    3
+                3
+            -----
+        4   1
+                5
+                    3
+                3
+            -----
+        2   5
+                3
+            -----
+        1   3
+            -----
+        '''
+        def make_map(l):
+            def make_map_(l,i,mem):
+                if i >= len(l):
+                    return
+                submap = {}
+                s = str(l[i])
+                if s not in mem:
+                    mem[s] = 1
+                submap[s] = 1
+                for j in range(i,len(l)):
+                    new_submap = make_map_(l,j+1,mem)
+                    if new_submap != None:
+                        for k,v in new_submap.items():
+                            s = str(l[i]) + ',' + k
+                            if s not in mem:
+                                mem[s] = 0
+                            mem[s] += 1
+                            submap[s] = 1
+                return submap
+
+            i = 0
+            mem = {}
+            make_map_(l,i,mem)
+            return mem
+        def t0():
+            #    0 1 2 3 4 5 6 7
+            l = [4,6,8,2,3,1,5,3]
+            mem = make_map(l)
+            debug = True
+            if debug:
+                p(l)
+                i = 0
+                for k,v in mem.items():
+                    p('{:3}:{}'.format(i,k))
+                    i += 1
+        def t1():
+            #    0 1 2 3 4 5 6 7
+            l = [4,6,8,2,3,1,5,7]
+            mem = make_map(l)
+            debug = False
+            if debug:
+                p(l)
+                i = 0
+                for k,v in mem.items():
+                    p('{:3}:{}'.format(i,k))
+                    i += 1
+            assert len(mem) == 255
+        t1()
+
+    def test_stack_operations(self):
+        def tower_of_hanoi():
+            pass
+        def t0():
+            pass
+        t0()
     def test_graph_acyclic_vs_cyclic(self):
+
         def test_cyclic_0():
             g = GraphSamples.get_graph_0()
             set_src_nodes = g.get_all_sources()
@@ -6537,12 +7290,13 @@ class ut(unittest.TestCase):
             l = merge_intervals_bst(lpairs)
             for i in range(len(l)):
                 n = l[i]
-                n.print_vals(lo=True,hi=True)
+                #n.print_vals(lo=True,hi=True)
         def t1():
             lpairs = [[1,3],[2,6],[8,10],[15,18]]
             l = merge_intervals_list(lpairs)
             for i in range(len(l)):
-                print(l[i])
+                #print(l[i])
+                pass
         t1()
 
     def test_LLN_functions(self):
@@ -6588,6 +7342,210 @@ class ut(unittest.TestCase):
         def t0():
             pass
         t0()
+
+    def test_get_triangle_tuples(self):
+        def binary_search_boundary(vlist,target):
+            # find target in vlist where idxl == target or idxr == target or (idxl < target and idxr < target)
+            def binary_search_1(vlist,target,idxl,idxr):
+                if idxl > idxr:
+                    return idxr
+                imid = int((idxl+idxr+1)/2)
+                v = vlist[imid]
+                if v == target:
+                    return imid
+                if (imid+1) <= idxr and (imid-1) >= idxl:
+                    if target < vlist[imid+1] and target > vlist[imid-1]:
+                        return imid
+                if v < target:
+                    return binary_search_1(vlist,target,imid+1,idxr)
+                return binary_search_1(vlist,target,idxl,imid-1)
+            return binary_search_1(vlist,target,0,len(vlist)-1)
+
+        def rule_satisfied(x,y,z):
+            return ((x+y)>z) and ((x+z)>y) and ((y+z)>x)
+
+        def find_all_triplets_for_triangle(l):
+            sz = len(l)
+            result = []
+            for i in range(sz):
+                vx = l[i]
+                for j in range(i,sz):
+                    vy = l[j]
+                    minz = vx+vy
+                    idxz = binary_search_boundary(l,minz)
+                    if idxz == None:
+                        continue
+                    while idxz < sz:
+                        vz = l[idxz]
+                        if rule_satisfied(vx,vy,vz) == True:
+                            result.append((vx,vy,vz))
+                            idxz += 1
+                        else:
+                            break
+            return result
+
+        l = [2,3,4,5,6,7,100]
+        r = find_all_triplets_for_triangle(l)
+        print(r)
+
+    def test_closest_value_in_array(self):
+        '''
+        get the closest value in list
+        get left closest value in list
+        get right closest value in list
+        get closest n values in list
+
+        this is not true closest, only the element to the left or right of close value
+        '''
+
+        def get_closest(l,v,il,ir,select_left,return_index=False):
+            if il > ir:
+                #print('il:{} ir:{}'.format(il,ir))
+                if ir < 0:
+                    return l[0] if not return_index else 0
+                if il >= len(l):
+                    return l[-1] if not return_index else (len(l)-1)
+                if select_left:
+                    return l[ir] if not return_index else ir
+                return l[il] if not return_index else il
+            im = int((il+ir+1)/2)
+            if l[im] == v:
+                return v if not return_index else im
+            if v <l[im]:
+                return get_closest(l,v,il,im-1,select_left,return_index)
+            return get_closest(l,v,im+1,ir,select_left,return_index)
+
+        def get_range_vals(l,vmin,vmax):
+            il = get_closest(l,vmin,0,len(l)-1,False,True)
+            ir = get_closest(l,vmax,0,len(l)-1,True,True)
+            r  = [l[i] for i in range(il,ir+1)]
+            return r
+
+        def t0():
+            #    0 1 2 3 4  5  6  7  8  9
+            l = [2,4,6,8,10,12,14,16,18,20]
+            v = get_closest(l,3,0,len(l)-1,False)
+            assert v == 4
+            v = get_closest(l,3,0,len(l)-1,True)
+            assert v == 2
+            v = get_closest(l,1,0,len(l)-1,False)
+            assert v == 2
+            v = get_closest(l,1,0,len(l)-1,True)
+            assert v == 2
+            v = get_closest(l,19,0,len(l)-1,False)
+            assert v == 20
+            v = get_closest(l,19,0,len(l)-1,True)
+            assert v == 18
+            v = get_closest(l,21,0,len(l)-1,False)
+            assert v == 20
+            v = get_closest(l,21,0,len(l)-1,True)
+            assert v == 20
+            v = get_closest(l,12,0,len(l)-1,False)
+            assert v == 12
+            v = get_closest(l,12,0,len(l)-1,True)
+            assert v == 12
+
+            #    0 1 2 3 4  5  6  7  8  9  10
+            l = [2,4,6,8,10,12,14,16,18,20,22]
+            v = get_closest(l,3,0,len(l)-1,False)
+            assert v == 4
+            v = get_closest(l,3,0,len(l)-1,True)
+            assert v == 2
+            v = get_closest(l,1,0,len(l)-1,False)
+            assert v == 2
+            v = get_closest(l,1,0,len(l)-1,True)
+            assert v == 2
+            v = get_closest(l,19,0,len(l)-1,False)
+            assert v == 20
+            v = get_closest(l,19,0,len(l)-1,True)
+            assert v == 18
+            v = get_closest(l,23,0,len(l)-1,False)
+            assert v == 22
+            v = get_closest(l,23,0,len(l)-1,True)
+            assert v == 22
+            v = get_closest(l,12,0,len(l)-1,False)
+            assert v == 12
+            v = get_closest(l,12,0,len(l)-1,True)
+            assert v == 12
+
+        def t1():
+            #    0 1 2 3 4  5  6  7  8  9  10
+            l = [2,4,6,8,10,12,14,16,18,20,22]
+            r = get_range_vals(l,5,14)
+            assert r == [6,8,10,12,14]
+        t1()
+
+    def test_redblack_tree(self):
+        '''
+        - every node is either red or black
+        - root is always black
+        - no two adjacent red nodes: red node's parent or child cannot be red
+        - every path from a node to descendant NULL node has same number of black nodes
+        - every leaf red or black node has 2 NULL children
+
+        every node should be visualized as a node with center as black,
+        and left and right as red. each red (left or right) has black children.
+        each of those black children is a center black, with left and right as
+        either null or red
+
+        there are 4 rotation cases for insert, rotate_left and rotate_right
+
+        there are 6 rotation cases for delete
+        '''
+        class rb_node:
+            def __init__(self):
+                self.color = 'r'
+                self.v = None
+                self.p = None
+                self.lc = None
+                self.rc = None
+            def p(self,p=None):
+                if p != None:
+                    self.p = p
+                return self.p
+            def lc(self,lc=None):
+                if lc != None:
+                    self.lc = lc
+                return self.lc
+            def rc(self,rc=None):
+                if rc != None:
+                    self.rc = rc
+                return self.rc
+            def v(self,v=None):
+                if v != None:
+                    self.v = v
+                return self.v
+            def color(self,color=None):
+                if color != None:
+                    self.color = color
+                return self.color
+        class red_black_tree:
+            def __init__(self):
+                self.r = None
+            def height(self):
+                return
+            def add(self,v):
+                return
+            def _add(self,v,n):
+                return
+            def delete(self,v):
+                return
+            def _delete(self,v,n):
+                return
+            def get_val(self,v):
+                return
+            def get_node(self,v):
+                return
+            def get_range_nodes(self,vmin,vmax):
+                pass
+            def get_range_vals(self,vmin,vmax):
+                pass
+            def _get_range(self,vmin,vmax,n):
+                pass
+            def _rotate_l(self):
+                return
+            def _rotate_r(self):
+                return
 
     def main(self):
         p('main passed')

@@ -925,3 +925,9 @@ employees: 136
 
 
 }
+
+select count(*),lastname from entities where (lastname='momo' or lastname='om') group by lastname;
+select  sum(case when lastname='momo' then 1 else 0 end) as sum_momo,
+        sum(case when lastname='om' then 1 else 0 end) as sum_om,
+        lastname from entities where (lastname='momo' or lastname='om') group by lastname;
+
