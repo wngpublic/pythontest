@@ -316,6 +316,53 @@ class my_utils:
     def rand(min:int,max:int) -> int:
         return random.randrange(min,max)            # rand_int is [min,max], randrange is [min,max)
 
+    @staticmethod
+    def rand_int_pct(mean,minpct,maxpct):           # translate to min val and [min,max]
+        assert minpct >= 0 and maxpct > 0
+        min = int(mean*minpct/100)
+        max = int(mean*maxpct/100)
+        if min == max:
+            return min
+        return my_utils.rand_int(min,max)
+
+    @staticmethod
+    def get_uniform_dist_vals(mean,min_pct,max_pct,num_points):
+        inc_val = int((max_pct-min_pct)/num_points)
+        min_val = int(mean*min_pct/100)
+        res = []
+        v = min_val
+        for i in range(num_points):
+            res.append(v)
+            v += inc_val
+        return res
+
+    @staticmethod
+    def get_normal_dist_vals(mu,sigma,min_pct,max_pct,num_points):
+        res = []
+        ctr = 0
+        min = int(mu*min_pct/100)
+        max = int(mu*max_pct/100)
+        max_ctr = num_points * 1000
+        while ctr < num_points:
+            f = random.gauss(mu,sigma)
+            if f >= min and f <= max:
+                v = int(f)
+                res.append(v)
+                ctr += 1
+            if ctr > max_ctr:
+                break
+        if num_points == 1:
+            return res[0]
+        return sorted(res)
+
+    @staticmethod
+    def get_vals_from_pct(val,list_pct):
+        if isinstance(list_pct,list):
+            res = [int(val*pct/100) for pct in list_pct]
+            return res
+        if isinstance(list_pct,int):
+            return int(val*list_pct/100)
+
     '''
     s can be string, list, set, tuple, etc
     '''
@@ -343,11 +390,33 @@ class my_utils:
         return li[:num_to_choose]
 
     @staticmethod
+    def choice(choices):
+        assert isinstance(choices,list)
+        return random.choice(choices)
+
+    @staticmethod
     def choose_objs_from(l,num_to_choose):
         assert num_to_choose > 0 and num_to_choose <= len(l)
         lc = l.copy()
         my_utils.shuffle(lc)
         return lc[:num_to_choose]
+
+    @staticmethod
+    def rand_int_normal(min,max,mu,sigma,numitems=1):
+        res = []
+        ctr = 0
+        max_ctr = numitems * 1000
+        while ctr < numitems:
+            f = random.gauss(mu,sigma)
+            if f >= min and f <= max:
+                v = int(f)
+                res.append(v)
+                ctr += 1
+            if ctr > max_ctr:
+                break
+        if numitems == 1:
+            return res[0]
+        return res
 
 
     '''

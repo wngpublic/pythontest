@@ -96,11 +96,33 @@ data
     |
     +---STATE2
 
-figure1: data layout
+inventory
+|
++---S_CAT_CONSUME
+    |
+    +---S_CONSUME_FRUITS
+    |   |
+    |   +---S_ARRAY
+    |       |
+    |       0---apple
+    |       |   |
+    |       |   +---S_MSRP:price
+    |       |   |
+    |       |   +---S_ARRAY_PRICEPOINTS:[price0,price1,price2,price3,price4]
+    |       |
+    |       1---banana
+    |           |
+    |           +---S_ARRAY_PRICEPOINTS:[price0,price1,price2,price3,price4]
+    |
+    +---S_CONSUME_VEGS
+        |
+        +---S_ARRAY
+            |
+            0---tomato
+
+inventory_durables
 
 '''
-
-
     S_CAT_ADDR          = 'category_address'
     S_ADDR_RES          = 'resident'
     S_ADDR_RES_VIRT     = 'resident_virtual'
@@ -118,6 +140,41 @@ figure1: data layout
     S_CONSUME_GRAINS    = 'grains'
     S_CONSUME_MEAT      = 'meat'
     S_CONSUME_DRINK     = 'drink'
+    S_CAT_DURABLES      = 'durables'
+    S_DURABLE_SHIRTS    = 'shirts'
+    S_DURABLE_PANTS     = 'pants'
+    S_DURABLE_CLOTHES   = 'clothes'
+    S_DURABLE_ACC       = 'accessories'
+
+    S_ITEM_NAME                 = 'itemname'
+    S_NUM_PRICEPOINTS           = 5
+    S_CONSUME_PRICEPOINTS_PCT   = [50,75,100,150,300]
+    S_DURABLE_PRICEPOINTS_PCT   = [50,100,150,300,800]
+    S_ARRAY_PRICEPOINTS         = 'pricepoints'
+    S_MSRP                      = 'msrp'
+    S_ARRAY                     = 'array'
+    S_CONSUME_MSRP_MIN_PCT      = 50
+    S_CONSUME_MSRP_MAX_PCT      = 200
+    S_CONSUME_LEVEL_MIN_PCT     = 50
+    S_CONSUME_LEVEL_MAX_PCT     = 300
+    S_DURABLE_MSRP_MIN_PCT      = 50
+    S_DURABLE_MSRP_MAX_PCT      = 200
+    S_DURABLE_LEVEL_MIN_PCT     = 50
+    S_DURABLE_LEVEL_MAX_PCT     = 800
+
+    S_PCT_TO_SELECT_MIN         = 30
+    S_PCT_TO_SELECT_MAX         = 80
+    S_EXPENSE_LEVEL_MIN         = 0
+    S_EXPENSE_LEVEL_MAX         = 5
+
+    S_CONSUME_FRUITS_MSRP       = 40
+    S_CONSUME_VEGS_MSRP         = 20
+    S_CONSUME_GRAINS_MSRP       = 50
+    S_CONSUME_MEAT_MSRP         = 80
+    S_CONSUME_DRINK_MSRP        = 20
+    S_DURABLE_SHIRTS_MSRP       = 200
+    S_DURABLE_PANTS_MSRP        = 300
+    S_DURABLE_ACC_MSRP          = 400
     S_ZIP_INC_THRESHOLD = 20
     S_ZIP               = 'zip'
     S_STREET            = 'streetname'
@@ -125,7 +182,7 @@ figure1: data layout
     S_ADDR_UNIT         = 'addr_unit_num'
     S_ADDR_TYPE         = 'addr_type'
     S_ADDRESSES         = 'addresses'
-
+    S_SELECT_LIKELY_PCT     = 80
     S_ENTITY_RELATIONSHIP   = 'relationship'
     S_ENTITY_RELATE_SIBLING = 'sibling'
     S_ENTITY_RELATE_PARENT  = 'parent'
@@ -167,8 +224,19 @@ figure1: data layout
             self.S_ENTITYT_VIRTUAL:{},
             self.S_ENTITYT_ANIMAL:{}
         }
+        self.d_msrp = {
+            self.S_CONSUME_FRUITS:  self.S_CONSUME_FRUITS_MSRP,
+            self.S_CONSUME_VEGS:    self.S_CONSUME_VEGS_MSRP,
+            self.S_CONSUME_GRAINS:  self.S_CONSUME_GRAINS_MSRP,
+            self.S_CONSUME_MEAT:    self.S_CONSUME_MEAT_MSRP,
+            self.S_CONSUME_DRINK:   self.S_CONSUME_DRINK_MSRP,
+            self.S_DURABLE_PANTS:   self.S_DURABLE_PANTS_MSRP,
+            self.S_DURABLE_SHIRTS:  self.S_DURABLE_SHIRTS_MSRP,
+            self.S_DURABLE_ACC:     self.S_DURABLE_ACC_MSRP
+        }
         self.data_relationships                     = {}
         self.data_addresses                         = {}
+        self.inventory                              = {}
         self.min_address_per_street                 = 1
         self.max_address_per_street                 = 5
         self.address_starting_val                   = 10
@@ -395,6 +463,11 @@ figure1: data layout
             self.S_CONSUME_GRAINS: ['rice','bread','lentil'],
             self.S_CONSUME_MEAT:   ['chicken','fish','lamb'],
             self.S_CONSUME_DRINK:  ['water','juice','tea','coffee','milk','wine']
+        }
+        data[self.S_CAT_DURABLES] = {
+            self.S_DURABLE_PANTS: ['pant','shorts','wrap','jeans'],
+            self.S_DURABLE_SHIRTS: ['tshirt','jacket','wrap','longsleeve','shortsleeve'],
+            self.S_DURABLE_ACC: ['shoes','wallet','purse','hat','sunglass']
         }
         return data
 
@@ -702,8 +775,135 @@ figure1: data layout
         make_people_relationships(arrayid,dentities,drelationships)
         return
 
-    def make_inventory_catalog(self, data_geo):
-        return
+    def make_inventory_catalog(self):
+        '''
+        produce a dictionary of consumables and durables with msrp
+        each consumable has 5 levels of expense, 1-5, with mean at 3
+        each entity has 5 levels of afforability, 1-5, mean at 3
+        each city has 5 levels of affordability, 1-5, with mean at 3
+
+        for each subcategory, assign weights where one item is more expensive than another
+        then for each item, have 5 different levels of expense
+
+        this structure should be such that you can pick an item from subcategory,
+        and choose which level of expense from that item.
+        eg choose fruits:
+            apple   $1
+                level0: $0.50
+                level1: $0.75
+                level2: $1
+                level3: $2
+                level4: $5
+            banana  $3
+                level0: $0.50
+                level1: $1
+                level2: $3
+                level3: $7
+                level4: $10
+            orange  $5
+                level0: $1
+                level1: $3
+                level2: $5
+                level3: $10
+                level4: $12
+
+        that means for each subcategory, each item is already preranked by cost
+        '''
+
+        def select_inventory_recursive(inventory,dresult,pct_to_select,expense_level_min,expense_level_max):
+            if isinstance(inventory,dict):
+                for k,v in inventory.items():
+                    select_inventory_recursive(v,dresult,pct_to_select,expense_level_min,expense_level_max)
+            elif isinstance(inventory,list):
+                for item in inventory:
+                    if self.u.rand_bool(pct_to_select):
+                        pricepoints = item[self.S_ARRAY_PRICEPOINTS]
+                        for i in range(len(pricepoints)):
+                            if i >= expense_level_min and i <= expense_level_max:
+                                if self.u.rand_bool(self.S_SELECT_LIKELY_PCT):
+                                    pricepoint = pricepoints[i]
+                                    dresult[item[self.S_ITEM_NAME]] = {}
+                                    dresult[item[self.S_ITEM_NAME]][i] = pricepoint
+
+        def make_inventory_for_business(keys_categories,inventory_all,pct_to_select_min,pct_to_select_max,
+                               expense_level_min,expense_level_max,markup_pct_min,markup_pct_max):
+
+            assert pct_to_select_min >= and pct_to_select_max <= 100 and pct_to_select_min <= pct_to_select_max
+            assert expense_level_min >= 0 and expense_level_max <= 4 and expense_level_min < expense_level_max
+            assert markup_pct_min >= 0 and markup_pct_max <= 100 and markup_pct_min < markup_pct_max
+
+            dinventory = {}
+
+            for each key_category in keys_categories:
+                if key_category not in inventory_all:
+                    raise Exception('{} is not valid inventory category key'.format(key_category))
+                inventory_category = inventory_all[key_category]
+                pct_to_select = self.u.rand_int_inclusive(pct_to_select_min,pct_to_select_max)
+                select_inventory_recursive(inventory,dinventory,pct_to_select,expense_level_min,expense_level_max)
+
+            for item,pricepoints in dinventory.items():
+                for level,pricepoint in pricepoints.items():
+                    markup = self.u.rand_int_inclusive(markup_pct_min,markup_pct_max)
+                    markup_pricepoint = int(pricepoint * markup/100)
+                    pricepoints[level] = markup_pricepoint
+
+            return dinventory
+
+        def make_inventory_for_businesses():
+            inventory_all     = self.inventory
+            keys_categories   = [self.u.choice([self.S_CAT_CONSUME,self.S_CAT_DURABLES])]
+            pct_to_select_min = self.S_PCT_TO_SELECT_MIN
+            pct_to_select_max = self.S_PCT_TO_SELECT_MAX
+            expense_level_mu  = self.u.rand_int(self.S_EXPENSE_LEVEL_MIN,self.S_EXPENSE_LEVEL_MAX)
+            expense_level_min = expense_level_mu if expense_level_mu == self.S_EXPENSE_LEVEL_MIN else (expense_level_mu-1)
+            expense_level_max = expense_level_mu if expense_level_mu == self.S_EXPENSE_LEVEL_MAX else (expense_level_mu+1)
+            markup_pct_mu     = self.u.rand_int(75,150)
+            markup_pct_min    = markup_pct_mu-10
+            markup_pct_max    = markup_pct_mu+10
+            dinventory        = make_inventory_for_business(keys_categories,inventory_all,pct_to_select_min,pct_to_select_max,
+                                                            expense_level_min,expense_level_max,markup_pct_min,markup_pct_max)
+
+        def make_catalog_all():
+            dentities = self.entity_types
+            inventory = self.inventory
+            dmsrp     = self.d_msrp
+
+            inventory[self.S_CAT_CONSUME] = {}
+            inventory[self.S_CAT_DURABLES] = {}
+
+            for ksubcategories,items in dentities[self.S_CAT_CONSUME].items():
+                inventory[self.S_CAT_CONSUME][ksubcategories] = {}
+                inventory[self.S_CAT_CONSUME][ksubcategories][self.S_ARRAY] = []
+                for item in items:
+                    msrp = self.u.rand_int_pct(dmsrp[ksubcategories],self.S_CONSUME_MSRP_MIN_PCT,self.S_CONSUME_MSRP_MAX_PCT)
+                    pricepoints = self.u.get_vals_from_pct(msrp,self.S_CONSUME_PRICEPOINTS_PCT)
+                    item_obj = {
+                        self.S_ITEM_NAME:item,
+                        self.S_MSRP:msrp,
+                        self.S_ARRAY_PRICEPOINTS:pricepoints
+                    }
+                    inventory[self.S_CAT_CONSUME][ksubcategories][self.S_ARRAY].append(item_obj)
+            for ksubcategories,items in dentities[self.S_CAT_DURABLES].items():
+                inventory[self.S_CAT_DURABLES][ksubcategories] = {}
+                inventory[self.S_CAT_DURABLES][ksubcategories][self.S_ARRAY] = []
+                for item in items:
+                    msrp = self.u.rand_int_pct(dmsrp[ksubcategories],self.S_DURABLE_MSRP_MIN_PCT,self.S_DURABLE_MSRP_MAX_PCT)
+                    pricepoints = self.u.get_vals_from_pct(msrp,self.S_DURABLE_PRICEPOINTS_PCT)
+                    item_obj = {
+                        self.S_ITEM_NAME:item,
+                        self.S_MSRP:msrp,
+                        self.S_ARRAY_PRICEPOINTS:pricepoints
+                    }
+                    inventory[self.S_CAT_DURABLES][ksubcategories][self.S_ARRAY].append(item_obj)
+
+            daddr = self.data_addresses
+
+        make_catalog_all()
+
+
+        # first find how many businesses there are. take about 50% of those for combination
+        # of consume and durables. make random between 40-90% consumable, and durables as 10-60%
+
 
     def make_transaction_receipts(self, data_geo, data_entities, data_inventory):
         return
@@ -946,7 +1146,10 @@ class ut(unittest.TestCase):
             #print('----------------------relationships')
             #print(json_val)
 
-            t.make_sql_tables()
+            t.make_inventory_catalog()
+
+            #t.make_sql_tables()
+
             return
 
         #construct_database_0()

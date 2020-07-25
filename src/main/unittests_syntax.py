@@ -264,15 +264,80 @@ class ut(unittest.TestCase):
         logger.critical("test_logger_critical")
 
     def test_random(self):
+        def rand_uniform(min,max,numruns):
+            for i in range(numruns):
+                val = random.randint(min, max)  # randint is min <= x <= max
+                assert val >= min and val <= max
+            for i in range(numruns):
+                val = random.randrange(min, max)  # randint is min <= x < max
+                assert val >= min and val < max
+        def rand_gauss_normal(min,max,mu,sigma,numruns,debug=True):
+            res = []
+            dist = {}
+            ctr = 0
+            max_ctr = numruns * 1000
+            while ctr < numruns:
+                f = random.gauss(mu,sigma)  # same as random.normalvariate(mu,sigma)
+                if f >= min and f <= max:
+                    #v = round(f,2)
+                    v = int(f)
+                    res.append(v)
+                    ctr += 1
+                if ctr > max_ctr:
+                    break
+            assert ctr < max_ctr
+            for v in res:
+                if v not in dist:
+                    dist[v] = 0
+                dist[v] += 1
+                #print(v)
+            ordered_dist = collections.OrderedDict(sorted(dist.items()))
+            if debug:
+                for k,v in ordered_dist.items():
+                    print('val:count = {}:{}'.format(k,v))
+        def rand_choice_and_choices(choices,cum_weights,numruns,debug=True):
+            res = []
+            for i in range(numruns):
+                v = random.choice(choices)
+                res.append(v)
+            dist = {}
+            for v in res:
+                if v not in dist:
+                    dist[v] = 0
+                dist[v] += 1
+            ordered_keys = sorted(dist.keys())
+            if debug:
+                print('\n')
+                print('choices\n')
+                for k in ordered_keys:
+                    print('val:count = {}:{}'.format(k,dist[k]))
+                print('\n')
+            res = random.choices(choices,cum_weights=cum_weights,k=numruns)
+            dist = {}
+            for v in res:
+                if v not in dist:
+                    dist[v] = 0
+                dist[v] += 1
+            ordered_keys = sorted(dist.keys())
+            if debug:
+                for k in ordered_keys:
+                    print('val:count = {}:{}'.format(k,dist[k]))
+                print('\n')
+
         min = 1
         max = 10
-        numruns = 100
-        for i in range(numruns):
-            val = random.randint(min, max)  # randint is min <= x <= max
-            assert val >= min and val <= max
-        for i in range(numruns):
-            val = random.randrange(min, max)  # randint is min <= x < max
-            assert val >= min and val < max
+        mu = 2          # mean
+        sigma = 3       # deviation f(x)=(1/(sigma*sqrt(2*pi)))*(e^((-1/2)*((x-mu)/sigma))^2))
+        numruns = 1000
+        choices = [ 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+        #  %       20 20 20 10  5  5  5  5  5
+        cum_w   = [20,40,60,70,75,80,85,90,95]
+        debug = False
+        rand_uniform(min,max,numruns)
+        rand_gauss_normal(min,max,mu,sigma,numruns,debug=debug)
+        numruns = 10000
+        rand_choice_and_choices(choices,cum_w,numruns,debug=debug)
 
     def test_list(self):
         # push and pop
