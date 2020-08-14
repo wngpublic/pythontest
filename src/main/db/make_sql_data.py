@@ -4,7 +4,7 @@ import random
 import enum
 import sys
 import unittest
-import myutils
+from src.main.utils import myutils
 
 def p(s):
     print(s)
@@ -828,18 +828,18 @@ inventory_durables
         def make_inventory_for_business(keys_categories,inventory_all,pct_to_select_min,pct_to_select_max,
                                expense_level_min,expense_level_max,markup_pct_min,markup_pct_max):
 
-            assert pct_to_select_min >= and pct_to_select_max <= 100 and pct_to_select_min <= pct_to_select_max
+            assert pct_to_select_min >= 0 and pct_to_select_max <= 100 and pct_to_select_min <= pct_to_select_max
             assert expense_level_min >= 0 and expense_level_max <= 4 and expense_level_min < expense_level_max
             assert markup_pct_min >= 0 and markup_pct_max <= 100 and markup_pct_min < markup_pct_max
 
             dinventory = {}
 
-            for each key_category in keys_categories:
+            for key_category in keys_categories:
                 if key_category not in inventory_all:
                     raise Exception('{} is not valid inventory category key'.format(key_category))
                 inventory_category = inventory_all[key_category]
                 pct_to_select = self.u.rand_int_inclusive(pct_to_select_min,pct_to_select_max)
-                select_inventory_recursive(inventory,dinventory,pct_to_select,expense_level_min,expense_level_max)
+                select_inventory_recursive(inventory_category,dinventory,pct_to_select,expense_level_min,expense_level_max)
 
             for item,pricepoints in dinventory.items():
                 for level,pricepoint in pricepoints.items():
@@ -906,6 +906,9 @@ inventory_durables
 
 
     def make_transaction_receipts(self, data_geo, data_entities, data_inventory):
+        '''
+
+        '''
         return
 
 

@@ -18,8 +18,9 @@ import numpy
 import calendar
 import string           # this is for string templates
 import enum
-import utils.myutils    # test import from utils directory
-import utils.myutils as myutils1
+from src.main.utils import myutils
+#import utils.myutils    # test import from utils directory
+#import utils.myutils as myutils1
 import zlib
 import hashlib
 import typing
@@ -33,10 +34,12 @@ import binascii
 import codecs
 import base64
 import site
+import bisect
+import matplotlib
 # install pycrypto
-import Crypto.Hash.SHA256 # from Crypto.Hash import SHA256
-import Crypto.Cipher.AES # from Crypto.Cipher import AES
-import Crypto.Random
+#import Crypto.Hash.SHA256 # from Crypto.Hash import SHA256
+#import Crypto.Cipher.AES # from Crypto.Cipher import AES
+#import Crypto.Random
 
 '''
 python3 -m unittest syntax_unittests.ut.test_method
@@ -402,6 +405,12 @@ class ut(unittest.TestCase):
         l.reverse()
         assert l == [6,5,4,3,2,1]
         assert lcopy == [1,2,3,4,5,6]
+        l = list(reversed(l))
+        assert l == [1,2,3,4,5,6]
+        #idx = [0,2,4]
+        #res = l[idx]
+        #assert l[idx] == [1,3,5]
+
 
         # append list vs extend list
         l.clear()
@@ -494,6 +503,15 @@ class ut(unittest.TestCase):
         del l[0]
         assert l == [[7,8]]
 
+        # 2d array by reading vars
+        v1 = 'abc'
+        v2 = '123'
+        l = [['{}{}'.format(c,i) for i in v2] for c in v1]
+        assert l == [['a1','a2','a3'],['b1','b2','b3'],['c1','c2','c3'],]
+
+        l = [1,2,3]
+        l = l*2
+        assert l == [1,2,3,1,2,3]
 
         l = [1,2,3]
         assert l == [1,2,3]
@@ -537,6 +555,11 @@ class ut(unittest.TestCase):
         assert l == ['a','b','c','d','e']
 
         s = 'aa bb cc dd ee'
+        l = s.split()
+        assert len(l) == 5
+        assert l == ['aa','bb','cc','dd','ee']
+
+        s = 'aa   bb cc dd   ee'
         l = s.split()
         assert len(l) == 5
         assert l == ['aa','bb','cc','dd','ee']
@@ -913,6 +936,32 @@ class ut(unittest.TestCase):
         assert v == 6
 
         return
+
+    def test_numpy(self):
+        debug = False
+        numpy.random.seed(0)
+        lo = 10
+        hi = 20
+        l1d = numpy.random.randint(lo,hi,size=3)        # 1d list
+        l2d = numpy.random.randint(lo,hi,size=(3,4))    # 2d list
+        l3d = numpy.random.randint(lo,hi,size=(3,4,5))  # 3d list
+
+        assert len(l1d) == 3
+        assert len(l2d) == 3 and len(l2d[0]) == 4
+        assert len(l3d) == 3 and len(l3d[0]) == 4 and len(l3d[0][0]) == 5
+
+        l = numpy.random.random(10)
+        assert len(l) == 10
+        l = numpy.random.randint(0,10,10)
+        assert len(l) == 10
+        numpy.sum(l) < (10*10)
+        sum(l) < (10*10)
+
+
+    def test_input(self):
+        p('enter an int:')
+        i = int(input())
+        p('you entered {}'.format(i))
 
     '''
     test priority queue, heap, queue
@@ -1325,6 +1374,116 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         s = st3.format(**d)
         assert s == "\nvar:  v1 and 22\nesc:  {}\nstr:  varv1end with 22 and v4blah\n"
 
+        s = 'abc 2:4:56PM def'
+        m = re.search('([\d]{2}):([\d]{2}):([\d]{2})(AM|PM)',s)   # group match
+        assert m == None
+
+        m = re.search('([\d]{1,2}):([\d]{1,2}):([\d]{1,2})(AM|PM)',s)   # group match
+        assert m.group(0) == '2:4:56PM' and m.group(1) == '2' and m.group(2) == '4' and m.group(4) == 'PM'
+        assert len(m.groups()) == 4                                     # number of groups. groups itself is a tuple
+        assert m.group(1,2,3) == ('2','4','56')                         # multiple args in group gives a tuple
+        assert re.search('.*\d{1}:\d{1}:\d{1,2}(?:AM|PM).*',s)
+        assert re.search('\d{1}:\d{1}:\d{1,2}(?:AM|PM)',s)              # this would fail match
+
+        assert re.match('2:4:56PM',s) == None
+        assert re.match('.*\d{1,2}:\d{1,2}:\d{1,2}(?:AM|PM).*',s)           # (?:AM|PM) means non group capture
+        assert re.match('.*\d{1}:\d{1,2}:\d{1,2}(?:AM|PM).*',s)             # (?:AM|PM) means non group capture
+        assert re.match('.*\d{1}:\d{1}:\d{1,2}(?:AM|PM).*',s)               # (?:AM|PM) means non group capture
+        assert re.match('[\w\s]+\d{1}:\d{1}:\d{1,2}(?:AM|PM).*',s)          # (?:AM|PM) means non group capture
+        assert re.match('[\w\s]+\d{1}:\d{1}:\d{1,2}(?:AM|PM)[\w\s]+',s)     # (?:AM|PM) means non group capture
+        assert re.match('^[\w\s]+\d{1}:\d{1}:\d{1,2}(?:AM|PM)[\w\s]+',s)    # (?:AM|PM) means non group capture
+        assert re.match('[\w\s]+\d{1}:\d{1}:\d{1,2}(AM|PM).*',s)            # (AM|PM) means group capture
+        assert re.match('.*\d{1}:\d{2}:\d{1,2}(?:AM|PM).*',s) == None       # (?:AM|PM) means non group capture
+
+        s = 'abc 12:34:56PM def'
+        m = re.search('([\d]{2}):([\d]{2}):([\d]{2})(AM|PM)',s)   # group match
+        assert m.group(0) == '12:34:56PM' and m.group(1) == '12' and m.group(2) == '34' and m.group(4) == 'PM'
+
+        s = 'abc 12:34:56AM def'
+
+        m = re.search('([\d]{2}):([\d]{2}):([\d]{2})(AM|PM)',s)   # group match
+        assert m.group(0) == '12:34:56AM' and m.group(1) == '12' and m.group(2) == '34'
+
+        m = re.search('(\d{2}):(\d{2}):(\d{2})(AM|PM)',s)   # group match
+        assert m.group(0) == '12:34:56AM' and m.group(1) == '12' and m.group(2) == '34'
+
+        s = 'abc 1:2:3PM 1:2:3AM 2:3:4PM 4:5:6PM 5:6:7AM def'
+        m = re.search('(\d+):(\d+):(\d+)(AM|PM)',s)
+        assert m.group(0) == '1:2:3PM'
+        m = re.findall('(\d+):(\d+):(\d+)(?:PM)',s)                         # (?:PM) is non capturing, find all
+        assert len(m) == 3
+        assert m[0] == ('1','2','3')
+        assert m[1] == ('2','3','4')
+        assert m[2] == ('4','5','6')
+
+        m = re.findall('(\d+):(\d+):(\d+)(?:AM|PM)',s)                      # (?:PM) is non capturing, find all
+        assert len(m) == 5
+        assert m[0] == ('1','2','3')
+        assert m[1] == ('1','2','3')
+        assert m[2] == ('2','3','4')
+        assert m[3] == ('4','5','6')
+        assert m[4] == ('5','6','7')
+
+        #    ___
+        #      ___
+        #        ___
+        #          ___
+        #            ___
+        s = '1:2:3:4:5:6:7'
+
+        m = re.findall('(\d+):(\d+):(?:\d+)',s)                             # non group capture
+        assert len(m) == 2
+        assert m == [('1','2'),('4','5')]
+
+        m = re.findall('(\d+):(\d+):(?=\d+)',s)                             # positive lookahead == non group capture and non overlap
+        assert len(m) == 3
+        assert m == [('1','2'),('3','4'),('5','6')]
+
+        m = re.findall('(\d+):(\d+):(\d+)',s)                               # all group capture
+        assert len(m) == 2
+        assert m == [('1','2','3'),('4','5','6')]
+
+        m = re.findall('(\d+):(\d+)',s)
+        assert len(m) == 3
+        assert m == [('1','2'),('3','4'),('5','6')]
+
+        s = '1:2:3:b:4:5:6:7'
+
+        m = re.findall('(\d+):(\d+):(?:\d+)',s)                             # non group capture
+        assert len(m) == 2
+        assert m == [('1','2'),('4','5')]
+
+        m = re.findall('(\d+):(\d+):(?=\d+)',s)                             # positive lookahead == non group capture and non overlap
+        assert len(m) == 2
+        assert m == [('1','2'),('4','5')]
+
+        m = re.findall('(\d+):(?![a-z]+)',s)                                # negative lookahead == non group capture and non overlap
+        assert len(m) == 5
+        assert m == [('1'),('2'),('4'),('5'),('6')]
+
+        m = re.findall('(\d+):(\d+):(\d+)',s)                               # all group capture
+        assert len(m) == 2
+        assert m == [('1','2','3'),('4','5','6')]
+
+        m = re.findall('(\d+):(\d+)',s)
+        assert len(m) == 3
+        assert m == [('1','2'),('4','5'),('6','7')]
+
+
+        s = ' 1 2 3 4  5 '
+
+        a = s.split()
+        assert a == ['1','2','3','4','5']
+
+        a = re.split('\s+',s)
+        assert a == ['','1','2','3','4','5','']
+
+        a = re.split('\s+',s.strip())
+        assert a == ['1','2','3','4','5']
+
+        s = 'the cat in the hat is fat'
+
+        p('pass regex')
 
     def test_byte_binary_conversion(self):
         '''
@@ -2241,6 +2400,14 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         assert abs(-10) == 10
         assert abs(10) == 10
 
+        # bit manipulation, shift
+        i = 0x8a
+        assert i == 138
+        assert i == 0b10001010
+        assert (i >> 3) & 1 == 1
+        assert (i >> 2) & 1 == 0
+        assert (i >> 4) & 0xf == 8
+
         d1 = dict(k1=10,k2=20,k3=30,k4=40)
         d2 = {'k1':10,'k2':20,'k3':30,'k4':40}
         d3 = dict(k1=11,k2=22,k3=33,k4=44)
@@ -2282,6 +2449,52 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         assert 'bb' not in 'eggs'
 
         #p('pass test_built_in_functions')
+
+    def test_bisect(self):
+        l = [i*5 for i in range(10)]
+        #            0    2     4     6     8
+        assert l == [0,5,10,15,20,25,30,35,40,45]
+        i = bisect.bisect_left(l,25)
+        assert i != None and i == 5
+        i = bisect.bisect(l,25)
+        assert i != None and i == 6
+        i = bisect.bisect(l,23)
+        assert i != None and i == 5
+        i = bisect.bisect(l,-100)
+        assert i == 0
+        i = bisect.bisect(l,100)
+        assert i == 10 and i == len(l) and l[i-1] == 45
+        i = bisect.bisect_left(l,100)
+        assert i == 10 and i == len(l)
+
+        i = bisect.bisect_left(l,39)
+        assert i == 8 and l[i] == 40
+        i = bisect.bisect(l,39)
+        assert i == 8 and l[i] == 40
+        i = bisect.bisect_right(l,39)   # bisect_left vs bisect_right are same if not exact match, choose next largest
+        assert i == 8 and l[i] == 40
+
+        i = bisect.bisect_left(l,40)    # bisect_left vs bisect differ in exact match
+        assert i == 8 and l[i] == 40    # bisect_left i is exact
+        i = bisect.bisect(l,40)         # bisect_right is next largest
+        assert i == 9 and l[i] == 45    # bisect_right and bisect behave the same
+        i = bisect.bisect_right(l,40)
+        assert i == 9 and l[i] == 45
+
+        i = bisect.bisect_left(l,41)
+        assert i == 9 and l[i] == 45
+        i = bisect.bisect(l,41)
+        assert i == 9 and l[i] == 45
+        i = bisect.bisect_right(l,41)   # bisect_left vs bisect_right are same if not exact match, choose next largest
+        assert i == 9 and l[i] == 45
+
+
+        i = bisect.bisect_left(l,43)
+        assert i == 9
+        i = bisect.bisect_left(l,45)
+        assert i == 9
+        i = bisect.bisect(l,45)
+        assert i == 10
 
     def test_math_functions(self):
         vact = math.factorial(5)
@@ -2625,6 +2838,86 @@ str:  var{k1s}end with {k2i} and {k4s}blah
             heapq.heappop(hqmax)
             ctr += 1
         assert ctr == 0
+
+
+        # heapq for char has to be converted to int for maxheap
+
+        i = ord('a')
+        c = chr(i)
+        assert c == 'a'
+
+        c = chr(97)
+        i = ord(c)
+        assert i == 97
+
+        #          0 2 4 6 8
+        lo = list('abcdefghij')
+        la = lo.copy()
+        random.shuffle(la)
+        assert la != lo
+        hqmin = []
+        hqmax = []
+        for c in la:
+            i = ord(c)
+            heapq.heappush(hqmin,i)
+            heapq.heappush(hqmax,-1*i)
+
+        assert chr(hqmin[0]) == 'a'
+        assert chr(-1*hqmax[0]) == 'j'
+
+        res = []
+        while hqmin:
+            i = heapq.heappop(hqmin)
+            c = chr(i)
+            res.append(c)
+        assert res == lo
+
+        res = []
+        while hqmax:
+            i = heapq.heappop(hqmax)
+            c = chr(-1*i)
+            res.append(c)
+        assert res == list(reversed(lo))
+
+        # heapq for max words has to be special class that implements __lt__(self,o): return self.v > o.v
+
+        class TMPW:
+            def __init__(self,w):
+                self.w = w
+            def __lt__(self,o):
+                return self.w > o.w
+
+        lo = ['ab','bb','cb','db','db','eb','fb','gb']
+        la = lo.copy()
+        random.shuffle(la)
+        assert la != lo
+
+        hqmin = []
+        hqmax = []
+
+        for w in la:
+            t = TMPW(w)
+            heapq.heappush(hqmin,w)
+            heapq.heappush(hqmax,t)
+
+        assert hqmin[0] == 'ab'
+        assert hqmax[0].w == 'gb'
+
+        res = []
+        while hqmin:
+            w = heapq.heappop(hqmin)
+            res.append(w)
+        assert res == lo
+
+        res = []
+        while hqmax:
+            t = heapq.heappop(hqmax)
+            res.append(t.w)
+        assert res == list(reversed(lo))
+
+        # regular ints sorting with heapq
+        hqmin = []
+        hqmax = []
 
         li = [11,15,22,2,8,5,1,3,7]
         lc = li.copy()
@@ -3614,11 +3907,11 @@ str:  var{k1s}end with {k2i} and {k4s}blah
             fh.close()
 
             ftmp1 = 'tmp.1.log'
-            fho = open(ftmp,'w',encoding='utf-8')
+            fho = open(ftmp1,'w',encoding='utf-8')
             csvwriter = csv.DictWriter(fho,fieldnames=[keys[0],keys[1],keys[2]])
             csvwriter.writeheader()
             for k,v in d2.items():
-                csvwrite.writerow(v)
+                csvwriter.writerow(v)
             fho.close()
 
             ftmp2 = 'tmp.2.log'
@@ -3626,7 +3919,7 @@ str:  var{k1s}end with {k2i} and {k4s}blah
             csvwriter = csv.writer(fho,delimiter=',')
             csvwriter.writerow([keys[0],keys[1],keys[2]])
             for k,v in d2.items():
-                csvwrite.writerow(v)
+                csvwriter.writerow(v)
             fho.close()
 
             return (d1,d2)

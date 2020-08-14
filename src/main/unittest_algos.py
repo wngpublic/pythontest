@@ -6,7 +6,8 @@ import collections
 import enum
 import time
 import random
-import utils.myutils
+from src.main.utils import myutils
+#import utils.myutils
 import typing
 import logging
 import json
@@ -17,6 +18,8 @@ import numpy
 import random
 import scipy
 import copy
+import re
+import numpy
 #from __future__ import annotations
 
 '''
@@ -484,7 +487,7 @@ class IntervalTree:
                 return None
             if n.get_lo() <= v and v <= n.get_hi():
                 return n
-            if n.get_lo() < lo:
+            if n.get_lo() < v:
                 return find_first_overlap_(v,n.get_rp())
             return find_first_overlap_(v,n.get_lp())
         if self.r == None:
@@ -575,7 +578,7 @@ class GNode:
         return self.vertices2nodes
     def add_edge(self,dst_node,weight=1):
         self.add_edge_to_node(dst_node,weight)
-        self.vertices[dst_id] = weight
+        self.vertices[dst_node] = weight
         return self
     def add_edge_to_node(self,dst_node,weight=1):
         self.vertices2nodes[dst_node] = weight
@@ -1023,7 +1026,7 @@ class ut(unittest.TestCase):
 
     def setUp(self):
         self.perfctr = 0
-        self.dbg = False
+        self._dbg = False
         self.utils = Utils()
 
     def incperfctr(self):
@@ -1032,8 +1035,8 @@ class ut(unittest.TestCase):
     def getperfctr(self):
         return self.perfctr
 
-    def dbg(s):
-        if self.dbg:
+    def dbg(self,s):
+        if self._dbg:
             p(s)
 
     def tearDown(self) -> None:
@@ -1235,7 +1238,7 @@ class ut(unittest.TestCase):
             '''
 
         def partition_swap(list,lp,rp) -> None:
-            i = partition_key(list,l,r)
+            i = partition_key(list,lp,rp)
             partition_val = list[i]
             while(lp < rp):
                 while(list[lp] < partition_val): lp += 1
@@ -1257,7 +1260,7 @@ class ut(unittest.TestCase):
             return (r-l)/2
 
         def partition_swap(list,lp,rp,idx_stop) -> None:
-            i = partition_key(list,l,r)
+            i = partition_key(list,lp,rp)
             partition_val = list[i]
             while(lp < rp):
                 while(list[lp] < partition_val): lp += 1
@@ -2186,7 +2189,7 @@ class ut(unittest.TestCase):
             return (d,nr,ba)
 
         def huffman_decode(s,nr):
-            decoded_s = huffman_decode_from_binary_string(encoded_string,nr)
+            decoded_s = huffman_decode_from_binary_string(s,nr)
             return decoded_s
 
         def t0():
@@ -4038,7 +4041,7 @@ class ut(unittest.TestCase):
                 n = BSTNode(k,v)
                 if k < self.min:        self.min = k
                 if k > self.max:        self.max = k
-                addNode(n,self.r)
+                self.addNode(n,self.r)
 
             def addNode(self, n:BSTNode,p:BSTNode=None):
                 if self.r is None:
@@ -4046,32 +4049,32 @@ class ut(unittest.TestCase):
                     self.r = n
                 elif n.k < p.k:
                     if p.l is None:     p.l = n
-                    else:               addNode(n,p.l)
+                    else:               self.addNode(n,p.l)
                 elif n.k > p.k:
                     if p.r is None:     p.r = n
-                    else:               addNode(n,p.r)
+                    else:               self.addNode(n,p.r)
                 else:
                     assert self.allow_overwrite
                     p.v = n.v           # same key gets overwritten
 
             def add(self, v, n=None):
                 if(n is None):
-                    if(self.r is None): self.r = _Node(v)
+                    if(self.r is None): self.r = BSTNode(v)
                     return
                 if(v < n.v):
-                    if(n.l is None): n.l = _Node(v)
-                    else:            add(v,n.l)
+                    if(n.l is None): n.l = BSTNode(v)
+                    else:            self.add(v,n.l)
                 else:
-                    if(n.r is None): n.r = _Node(v)
-                    else:            add(v,n.r)
-                return add(v, self.r)
+                    if(n.r is None): n.r = BSTNode(v)
+                    else:            self.add(v,n.r)
+                return self.add(v, self.r)
             def get(self, v, n=None):
                 if(n is None):
                     if(self.r is None): return None
-                    return get(v,self.r)
+                    return self.get(v,self.r)
                 if(n.v == v): return n
-                if(n.v < v): return get(v,n.l)
-                return get(v,n.r)
+                if(n.v < v): return self.get(v,n.l)
+                return self.get(v,n.r)
 
             def getNode(self, k) -> BSTNode:
                 result = self._getNode(k, self.r, '')
@@ -4086,8 +4089,8 @@ class ut(unittest.TestCase):
                 if n is None:           return None
                 path += '/' + n.k
                 if k == n.k:            return (n,path)
-                if k < n.k:             return _getNode(k,n.l,path)
-                return _getNode(k,n.r,path)
+                if k < n.k:             return self._getNode(k,n.l,path)
+                return self._getNode(k,n.r,path)
 
             def getNodesByVal(self, v) -> dict:
                 return self._getNodesByValFromRange(v,self.min,self.max)
@@ -4137,7 +4140,7 @@ class ut(unittest.TestCase):
                 removedTuples = []
                 for tuple in listTuples:
                     if tuple.min <= n.k and tuple.max <= max:
-                        if tuple.v == v:
+                        if tuple.v == n.v:
                             if path not in results:
                                 results[path] = n
                         newTuples.append(tuple)
@@ -4412,6 +4415,9 @@ class ut(unittest.TestCase):
             def is_interleave_with_errors_sliced(s1,s2,s3,memo,num_errors,max_num_errors):
                 if s1 == s2 == s3:
                     return True
+                i1 = s1[0]
+                i2 = s2[0]
+                i3 = s3[0]
                 if (i1,i2) in memo:
                     return memo[(i1,i2)]
                 if i1 == len(s1) and i2 == len(s2) and i3 == len(s3):
@@ -7343,6 +7349,455 @@ class ut(unittest.TestCase):
             pass
         t0()
 
+    def test_jumping_indices(self):
+        '''
+        find min number of jumps to finish. you can always finish
+        given an array of 0 and 1, you can:
+        - jump +1 or +2 + current index of the array, eg if you are in array 3, you can jump to 4 or 5
+        - the array value of 1 is terminal, so avoid it
+        '''
+        def min_jump(a,i,mem):
+            if i == (len(a)-1):
+                return 0
+            if i in mem:
+                return mem[i]
+            min = None
+            sz = len(a)
+            for j in range(i+1):
+                if (j+1) < sz:
+                    t = min_jump(a,j+1,mem) + 1
+                    min = t if min == None or t < min else min
+                if (j+2) < sz:
+                    t = min_jump(a,j+2,mem) + 1
+                    min = t if min == None or t < min else min
+            mem[i] = min
+            return min
+
+        def min_jumps_to_finish(a,i,mem):
+            if i == (len(a)-1):
+                return 0
+            if i in mem:
+                return mem[i]
+            min = None
+            sz = len(a)
+            if (i+1) < sz and a[i+1] == 0:
+                min = min_jumps_to_finish(a,i+1,mem) + 1
+            if (i+2) < sz and a[i+2] == 0:
+                t   = min_jumps_to_finish(a,i+2,mem) + 1
+                min = t if min == None or t < min else min
+            if min == None:
+                assert min != None
+            mem[i] = min
+            return min
+        def t0():
+            mem = {}
+            a = [0,1,0,0,0,1,0]
+            v = min_jumps_to_finish(a,0,mem)
+            assert v == 3
+            pass
+        t0()
+    def test_queens_attack(self):
+        '''
+        given 8x8 chessboard, queen is at x,y. count number of squares a queen can traverse
+        if there is obstacle, then queen cannot attack that coordinate and beyond
+
+        r0:     length_of_square, num_obstacles
+        r1:     x,y of queen
+        r2:     x,y of obstacle1
+        r3:     x,y of obstacle2
+        ...     x,y of obstacleX
+        '''
+        def traverse_old(ll,r,c):
+            # always start N,NE,E,SE,S,SW,W,NW
+            r = r-1
+            c = c-1
+            cnt = 0
+
+            rmax = len(ll)
+            cmax = len(ll[0])
+
+            y = r-1
+            x = c
+            while y >= 0 and ll[y][x] == 0: #N
+                cnt += 1
+                y -= 1
+
+            y = r-1
+            x = c+1
+            while y >= 0 and x < cmax and ll[y][x] == 0:  # NE
+                cnt += 1
+                y -= 1
+                x += 1
+
+            x = c+1
+            y = r
+            while x < cmax: # E
+                cnt += 1
+                x += 1
+
+            y = r+1
+            x = c+1
+            while x < cmax and y < rmax and ll[y][x] == 0: # SE
+                cnt += 1
+                x += 1
+                y += 1
+
+            x = c
+            y = r+1
+            while y < rmax and ll[y][x] == 0: # S
+                cnt += 1
+                y += 1
+
+            x = c-1
+            y = r+1
+            while x >= 0 and y < rmax and ll[y][x] == 0: # SW
+                cnt += 1
+                x -= 1
+                y += 1
+
+            x = c-1
+            y = r
+            while x >= 0 and ll[y][x] == 0: # W
+                cnt += 1
+                x -= 1
+
+            x = c-1
+            y = r-1
+            while x >= 0 and y >= 0 and ll[y][x] == 0: # NW
+                cnt += 1
+                x -= 1
+                y -= 1
+
+            return cnt
+
+        def queens_old(n,k,r_q,c_q,obstacles):
+            ll = [[0 for x in range(n)] for y in range(n)]
+            for o in obstacles:
+                ll[o[0]-1][o[1]-1] = 1
+            cnt = traverse_old(ll,r_q,c_q)
+            return cnt
+
+        def exists(mem,r,c):
+            if r not in mem:
+                return False
+            if c not in mem[r]:
+                return False
+            return True
+
+        def traverse(mem,n,r,c):
+            # always start N,NE,E,SE,S,SW,W,NW
+            r = r-1
+            c = c-1
+            cnt = 0
+
+            rmax = n
+            cmax = n
+
+            y = r-1
+            x = c
+            while y >= 0 and not exists(mem,y,x): #N
+                cnt += 1
+                y -= 1
+
+            y = r-1
+            x = c+1
+            while y >= 0 and x < cmax and not exists(mem,y,x):  # NE
+                cnt += 1
+                y -= 1
+                x += 1
+
+            x = c+1
+            y = r
+            while x < cmax and not exists(mem,y,x): # E
+                cnt += 1
+                x += 1
+
+            y = r+1
+            x = c+1
+            while x < cmax and y < rmax and not exists(mem,y,x): # SE
+                cnt += 1
+                x += 1
+                y += 1
+
+            x = c
+            y = r+1
+            while y < rmax and not exists(mem,y,x): # S
+                cnt += 1
+                y += 1
+
+            x = c-1
+            y = r+1
+            while x >= 0 and y < rmax and not exists(mem,y,x): # SW
+                cnt += 1
+                x -= 1
+                y += 1
+
+            x = c-1
+            y = r
+            while x >= 0 and not exists(mem,y,x): # W
+                cnt += 1
+                x -= 1
+
+            x = c-1
+            y = r-1
+            while x >= 0 and y >= 0 and not exists(mem,y,x): # NW
+                cnt += 1
+                x -= 1
+                y -= 1
+
+            return cnt
+
+        def queens(n,k,r_q,c_q,obstacles):
+            mem = {}
+            for o in obstacles:
+                if (o[0]-1) not in mem:
+                    mem[o[0]-1] = set()
+                mem[o[0]-1].add(o[1]-1)
+            cnt = traverse(mem,n,r_q,c_q)
+            return cnt
+
+        def t0():
+            n = 5
+            k = 3
+            r_q = 4
+            c_q = 3
+            obstacles = []
+            obstacles.append([5,5])
+            obstacles.append([4,2])
+            obstacles.append([2,3])
+            cnt = queens(n,k,r_q,c_q,obstacles)
+            assert cnt == 10
+
+        def t1():
+            n = 1
+            k = 0
+            r_q = 1
+            c_q = 1
+            obstacles = []
+            cnt = queens(n,k,r_q,c_q,obstacles)
+            assert cnt == 0
+
+        def t2():
+            n = 4
+            k = 0
+            r_q = 4
+            c_q = 4
+            obstacles = []
+            cnt = queens(n,k,r_q,c_q,obstacles)
+            assert cnt == 9
+
+        def t3():
+            n = 100000
+            k = 0
+            r_q = 4187
+            c_q = 5068
+            obstacles = []
+            cnt = queens(n,k,r_q,c_q,obstacles)
+            assert cnt == 308369
+
+        t0()
+        t1()
+        t2()
+        t3()
+
+    def test_bigger_better(self):
+        '''
+        return the next biggest word by swapping
+
+        abbd -> abdb
+
+        return None if no next biggest word
+        '''
+        class T:
+            def __init__(self,k):
+                self.k = k
+                self.a = []
+            def __lt__(self,o):
+                return self.k < o.k
+            def add_idx(self,i):
+                self.a.append(i)
+            def get_ary(self):
+                return self.a
+
+        def next_biggest_word_o(w):
+            def next_biggest(w):
+                hqmin = []
+                l = list(w)
+                d = {}
+                cmin = None
+                swapped = False
+                for i in range(len(l)-1,-1,-1):
+                    c = w[i]
+                    if cmin != None and c < cmin:
+                        j = d[cmin][0]
+                        l[i] = l[j]
+                        l[j] = c
+                        swapped = True
+                        break
+                    if c not in d:
+                        d[c] = []
+                        heapq.heappush(hqmin,c)
+                        cmin = hqmin[0]
+                    d[c].append(i)
+                if swapped == True:
+                    r = ''.join(l)
+                    return r
+                return None
+            r = next_biggest(w)
+            if r == None:
+                r = 'no answer'
+            return r
+        def next_biggest_word_1(w):
+            def next_biggest(w):
+                hqmin = []
+                l = list(w)
+                d = {}
+                stack = []
+                cmin = None
+                cmax = None
+                swapped = False
+                for i in range(len(l)-1,-1,-1):
+                    c = w[i]
+                    if c not in d:
+                        d[c] = []
+                        heapq.heappush(hqmin,c)
+                    d[c].append(i)
+                    while len(stack) != 0 and c > stack[-1]:
+                        v = stack.pop()
+                    if cmax != None and c < cmax:
+                        j = i
+                        # drain everything. remove c first, which should be smallest element
+                        heapq.heappop(hqmin)
+                        tc = heapq.heappop(hqmin)
+                        heapq.heappush(hqmin,c)
+                        for idx in d[tc]:
+                            l[j] = tc
+                            j += 1
+                        while hqmin:
+                            tc = heapq.heappop(hqmin)
+                            for idx in d[tc]:
+                                l[j] = tc
+                                j += 1
+                        swapped = True
+                        break
+                    stack.append(c)
+                    if cmax == None or c > cmax:
+                        cmax = c
+                    cmin = hqmin[0]
+                if swapped == True:
+                    r = ''.join(l)
+                    return r
+                return None
+            r = next_biggest(w)
+            if r == None:
+                r = 'no answer'
+            return r
+        def next_biggest_word(w):
+            def next_biggest(w):
+                hqmin = []
+                l = list(w)
+                d = {}
+                stack = []
+                cmax = w[-1]
+                swapped = False
+                for i in range(len(l)-1,-1,-1):
+                    c = w[i]
+                    if c not in d:
+                        d[c] = []
+                        heapq.heappush(hqmin,c)
+                    d[c].append(i)
+                    while len(stack) != 0 and c > stack[-1]:
+                        v = stack.pop()
+                    if c < cmax:
+                        j = i
+                        # drain everything. remove c first, which should be smallest element
+                        heapq.heappop(hqmin)
+                        tc = heapq.heappop(hqmin)
+                        heapq.heappush(hqmin,c)
+                        for idx in d[tc]:
+                            l[j] = tc
+                            j += 1
+                        while hqmin:
+                            tc = heapq.heappop(hqmin)
+                            for idx in d[tc]:
+                                l[j] = tc
+                                j += 1
+                        swapped = True
+                        break
+                    stack.append(c)
+                    if c > cmax:
+                        cmax = c
+                if swapped == True:
+                    r = ''.join(l)
+                    return r
+                return None
+            r = next_biggest(w)
+            if r == None:
+                r = 'no answer'
+            return r
+        def t0():
+            w = 'abbd'
+            r = next_biggest_word(w)
+            assert r == 'abdb'
+            w = 'dkhc'
+            r = next_biggest_word(w)
+            assert r == 'hkdc'
+        t0()
+
+
+
+    def test_beautiful_triplets(self):
+        '''
+        i < j < k
+        a[j]-a[i] == a[k]-a[j] == d
+        '''
+        def bsearch_ge(l,d):
+            # find index >= d in l
+            pass
+        def solve(d,l):
+            # l is already sorted
+            sz = len(l)
+            for i in range(sz):
+                diff = d - l[i]
+                i_s = bsearch_ge(l,diff)
+                if i_s == None or i_s < 0:
+                    break
+                i_s = i_s if i_s > i else i+1
+                for j in range(i_s+1,sz):
+                    diff_j = l[j] - l[i]
+                    if diff_j > diff:
+                        break
+                    for k in range(j+1,sz):
+                        diff_k = l[k] - l[j]
+                        if diff_k > diff:
+                            break
+            pass
+        def t0():
+            n = 7
+            d = 7
+            arr = [1,2,4,5,7,8,10]
+            solve(d,arr)
+        t0()
+
+    def test_pick_numbers(self):
+        def pick(a):
+            cnt_max = 0
+            cnt = 0
+            for i in range(len(a)):
+                if i == 0:
+                    cnt += 1
+                elif abs(a[i]-a[i-1]) <= 1:
+                    cnt += 1
+                else:
+                    if cnt > cnt_max:
+                        cnt_max = cnt
+                    cnt = 1
+            if cnt > cnt_max:
+                cnt_max = cnt
+            return cnt_max
+        v = pick([4,6,5,3,3,1])
+        assert v == 3
+
     def test_get_triangle_tuples(self):
         def binary_search_boundary(vlist,target):
             # find target in vlist where idxl == target or idxr == target or (idxl < target and idxr < target)
@@ -7546,6 +8001,690 @@ class ut(unittest.TestCase):
                 return
             def _rotate_r(self):
                 return
+
+    def test_make_journal_dates(self):
+        # d = { 1:31,2:30,3:31,4:40,5:31,6:30,7:31,8:31,9:30,10:31,11:30,12:31 }
+        d = { 1:31,2:29,3:31,4:40,5:31,6:30,7:31,8:31,9:30,10:31,11:30,12:31 }
+
+        debug = False
+        # MMDDYY
+        dbeg = '080520'
+        dend = '080521'
+
+        m = re.match('(\d{2})(\d{2})(\d{2})',dbeg)
+        assert m != None
+        mm = int(m.group(1))
+        dd = int(m.group(2))
+        yy = int(m.group(3))
+
+        res = []
+        dcur = dbeg
+        while dcur != dend:
+            dcur = '{:02}{:02}{:02}'.format(mm,dd,yy)
+            res.append(dcur)
+            dd += 1
+            vmax = d[mm]
+            if dd > vmax:
+                dd = 1
+                mm += 1
+                if mm > 12:
+                    mm = 1
+                    yy += 1
+        if debug:
+            for v in res:
+                print('- {}'.format(v))
+
+    def test_make_timeseries_data(self):
+        debug = False
+        def make_progressive(min,max,noise,num_points):
+            def make_simple(min,max,noise,num_points):
+                l = []
+                for i in range(num_points):
+                    v = random.randint(min,max)
+                    l.append(v)
+                    assert v >= min and v <= max
+                return l
+            def make_numpy(min,max,noise,num_points):
+                l = numpy.random.randint(min,max,num_points)
+                return l
+            #l = make_simple(min,max,noise,num_points)
+            l = make_numpy(min,max,noise,num_points)
+            return l
+
+        #                   [lo,hi)
+        l = make_progressive(10,13,1,10)
+        if debug:
+            for v in l:
+                p(v)
+
+    def test_cavity_map(self):
+        def replace_cavity(grid,c):
+            sz = len(grid)
+            for i in range(1,sz-1):
+                for j in range(1,sz-1):
+                    x = grid[i][j]
+                    n = grid[i-1][j]
+                    e = grid[i][j+1]
+                    s = grid[i+1][j]
+                    w = grid[i][j-1]
+                    if n == c or e == c or s == c or w == c:
+                        continue
+                    if x > n and x > e and x > s and x > w:
+                        grid[i][j] = c
+            pass
+        def replace_cavity_array(list_of_str,c):
+            grid = [[v for v in l] for l in list_of_str]
+            replace_cavity(grid,c)
+            res = [''.join(l) for l in grid]
+            return res
+        def t0():
+            grid = [[1,1,1,2],
+                    [1,9,1,2],
+                    [1,8,9,2],
+                    [1,2,3,4]]
+            replace_cavity(grid,'X')
+            assert grid == [[1,1,1,2],
+                            [1,'X',1,2],
+                            [1,8,'X',2],
+                            [1,2,3,4]]
+            list_of_str = ['1112',
+                           '1912',
+                           '1892',
+                           '1234']
+            res = replace_cavity_array(list_of_str,'X')
+            assert res == ['1112',
+                           '1X12',
+                           '18X2',
+                           '1234']
+        t0()
+
+    def test_fair_ration(self):
+        def fair_ration(l):
+            sz = len(l)
+            cnt = 0
+            i = 0
+            while i < sz:
+                if((l[i] % 2) == 0):
+                    i += 1
+                    continue
+                if(((i+1) >= sz)):
+                    return 'NO'
+                l[i] += 1
+                l[i+1] += 1
+                i += 1
+                cnt += 2
+            if((cnt % 2) == 1):
+                return 'NO'
+            return cnt
+        def t0():
+            v = fair_ration([1,2])
+            assert v == 'NO'
+            v = fair_ration([2,2])
+            assert v == 0
+            v = fair_ration([2,1])
+            assert v == 'NO'
+            v = fair_ration([1,1,1])
+            assert v == 'NO'
+            v = fair_ration([1,2,2,1])  # 1221,2321,2431,2442
+            assert v == 6
+            v = fair_ration([1,1,1,1])
+            assert v == 4
+            v = fair_ration([1,1,1,1,1])
+            assert v == 'NO'
+            v = fair_ration([1,1,2,1,1])
+            assert v == 4
+            v = fair_ration([2,1,2,1,1])
+            assert v == 'NO'
+            v = fair_ration([2,1,2,1,2])
+            assert v == 4
+            v = fair_ration([1,1,2,1,2])
+            assert v == 'NO'
+        t0()
+
+    def test_rotate_matrix(self):
+        '''
+            4x4
+
+            ABCD
+            EFGH
+            IJKL
+            MNOP
+
+
+            5x5
+
+            ABCDE
+            FGHIJ
+            KLMNO
+            PQRST
+
+
+            5x4
+
+            ABCDE   ABCDEF
+            FGHIJ   GHIJKL
+            KLMNO   MNOPQR
+            PQRST   STUVWX
+
+
+                 vnw
+                 |
+                BCDEJ
+                AHINO-vne
+            vsw-FGLMT
+                KPQRS
+                   |
+                   vse
+        '''
+
+        def rotate_matrix_linear(matrix,num_rotations_ccw):
+            # make the wrap around into a single array and do a single shift for each array instead of incremental
+            def rotate_ccw(ll,num_rotations_ccw):
+                for l in ll:
+                    sz = len(l)
+                    t = l[0]
+                    for i in range(sz):
+                        idx = (i+num_rotations_ccw)%sz
+                        l[i] = l[idx]
+                    idx = (sz-1+num_rotations_ccw)%sz
+                    l[idx] = t
+
+            def unroll_to_list(matrix,r0,r1,c0,c1):
+                l = []
+                for c in range(c0,c1):
+                    l.append(matrix[r0][c])
+                for r in range(r0,r1):
+                    l.append(matrix[r][c1])
+                for c in range(c1,c0,-1):
+                    l.append(matrix[r1][c])
+                for r in range(r1,r0,-1):
+                    l.append(matrix[r][c0])
+                return l
+
+            def matrix_to_ll(matrix):
+                r0 = 0
+                r1 = len(matrix)-1
+                c0 = 0
+                c1 = len(matrix[0])-1
+
+                ll = []
+                while r0 <= r1 and c0 <= c1:
+                    l = unroll_to_list(matrix,r0,r1,c0,c1)
+                    ll.append(l)
+                    r0 += 1
+                    r1 -= 1
+                    c0 += 1
+                    c1 -= 1
+                return ll
+
+            def ll_to_matrix(ll,num_rows,num_cols):
+                r0 = 0
+                r1 = num_rows-1
+                c0 = 0
+                c1 = num_cols-1
+                matrix = [[0 for j in range(num_cols)] for i in range(num_rows)]
+
+                for l in ll:
+                    sz = len(l)
+                    i = 0
+                    for c in range(c0,c1):
+                        matrix[r0][c] = l[i]
+                        i += 1
+                    for r in range(r0,r1):
+                        matrix[r][c1] = l[i]
+                        i += 1
+                    for c in range(c1,c0,-1):
+                        matrix[r1][c] = l[i]
+                        i += 1
+                    for r in range(r1,r0,-1):
+                        matrix[r][c0] = l[i]
+                        i += 1
+                    c0 += 1
+                    c1 -= 1
+                    r0 += 1
+                    r1 -= 1
+                    if c0 > c1 or r0 > r1:
+                        break
+                return matrix
+
+            def rotate(matrix,num_rotations_ccw):
+                ll = matrix_to_ll(matrix)
+                rotate_ccw(ll,num_rotations_ccw)
+                res_matrix = ll_to_matrix(ll,len(matrix),len(matrix[0]))
+                # copy back to original matrix
+                for row in res_matrix:
+                    for c in row:
+                        matrix[row][c] = res_matrix[row][c]
+            rotate(matrix,num_rotations_ccw)
+            return
+
+        def rotate_matrix(ll,num_rotations_ccw):
+            def rotate_ccw(ll,c0,c1,r0,r1):
+                t = ll[r0][c0]
+                # top CCW
+                for c in range(c0,c1):
+                    if (c+1) > c1: break
+                    ll[r0][c] = ll[r0][c+1]
+                # right CCW
+                for r in range(r0,r1):
+                    if (r+1) > r1: break
+                    ll[r][c1] = ll[r+1][c1]
+                # bottom CCW
+                for c in range(c1,c0,-1):
+                    if (c-1) < c0: break
+                    ll[r1][c] = ll[r1][c-1]
+                # left CCW
+                for r in range(r1,r0,-1):
+                    if (r-1) < r0: break
+                    ll[r][c0] = ll[r-1][c0]
+                if r0 == r1:
+                    return
+
+                ll[r0+1][c0] = t
+
+            def rotate(ll,num_rotations):
+                szr = len(ll)
+                szc = len(ll[0])
+                r0,r1 = 0,szr-1
+                c0,c1 = 0,szc-1
+
+                while r0 <= r1 and c0 <= c1:
+                    szl = 0
+                    szr = r1-r0+1
+                    szc = c1-c0+1
+                    if szr <= 1:
+                        szl = szc
+                    elif szc <= 1:
+                        szl = szr
+                    else:
+                        szl = 2*(szr+szc-2)
+                    num_rotations_mod = num_rotations % szl
+                    for i in range(num_rotations_mod):
+                        rotate_ccw(ll,c0,c1,r0,r1)
+                    r0 += 1
+                    r1 -= 1
+                    c0 += 1
+                    c1 -= 1
+
+            rotate(ll,num_rotations_ccw)
+            for row in ll:
+                row = [str(v) for v in row]
+                line = ' '.join(row)
+                print(line)
+            return
+
+        def t0():
+            l1 = ['ABCD',
+                  'EFGH',
+                  'IJKL',
+                  'MNOP']
+            ll1 = [[c for c in l] for l in l1]
+            ll0 = copy.deepcopy(ll1)
+            rotate_matrix(ll1,12)
+
+            l1 = ['ABCDE',
+                  'FGHIJ',
+                  'KLMNO',
+                  'PQRST',
+                  'UVWXY']
+            ll1 = [[c for c in l] for l in l1]
+            ll0 = copy.deepcopy(ll1)
+            rotate_matrix(ll1,16)
+
+            l1 = ['ABCDE',
+                  'FGHIJ',
+                  'KLMNO',
+                  'PQRST']
+            ll1 = [[c for c in l] for l in l1]
+            assert ll1 == [['A','B','C','D','E'],
+                          ['F','G','H','I','J'],
+                          ['K','L','M','N','O'],
+                          ['P','Q','R','S','T']]
+            ll0 = copy.deepcopy(ll1)
+            rotate_matrix(ll1,14)
+
+            ll1 = [[1,2,3,4],
+                  [7,8,9,10],
+                  [13,14,15,16],
+                  [19,20,21,22],
+                  [25,26,27,28]]
+            ll0 = copy.deepcopy(ll1)
+            rotate_matrix(ll1,7)
+
+            return
+
+        def t1():
+            l1 = ['ABCD',
+                  'EFGH',
+                  'IJKL',
+                  'MNOP']
+            ll1 = [[c for c in l] for l in l1]
+            ll0 = copy.deepcopy(ll1)
+            rotate_matrix_linear(ll1,12)
+
+            l1 = ['ABCDE',
+                  'FGHIJ',
+                  'KLMNO',
+                  'PQRST',
+                  'UVWXY']
+            ll1 = [[c for c in l] for l in l1]
+            ll0 = copy.deepcopy(ll1)
+            rotate_matrix_linear(ll1,16)
+
+            l1 = ['ABCDE',
+                  'FGHIJ',
+                  'KLMNO',
+                  'PQRST']
+            ll1 = [[c for c in l] for l in l1]
+            assert ll1 == [['A','B','C','D','E'],
+                           ['F','G','H','I','J'],
+                           ['K','L','M','N','O'],
+                           ['P','Q','R','S','T']]
+            ll0 = copy.deepcopy(ll1)
+            rotate_matrix_linear(ll1,14)
+
+            ll1 = [[1,2,3,4],
+                   [7,8,9,10],
+                   [13,14,15,16],
+                   [19,20,21,22],
+                   [25,26,27,28]]
+            ll0 = copy.deepcopy(ll1)
+            rotate_matrix(ll1,7)
+
+            return
+
+        t0()
+        #t1()
+
+    def test_compare_triplets(self):
+        def compare_triplets(a,b):
+            sa,sb = 0,0
+            for va,vb in zip(a,b):
+                if va > vb:
+                    sa += 1
+                elif va < vb:
+                    sb += 1
+            return [sa,sb]
+        def t0():
+            a = [5,6,7]
+            b = [3,6,10]
+            res = compare_triplets(a,b)
+            assert res == [1,1]
+        t0()
+
+    def test_double_plus_one(self):
+        def double_plus_one(n):
+            r = 1
+            for i in range(1,n+1):
+                if i % 2 == 0:
+                    r = r+1
+                else:
+                    r = r*2
+            return r
+        def t0():
+            v = double_plus_one(5)
+            assert v == 14
+        t0()
+    def test_viral_spread(self):
+        def viral_spread(n):
+            cnt_sum = 0
+            cnt_hit = 0
+            cnt_ppl = 5
+            for i in range(n):
+                cnt_hit = int(cnt_ppl/2)
+                cnt_ppl = cnt_hit * 3
+                cnt_sum += cnt_hit
+            return cnt_sum
+        def t0():
+            v = viral_spread(3)
+            assert v == 9
+        t0()
+
+    def test_tiny_problems(self):
+        def test_encrypt():
+            '''
+            L = length
+            floor(sqrt(L)) <= row <= column <= ceil(sqrt(L))
+            row*col >= L
+            choose min(row*col)
+            '''
+            def encrypt(s):
+                vsqrt = math.sqrt(len(s))
+                vsqrtf = math.floor(vsqrt)
+                vsqrtc = math.ceil(vsqrt)
+                sz = len(s)
+                col = vsqrtc
+                row = vsqrtf
+                if(col*row) >= sz:
+                    row = col
+                l = []
+                ib = 0
+                ie = col
+                while ib <= sz and ie <= sz:
+                    ss = s[ib:ie]
+                    l.append(ss)
+                    ib = ie
+                    ie += col
+                    if ib >= sz:
+                        break
+                    if ie > sz:
+                        ie = sz
+                lt = [[] for i in range(col)]
+                for w in l:
+                    for i in range(len(w)):
+                        lt[i].append(w[i])
+                lres = []
+                for lc in lt:
+                    w = ''.join(lc)
+                    lres.append(w)
+                res = ' '.join(lres)
+                return res
+
+            def t0():
+                s0 = 'if man was meant to stay on the ground god would have given us roots'
+                s1 = s0.replace(' ','')
+                assert len(s1) == 54
+                res = encrypt(s1)
+                assert res == 'imtgdvs fearwer mayoogo anouuio ntnnlvt wttddes aohghn sseoau'
+                return
+            try:
+                t0()
+            except Exception as e:
+                raise e
+
+        def test_super_reduce_string():
+            def reduce(s):
+                l = []
+                sz = len(s)
+                i = 0
+                while i < sz:
+                    if (i + 1) < sz:
+                        if s[i] == s[i+1]:
+                            i += 1
+                        else:
+                            l.append(s[i])
+                    else:
+                        l.append(s[i])
+                    i += 1
+                r = ''.join(l)
+                if r == '':
+                    return 'Empty String'
+                if r != s:
+                    return reduce(r)
+                return r
+            def t0():
+                s = 'aaabccddd'
+                r = reduce(s)
+                assert r == 'abd'
+
+                s = 'aa'
+                r = reduce(s)
+                assert r == 'Empty String'
+
+                s = 'baab'
+                r = reduce(s)
+                assert r == 'Empty String'
+
+            t0()
+
+        def test_unique_pair():
+            '''
+            A and B never have same types of items. A and B must spend all money to buy different items.
+            m = money pooled,
+            l = items and cost
+            use 1 based indexing
+            it is always a pair, 1 for A and 1 for B
+            '''
+            def get_unique_pair(m,arr):
+                d = {}
+                i = 0
+                sz = len(arr)
+                for i in range(sz):
+                    v = arr[i]
+                    if v not in d:
+                        d[v] = []
+                    d[v].append(i)
+                for i in range(sz):
+                    cost = arr[i]
+                    diff = m - cost
+                    if diff in d:
+                        l = d[diff]
+                        for idx in l:
+                            if idx != i and idx > i:
+                                return '{} {}'.format(i+1,idx+1)
+                return ''
+
+            def t0():
+                c = 4
+                s = '1 4 5 3 2'
+                l = [int(c) for c in s.split()]
+                v = get_unique_pair(c,l)
+                assert v == '1 4'
+
+                c = 100
+                s = '5 75 25'
+                l = [int(c) for c in s.split()]
+                v = get_unique_pair(c,l)
+                assert v == '2 3'
+
+                c = 200
+                s = '150 24 79 50 88 345 3'
+                l = [int(c) for c in s.split()]
+                v = get_unique_pair(c,l)
+                assert v == '1 4'
+
+                c = 8
+                s = '2 1 9 4 4 56 90 3'
+                l = [int(c) for c in s.split()]
+                v = get_unique_pair(c,l)
+                assert v == '4 5'
+
+                c = 542
+                s = '230 863 916 585 981 404 316 785 88 12 70 435 384 778 887 755 740 337 86 92 325 422 815 650 920 125 277 336 221 847 168 23 677 61 400 136 874 363 394 199 863 997 794 587 124 321 212 957 764 173 314 422 927 783 930 282 306 506 44 926 691 568 68 730 933 737 531 180 414 751 28 546 60 371 493 370 527 387 43 541 13 457 328 227 652 365 430 803 59 858 538 427 583 368 375 173 809 896 370 789'
+                l = [int(c) for c in s.split()]
+                v = get_unique_pair(c,l)
+                assert v == '29 46'
+
+                c = 789
+                s = '591 955 829 805 312 83 764 841 12 744 104 773 627 306 731 539 349 811 662 341 465 300 491 423 569 405 508 802 500 747 689 506 129 325 918 606 918 370 623 905 321 670 879 607 140 543 997 530 356 446 444 184 787 199 614 685 778 929 819 612 737 344 471 645 726'
+                l = [int(c) for c in s.split()]
+                v = get_unique_pair(c,l)
+                assert v == '11 56'
+
+                c = 101
+                s = '722 600 905 54 47'
+                l = [int(c) for c in s.split()]
+                v = get_unique_pair(c,l)
+                assert v == '4 5'
+
+                c = 35
+                s = '210 582 622 337 626 580 994 299 386 274 591 921 733 851 770 300 380 225 223 861 851 525 206 714 985 82 641 270 5 777 899 820 995 397 43 973 191 885 156 9 568 256 659 673 85 26 631 293 151 143 423'
+                l = [int(c) for c in s.split()]
+                v = get_unique_pair(c,l)
+                assert v == '40 46'
+
+                c = 890
+                s = '286 461 830 216 539 44 989 749 340 51 505 178 50 305 341 292 415 40 239 950 404 965 29 972 536 922 700 501 730 430 630 293 557 542 598 795 28 344 128 461 368 683 903 744 430 648 290 135 437 336 152 698 570 3 827 901 796 682 391 693 161 145'
+                l = [int(c) for c in s.split()]
+                v = get_unique_pair(c,l)
+                assert v == '16 35'
+
+                c = 163
+                s = '22 391 140 874 75 339 439 638 158 519 570 484 607 538 459 758 608 784 26 792 389 418 682 206 232 432 537 492 232 219 3 517 460 271 946 418 741 31 874 840 700 58 686 952 293 848 55 82 623 850 619 380 359 479 48 863 813 797 463 683 22 285 522 60 472 948 234 971 517 494 218 857 261 115 238 290 158 326 795 978 364 116 730 581 174 405 575 315 101 99'
+                l = [int(c) for c in s.split()]
+                v = get_unique_pair(c,l)
+                assert v == '55 74'
+
+                c = 295
+                s = '678 227 764 37 956 982 118 212 177 597 519 968 866 121 771 343 561'
+                l = [int(c) for c in s.split()]
+                v = get_unique_pair(c,l)
+                assert v == '7 9'
+
+            t0()
+
+
+        def test_num_substrings():
+            def num_substrings(s):
+                sz = len(s)
+                vset = set()
+                for i in range(sz):
+                    for j in range(i,sz):
+                        ss = s[i:j+1]
+                        vset.add(ss)
+                return len(vset)
+            def queries(s,queries):
+                l = []
+                for p in queries:
+                    ss = s[p[0]:p[1]+1]
+                    v = num_substrings(ss)
+                    l.append(v)
+                return l
+
+            def t0():
+                s = 'aabaa'
+                pairs = [(1,1),(1,4),(1,1),(1,4),(0,2)]
+                exp = [1,8,1,8,5]
+                i = 0
+                sz = len(r)
+                for i in sz:
+                    p = pairs[i]
+                    ss = s[p[0]:p[1]+1]
+                    v = num_substrings(ss)
+                    r = exp[i]
+                    assert v == r
+                pass
+            t0()
+
+        def test():
+            #test_encrypt()
+            #test_super_reduce_string()
+            test_unique_pair()
+        test()
+
+    def test_counting_valleys(self):
+        def counting_valley(n,s):
+            h = 0
+            r = 0
+            for i in range(len(s)):
+                if      s[i] == 'U':
+                    h += 1
+                    if h == 0:
+                        r += 1
+                elif    s[i] == 'D':
+                    h -= 1
+            return r
+        def t0():
+            pass
+        t0()
+
+    def test_print_random_grid(self):
+        '''
+                        | | | | |
+                       -+-+-+-+-+-
+                        |___|
+        '''
+        pass
 
     def main(self):
         p('main passed')
