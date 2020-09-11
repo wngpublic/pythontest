@@ -1,0 +1,583 @@
+- tcpdump
+
+- grep
+    -o                              print only matching parts of line, in context of grouping with regex
+                                    grep -oE "abc:{0,5}" *  // prints out only abc:blah
+    --exclude=*.jar
+    --exclude-dir=abc
+    --exclude-dir={.dir1,dir2}
+    --include=*.java
+    --include-dir={a,b,c}
+    OR                              grep "term1\|term2\|term3" *
+    -l                              filename only
+    -e regexpat                     search for regex pattern
+    -E extended_regex               normal regex pattern          examples below
+    -o                              print only matching parts of line, in context of grouping with regex
+                                    grep -oE "abc:{0,5}" *  // prints out only abc:blah
+                                    :r!grep -o "fieldName\":\"[a-zA-Z0-9-]\+\"" tmp.txt
+                                    grep -o "field:[0-9]\+" filename
+    egrep == grep -E                  # so you don't need backspace for special regex characters
+    grep "t[wo]o" file                # two | too
+    grep "..bt" file                  # xxbt
+    grep "[^c]ode" file               # NOT match code but any other char
+    grep "^[a-z]" file                # every beginning alphachar
+    grep "[[:upper:]]" file           # every beginning uppercase alpha
+    grep "([A-Z]*)" file              # match 0 or more times
+    grep -o -w '\w\{1,5\}' file       # print whole words in length 1,5
+    grep -E "pat1|pat2" file          # grep OR
+    grep -e "pat1" -e "pat2" file     # grep OR
+    grep -E "pat1.*pat2" file         # grep AND in order
+    grep -E "pat1.*pat2|pat2.*pat1" file    # grep AND in either order
+
+    [:alnum:]
+    [:alpha:]
+    [:blank:]                         # space or tab
+    [:digit:]
+    .                                 # any single char
+    ?                                 # preceding item is optional and matched at most once
+                                      # basically 0 or 1 time
+    *                                 # preceding item matched 0 or more
+    +                                 # 1 or more
+    {N}                               # exactly N times
+    {N,}                              # N or more times
+    {N,M}                             # at least N but not more than M times
+    :r!grep -o "fieldName\":\"[a-zA-Z0-9-]\+\"" tmp.txt
+    grep "[\w]\+" DOES NOT WORK!
+    grep "[[:digit:]]" file
+    grep "[[:digit:]][[:alpha:]]" file    # digit followed by alpha
+    grep "[ ]\+hi"                        # multi space followed by hi
+    grep "[ ]\?hi"                        # only 0 or 1
+    grep "[ ]+"                           # space followed by +
+    grep "^[^ ]$" file                      # no space
+    grep -E "^[ ]{10}$" file
+    grep "^[ ]\+$" file
+    grep "^[0-9]\+$" file                 # only numbers
+    grep "[ ][0-9]\{2\}$" tmp.txt         # space and exactly 2 numbers
+    grep ".[0-9]\{2\}$" tmp.txt           # any char and exactly 2 numbers
+    grep -E ".[0-9]{2}$" tmp.txt          # any char and exactly 2 numbers. -E removes the backslash
+    grep "\<anchor" file                  # anchor to beginning of word
+    grep "anchor\>" file                  # anchor to back of word
+    grep "\<anchor\>" file                # anchor to beginning and back
+    grep -E '\breg' file                  # \b is word boundary, if you use -e
+    grep -E 'hi|bye' file
+    grep -E '^[a-z]+|[0-9]+$' file        # -E seems to do regex without backslash
+    grep "$HOME" file                     # grep the variable
+    grep '$HOME' file                     # grep literal $HOME
+    grep `whoami` file
+    grep "^[a-z].*\.$" file               # any characters followed by literal .
+    grep -E "(A|B|C)" file                # grep A or B or C
+    grep "hi..hi" file                    # grep hi then any 2 char then hi
+    grep 'hi..hi' file                    # grep hi then any 2 char then hi
+    grep -E "hi..hi" file                 # same
+    grep -E 'hi[.a-z]{2}hi' tmp.txt       # period or a-z
+    grep 'hi\.\.hi' file                  # grep hi then .. then hi
+    grep -E '^[^2]{4}$' tmp.txt           # match any word that is not 2 four times
+    egrep "^[0-9]*$" file                 # match only numbers and blank space, * is for 0 or more
+    egrep == grep -E                      # just use grep instead of grep -E
+    fgrep == grep -F
+
+    find <dir> -type f --min +120 | xargs rm -f     # find all files older than 120 min and pass to remove
+- jdb
+-- the program should be started with:
+    -agentlib:jdwp=transport=dt_shmem,server=y,suspend=n
+    -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=127.0.0.1:8000 App
+-- then on jdb, do attach
+    jdb --attach <addres>
+    jdb --attach 127.0.0.1:8000   // App is not specified because jdb connecting to existing VM
+    jdb -attach <port>
+    jdb -attach <address>:<port>  // jdb -attach 127.0.0.1:8000
+    jdb MyClass                   // start new process MyClass with jdb
+    jdb -listen <address>:<port>  // wait for running VM to connect at this addr
+    jdb -sourcepath <path_end_slash/> -attach ip:port  // make sure path/ else not recursive!
+    jdb -sourcepath path1/:path2/path3/ -attach ip:port  // make sure path/ else not recursive!
+    jdb -sourcepath path/ -classpath target -attach ip:port // what is classpath?
+-- commands
+    jdb -help
+    stop in ClassName.<init>      // breakpoint at constructor
+    stop in ClassName.method(fullyQualifiedArgs)  // breakpoint at method name
+      stop in CM.mN(java.lang.String,java.lang.String)
+    stop in a.b.c.ClassName.methodName  // stop at that method
+    stop at ClassName:<line>      // stop at is for linenum
+      stop at ClassName:7
+    catch java.lang.Exception     // catch all exception
+    clear ClassName:<line>        // clear breakpoint
+    clear                         // list of existing breakpoints
+    run <classname>
+    run <classname> <args>
+    list                          // list 4 lines before and 5 lines after current line
+    list <line-num>               // list 10 lines surrounding line-num
+    list <method-name>            // list first 10 lines of method
+      if Source file not found:
+
+    step                          // step into method
+    step into                     // step into method
+    step up                       // step out of method
+    step out                      // step out of method
+    step over                     // same as step, step over a function
+    pop                           // pop stack, when to use?
+    next                          // step over method
+    cont
+    wherei                        // print current stack frame
+    where                         // dump stack of current thread
+    System.out.println(objectName.instancevar);
+    eval objectName.instancevar   // print out the var, same as print
+    print x                       // print out the var, same as eval
+    dump x                        // print out the var, same as print, maybe more complex
+    watch classname.fieldname
+    unwatch classname.fieldname
+    locals                        // print values of all local vars
+    set variable = value          // set value
+    threads                       // list the threads running
+    thread X command
+    thread <num>                  // go to thread num
+    exit
+    quit
+    up <n frames>                 // move up stack
+    down <n frames>               // move down stack
+    where <opt thread id>         // where in stack
+    wherei <opt thread id>        // where in stack with pc
+    javac -g *.java               // all code must be compiled with g flag for jdb
+    !!                            // repeat last command
+
+- ascii table
+        sym hex
+        ' ':0x20,
+        '!':0x21,
+        '"':0x22,
+        '#':0x23,
+        '$':0x24,
+        '%':0x25,
+        '&':0x26,
+        '\'':0x27,
+        '(':0x28,
+        ')':0x29,
+        '*':0x2A,
+        '+':0x2B,
+        ',':0x2C,
+        '-':0x2D,
+        '.':0x2E,
+        '/':0x2F,
+        '0':0x30,
+        '1':0x31,
+        '2':0x32,
+        '3':0x33,
+        '4':0x34,
+        '5':0x35,
+        '6':0x36,
+        '7':0x37,
+        '8':0x38,
+        '9':0x39,
+        ':':0x3A,
+        ';':0x3B,
+        '<':0x3C,
+        '=':0x3D,
+        '>':0x3E,
+        '?':0x3F,
+        '@':0x40,
+        'A':0x41,
+        'Z':0x5A,
+        '[':0x5B,
+        '\\':0x5C,
+        ']':0x5D,
+        '^':0x5E,
+        '_':0x5F,
+        '`':0x60,
+        'a':0x61,
+        'z':0x7A,
+        '{':0x7B,
+        '|':0x7C,
+        '}':0x7D,
+        '~':0x7E
+
+- vim
+
+:<range>s/pat/rep/cgiI    c   confirm each sub
+                          g   all occurrence
+                          i   ignore case for pattern
+                          I   don't ignore case for pattern
+
+-- fold
+  :set foldmethod=indent
+  :set foldlevel=1
+  zj                          move to next fold
+  zk                          move to prev fold
+  zo                          open fold at cursor
+  zO                          open all folds
+  zm                          increase close foldlevel by 1
+  zr                          increase open  foldlevel by 1
+  zM                          close all open folds
+  zd                          delete fold at cursor
+  zE                          delete all folds
+  [z                          move to start of open fold
+  ]z                          move to end of open fold
+
+  basically use zm to close and zr to open
+
+
+
+range arg:
+  %                           whole file
+  .
+  number                      absolute line of number
+
+%s/\w\+//gc                   substitute regex vim
+%s:/a/b/c/d:/a/b/c/e:g        use : instead of / to avoid backslash
+
+vim regex group substitution
+%s!slave \(\w\+\) 0 \(\d\+\) \(\d\+\) connected!slave \1 0 \3 connected!gc
+
+regex
+  \s \S
+  \d \D
+  \x \X
+  .
+  \w \W
+  \a \A
+
+quantifiers greedy
+  *
+  \+
+  \=
+  \{n,m}
+  \{n}
+  \{,m}
+  \{n,}
+
+quantifiers non greedy
+  \{-}                        0 or more of preceding, as few as possible
+  \{-n,m}
+  \{-n,}
+  \{-,m}
+
+[characterrange]
+swapping and grouping
+
+  s:\(\w\+\)\(\s\+\)\(\w\+\):\3\2\1:    swap group 1 2 3 with 3 2 1
+        1       2       3
+
+global command, search and execute
+
+  :range g/pat/cmd                      where match occur, do cmd
+  :range g!/pat/cmd                     where match not occur, do cmd
+
+  :g/^$/ d                              delete all empty lines
+  :g/^
+
+
+
+
+
+
+:registers          view all registers
+:reg a              view register at a
+:let @l='....'      edit a register
+q<key>seq cmd<esc>q
+n|                  jump to column, eg 300| to column 300
+gt                  go to next tab
+:g/pattern/d        delete all lines matching pattern
+:g!/pattern/del     delete all lines not matching pattern
+
+^M                  0xD 0xA newline. To remove, :%s/^M//g -> :%s/CTRL v + CTRL m//g
+                    this also works             :%s/\r//g
+
+- cat redirect
+
+echo "hello" >&1      # redirect stdout to stdout
+echo "hello" >&2      @ redirect stdout to stderr
+echo "no changes" >&1 | sed "s!no!some!"      # changes go through pipe because stdout
+echo "no changes" >&2 | sed "s!no!some!"      # changes dont go through because stderr
+echo "hello" >> file                          # append
+echo "hello" > file                           # out
+cmd 2>&1
+cmd > file 2>&1
+cmd 2> /dev/null                              # redirect stderr to null
+cmd 2> file                                   # redirect stderr to file
+cmd 1>&2 file                                 # stdout to same filedescriptor as stderr
+cmd 2>&1 file                                 # stderr to same filedescriptor as stdout
+cmd 1> /dev/null                              # redirect stdout to null
+cmd  > /dev/null                              # redirect stdout to null
+cmd &> /dev/null                              # redirect stdout and stderr to null
+cmd >  /dev/null 2>&1 &                       # redirect stdout and stderr to null background
+cmd >  /dev/null 2>&1                         # redirect stdout and stderr to null
+cmd >  file 2>&1                              # redirect stdout and stderr to file
+
+
+split
+split -b 100m filename          // split after 100mb
+split -b 1GB filename          // split after 1 GB
+split -l 200000 filename        // split after 200k lines
+split -C 5m --numeric-suffixes filename
+cat x* > filename             // merge files
+vmstat      // memory stats 
+free        // free mem
+lastlog | grep -v "Never logged in"
+last // last login
+
+nslookup <ipaddr>
+dig -x <ipaddr>
+host <hostname>
+host -t cname <hostname>
+
+
+awk '{ if($3 ~ /regex/){ d[$4]=$1; } else if($1 in d){ print($1 " exists"); } else { d[$1]=""; } }'
+
+awk '{ if($3 ~ /regex/){ if($4 in d && d[$4] != ""){ print($4 " in dict " d[$4]); } else { d[$4]=$1; } } else if($1 in d == 0){ d[$1]=""; } } END { print("--------"); for(k in d){ print(k " " d[k]); } }'
+
+awk '{ if($3 ~ /regex/){ if($4 in d && d[$4] != ""){ print($1 " is duplicate " $4 " " d[$4]); } else { d[$4]=$1; } } else if($1 in d == 0){ d[$1]=""; } } END { print("--------"); for(k in d){ if(d[k] == ""){ print(k " " d[k]); } } }'
+
+awk '{ if($3 ~ /regex/){ if($4 in d && d[$4] != ""){ print($1 " is duplicate " $4 " " d[$4]); } else { d[$4]=$1; } } else if($1 in d == 0){ d[$1]=""; } } END { print("-------- nodes "); for(k in d){ if(d[k] == ""){ print(k " " d[k]); } } }'
+
+awk '{ if($3 = "abc"){ if($4 in d && d[$4] != ""){ print($1 " is duplicate " $4 " " d[$4]); } else { d[$4]=$1; } } else if($1 in d == 0){ d[$1]=""; } } END { print("-------- nodes "); for(k in d){ if(d[k] == ""){ print(k " " d[k]); } } }'
+
+
+curl options
+  -a                        append, used in upload
+  -c <file>                 cookie filename
+  -b <data>                 cookie data in header
+  -d <data>                 data payload
+  -d @<file>                data payload from file
+  -H <header>               header
+  -i                        include header info in output
+  -o <file>                 output to file
+  -p                        proxy tunnel
+  -s                        silent progress meter mode
+  -A <name>                 user agent name
+  -u <user:pass>
+  -v                        verbose
+  -V                        version
+  
+
+curl -x               proxy, seems like same as default
+-v                    verbose
+-u                    username
+--trace <file>        full trace dump
+--trace-ascii <file>  
+-p                    proxy tunnel
+-L                    follow redirect, eg curl -vL http://www.yahoo.com
+
+
+- ssh command
+
+
+local port forward lets you connect from local host to remote host
+
+remote port forward lets you connect from remote host to local host. you have to enable
+remote port forwarding in sshd_config.
+
+dynamic port forward allows communication with range of ports, so your machine is effectively
+SOCKS proxy server.
+
+
+local port forward allows forward traffic on port1 of local node to ssh server, which is 
+forwarded to host2 port2.
+  ssh -L port1:host2:port3
+    any incoming local to port1 gets forwarded to host2:port3, and host2 may be local|remote
+    where port3 is the app's listening port. if localhost is host1,
+    then on remote or local host, open up host1:port1, which then forwards to host2:port3
+  ssh -R port1:host2:port3
+  ssh -R remoteport:host:port
+  ssh -L localport:host:port
+
+remote port forward is opposite of local port forward. it forwards from port1
+
+you can forward multiple sets of ports in single ssh command
+
+two ways to create ssh tunnel: local and remote port forwarding. dynamic forward is third way.
+ssh
+  -A                        enable forward of auth agent connection
+  -D port1:host:port2       dynamic port forward
+                            local app port forward
+  -L port1:host:port2       local port forward
+                            remote_socket
+                            forward local port1 to host:port2. then on browser do: localhost:9000
+  -p <port>                 port on remote host
+  -R port1:host:port2       remote port forward
+                            connections to remote host are to be forwarded
+                            to local side
+  -W 
+
+examples
+  ssh -L <port_1>:<ip_addr_1>:<port_2> <ip_addr_2>
+              open connection to ip_addr_2 and forward connection to 
+  ssh -L port1:localhost:port2
+              forward connections from local port1 to localhost:port2
+              port2 might be database listening port. then to connect, do
+              app -h localhost -p port1, which then uses shh to forward to localhost:port2
+  ssh -L p1:ip2:p2 -L p3:ip4:p4
+              incoming to p1 goes to ip2:p2 and incoming p3 goes to ip4:p4
+  ssh -L p1:ip2:p2
+              incoming to p1 goes to ip2:p2. 
+  ssh -L p1:localhost:p2
+              localhost:p2 is where app is running. but p2 may be firewalled. then 
+              externally available port is p1. 
+
+- tcpdump
+  tcpdump -i eth0
+  tcpdump -A -i eth0                  // get eth0 and print in ascii
+  tcpdump -XX -i eth0                 // get eth0 and print in hex and ascii
+  tcpdump -w file.pcap                // capture and save to pcap
+  tcpdump -r file.pcap                // read from pcap
+  tcpdump -tttt -r file.pcap          // read from pcap very verbose
+  tcpdump -n                          // include ip addresses (default is dns)
+  tcpdump -c 1000 tcp                 // capture only 1000 tcp packets
+  tcpdump tcp                         // include only tcp packets
+  tcpdump port 8000                   // capture from only port 8000
+  tcpdump src ipaddr                  // capture only from src == ipaddr
+  tcpdump dst ipaddr                  // capture only from dst == ipaddr
+  tcpdump dst ipaddr and port 8000    // capture only from dst -> port 8000
+  tcpdump -D                          // show available interfaces
+
+  options
+    -A                                print each packet in ASCII
+    -c <N>                            after receiving N packets, exit
+    -C <N>                            N file size, then open new file, need file output
+    -d                                dump human readable
+    -e                                print link level header on each dump line
+    -F <file>                         input file as filter expression
+    -i <ifc>                          listen on interface
+    -l                                lower case l, stdout line buffered
+    -n                                do not convert IP address to name
+    -nn                               do not convert IP and PORT
+    -N                                do not print domain name qualification of host names
+    -r <file>                         input file read packets from file
+    -s <N>                            snaplength/capture size of packet, default is 68 bytes, then throw away
+    -s 0                              save all contents of packet, do not discard
+    -t                                do not print timestamp on each dump line
+    -tttt                             print timestamp as h:m:s:fraction of second
+    -v,-vv,-vvv                       verbose
+    -w <file>                         write to file
+    -x                                print data of each packet in hex
+    -X,-XX                            print data of each packet in hex and ASCII
+    -D                                view which interface available for capture, eg tcpdump -D
+
+  filters
+    src <ip>
+    dst <ip>
+    port <port>
+    host <ip>                         filter traffic to AND from specific host, host can be src or dst
+    icmp                              icmp packets only
+    udp                               udp packets only
+    tcp                               tcp packets only
+    <=                                less than,equal packet size, eg tcpdump <= 128
+    less|greater                      tcpdump less 128, tcpdump greater 128   packet size
+    
+  packet metadata filter
+    or,and,not,(...),=,!=,||,&&,!
+
+  output explanation
+    Flags
+      S                               SYN connection
+      F                               FIN connection
+      P                               PUSH data
+      R                               RST connection
+      .                               ACK
+
+    <timestamp hr:min:s:milli> IP <src_ip.port>   > <dst_ip.port>:     Flags[SFPR.], seq <byte_start:byte_end>  <ack_num>   <window_size>   <tcp_options>       <packet_length_in_bytes>
+    xx:xx:xx.xxxxx             IP xx.xx.xx.xx.xxx > xx.xx.xx.xx.xxx    [P.]          seq 123:456                ack 1       win 222,        options [...],      length 555
+    
+    
+    <timestamp hr:min:s:milli>        timestamp
+    IP                                type of packet,can also by ARP
+    <src_ip.port>                     src ip and port
+    >                                 direction
+    <dst_ip.port>:                    dst ip and port
+    Flags[SFPR.],                     flags [SFPR.]
+    cksum                             checksum hex
+    seq <byte_start:byte_end>         byte_end-byte_start == packet_length in bytes
+    <ack_num>   
+    <window_size>                     src host TCP window
+    <tcp_options>                     check TCP field definitions
+      TOS                             type of service
+      proto                           TCP
+    <packet_length_in_bytes>
+    
+    
+
+
+  examples:
+    tcpdump -i eth0
+    tcpdump -i eth0 -c 100            
+                                      100 packets
+    tcpdump -i eth0 -c100 -nn
+                                      100 packets, do not convert IP address and port
+    tcpdump -i eth0 -c5 icmp          5 packets of ICMP packets
+    tcpdump -i eth0 -c5 -nn host 123.123.123.123
+                                      5 packets to host 123.123.123.123, do not convert IP or port
+    tcpdump -i eth0 -c5 -nn port 80
+                                      5 packets to and from port 80
+    tcpdump -i eth0 -c10 -nn src 1.1.1.1
+                                      10 packets from host 1.1.1.1
+    tcpdump -i eth0 -c10 -nn dst 2.2.2.2
+                                      10 packets to host 2.2.2.2
+    tcpdump -i eth0 -c10 -nn src 1.1.1.1 dst 2.2.2.2
+                                      10 packets from host 1.1.1.1 to host 2.2.2.2
+    tcpdump -i eth0 -c10 -nn src 1.1.1.1 and port 80
+                                      10 packets from host 1.1.1.1 to port 80
+    tcpdump -i eth0 -c10 -nn "(src 1.1.1.1 and port 123)" "(dst 2.2.2.2 and port 80)"
+                                      10 packets from host 1.1.1.1:123 to host 2.2.2.2:80
+    tcpdump -i eth0 -c10 -nn "(src 1.1.1.1 and dst 2.2.2.2 and port 80)"
+    tcpdump -i eth0 -c10 -nn -w filename port 80
+    tcpdump -nn -r filename
+    tcpdump -nn -r filename src 1.1.1.1
+                                      read from filename with src 1.1.1.1
+    tcpdump -i eth0 -c10 -nn host 1.1.1.1
+                                      10 packets to and from host 1.1.1.1 (src == host || dst == host)
+    tcpdump -i eth0 -c10 -nn src host 1.1.1.1
+                                      10 packets to and from host src 1.1.1.1 
+    tcpdump -i eth0 -c10 port 80 && port 90
+                                      10 packets with ports 80 AND 90 (doesn't matter if src or dst)
+    tcpdump -i eth0 -c10 'port 80 && port 90'
+                                      10 packets with ports 80 AND 90 (doesn't matter if src or dst)
+    tcpdump -i eth0 -c10 'port 80 || port 90'
+                                      10 packets with ports 80 OR 90 (doesn't matter if src or dst)
+    tcpdump -i eth0 '(port 80 or port 90) and host 1.1.1.1'
+    tcpdump -i eth0 not port 80
+    tcpdump -nnvvS                    very verbose
+    tcpdump -nnvvXSs 10000            snaplength
+    tcpdump 'tcp[13] & 16 != 0'       show all ACK packets
+    tcpdump 'tcp[13] & 32 != 0'       show all URG packets
+    tcpdump 'tcp[13] & 2 != 0'        show all SYN packets
+    tcpdump 'tcp[tcpflags] & (tcp-syn|tcp-ack) == (tcp-syn|tcp-ack)'
+                                      show TCP SYN/ACK
+    tcpdump -i eth0 -s0               snap length 0, needed for pulling binaries/files
+                                      if no -s0, then snap length is 68 bytes!
+    tcpdump -nn -A -s1500 -l | grep "User-Agent:"
+                                      snap length 1500 and line buffered ASCII, so can grep
+    tcpdump -s 0 -A -vv 'tcp[((tcp[12:1] & 0xf0) >> 2):4] = 0x47455420'
+                                      capture only HTTP get and POST packets
+                                      tcp[((tcp[12:1]&0xf0)>>2):4] first determines location
+                                      of bytes and then selects the 4 bytes to match against                                     
+    tcpdump -nn -A -s 0 -l | egrep -i 'Set-Cookie|Host:|Cookie:'
+                                      capture cookies from server from client
+    tcpdump ssh                       check all packets used on ssh
+    tcpdump net 192.168.1.0/24        get packets for entire subnet
+    tcpdump portrange 22-25           
+    tcpdump -i eth0 src port not 22
+    tcpdump -c 2000 -s 0 -nn -l -w tmp.tcpdump.1.pcap
+ 
+
+  ssldump -k /path/key_file.key -i eth0 -c10 port 80 src 1.1.1.1
+
+  ssldump can only decrypt SSL/TLS packet if RSA keys are used. if DHE or RSA ephemera
+  cipher suite used, RSA keys used only to secure DH or RSA exchange, but not encrypt.
+
+
+
+set is
+set ic
+set nowrap
+set backspace=2
+set nu
+set hlsearch
+set history=512
+set ruler
+hi linenr none
+syntax off
+set wildchar=<Tab> wildmenu wildmode=full
+set tabstop=2
+set shiftwidth=2
+set expandtab
+highlight DiffAdd    cterm=bold ctermfg=10 ctermbg=17 gui=none guifg=bg guibg=Red
+highlight DiffDelete cterm=bold ctermfg=10 ctermbg=17 gui=none guifg=bg guibg=Red
+highlight DiffChange cterm=bold ctermfg=10 ctermbg=17 gui=none guifg=bg guibg=Red
+highlight DiffText   cterm=bold ctermfg=10 ctermbg=88 gui=none guifg=bg guibg=Red

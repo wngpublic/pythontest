@@ -347,6 +347,18 @@ class Test {
         assert(count($aa2['a1']) == 2);
         assert(count($aa3['a1']) == 2);
 
+        $aa = [];
+        $aa['key11'] = 'v1';
+        $aa['key12'] = 'v2';
+        $aa['key13'] = 'v3';
+        $aa['key14'] = 'v4';
+        $aa['key15'] = 'v5';
+        $keys = array_keys($aa);
+        assert(count($keys) == 5);
+        assert($keys == ['key11','key12','key13','key14','key15']);
+        assert($keys != ['key11','key12','key13','key14']);
+        assert($keys != ['key15','key12','key13','key14','key11']);
+
         // array of arrays, this is broken!
         $aa = array();
         for($i = 0; $i < 2; $i++) {
@@ -454,6 +466,38 @@ class Test {
         }
         $cmp = array_diff_assoc($a1,$acopy);
         assert(count($cmp) == 0);
+
+        // delete array
+        $a = [1,2,3,4,5];
+        assert($a[1] == 2 && $a[3] == 4);
+        unset($a[2]);       // this deletes element but doesn't shift the array
+        assert(count($a) == 4);
+        assert($a[1] == 2 && $a[3] == 4);
+        assert(!isset($a[2]));
+        $a = array_values($a); // reindex/shift the array
+        assert($a[1] == 2 && $a[2] == 4);
+
+        $a = [1,2,3,4,5];
+        array_splice($a, 2, 1); // this deletes element and shifts the array
+        assert(count($a) == 4);
+        assert($a[1] == 2 && $a[2] == 4);
+
+        $a = [1,2,3,4,5];
+        array_splice($a, 2, 2); // delete 2 elements starting from index 2
+        assert(count($a) == 3);
+        assert($a[1] == 2 && $a[2] == 5);
+
+        //    0   2   4   6   8   A
+        $a = [1,2,3,4,5,1,2,3,1,2,3];
+        assert(count($a) == 11);
+        $a = array_diff($a, array(2,3)); // remove elements that are 2 or 3
+        assert(count($a) == 5);
+
+        $a = ["k1"=>"v1","k2"=>"v2","k3"=>"v3","k4"=>"v4","k5"=>"v5"];
+        assert(count($a) == 5);
+        unset($a["k3"]);
+        assert(count($a) == 4);
+        assert(!isset($a["k3"]));
 
         $v = $this->dbg_lvl_end;
         $this->dbg("test_structures",$v);
@@ -649,6 +693,8 @@ class Test {
         assert($v == "cat123");
         assert(intval("10") == 10);
         assert(intval("-10") == -10);
+        assert(intval(123.45) == 123);
+        assert(intval(123.54) == 123);
         assert(!is_int("10"));
         assert(is_int(10));
         assert(!is_int(10.1));
@@ -658,6 +704,40 @@ class Test {
         $v = null;
         assert($v !== FALSE);
         assert($v === null && $v == null && $v == NULL && $v == Null);
+
+        $s = "abcdefg";
+        assert(strpos($s,'cde') == true);
+        assert(strpos($s,'acd') == false);
+        $s = "abc/defg";
+        assert(strpos($s,'abc/def') == 0);
+        assert(strpos($s,'abc/def') === 0);
+        assert(strpos($s,'bc/defg') == true);
+
+        $res = strpos($s,'abc/defg');
+        assert(is_int($res));
+        assert(!is_bool($res));
+        assert(strpos($s,'abc/defg') == 0);         # this is int
+        assert(strpos($s,'abc/defg') == false);     # this is false cmp because idx = 0
+        assert(strpos($s,'abc/defg') !== false);    # this is the way to do it!!! checks for same value AND same type!
+        assert(strpos($s,'abc/defg') !== true);     # because pos == 0
+        assert(strpos($s,'abc/defg') != true);      # because pos == 0
+        $cnt = 0;
+        if(strpos($s,'abc/defg') === false) $cnt++;            # this would assert!
+        if(strpos($s,'abc/defg') === true) $cnt++;             # this would assert!
+        if(strpos($s,'abc/defg') !== 0) $cnt++;                # this would assert!
+        assert($cnt == 0);
+
+        assert(strpos($s,'abc/defgh') == 0);        # not right syntax!
+        assert(strpos($s,'abc/defgh') !== 0);       # do this for 1st index!
+        assert(strpos($s,'abc/defgh') == false);
+        assert(strpos($s,'abc/defgh') === false);
+        if(strpos($s,'abc/defgh') === true) $cnt++;
+        assert($cnt == 0);
+        assert(strpos($s,'bc/def') == true);
+        assert(strpos($s,'c/de') == true);
+        assert(strpos($s,'/def') == true);
+        assert(strpos($s,'/') == true);
+        assert(strpos($s,'/a') == false);
 
         $this->dbg("test_strings",$this->dbg_lvl_end);
     }
@@ -885,7 +965,26 @@ class Test {
 
         return;
     }
+    static $static_class_i = 1;
+    var $class_i = 2;
+    static function test_static_case($v1) {
+        assert(self::$static_class_i == 1);
+        //assert($this->class_i == 2); // cannot access class_i because this is static
+    }
+    function test_function_1($v1,$v2) {
+        return array($v1,$v2);          // multiple values return not supported
+    }
+    function test_class_case() {
+        assert($this->class_i == 2);
+        assert(self::$static_class_i == 1);
+        $a = $this->test_function_1(10,20);
+        assert($a[0] == 10 && $a[1] == 20);
+        Test::test_static_case(10);
+        self::test_static_case(20);
+
+    }
 }
+
 
 openlog("mylog.php.log", LOG_CONS, LOG_USER);
 $t = new Test();
@@ -897,6 +996,8 @@ $t->test_json();
 $t->test_url();
 $t->test_time();
 $t->test_args_case();
+$t->test_class_case();
+Test::test_static_case(10);
 closelog();
 
 ?>

@@ -36,6 +36,27 @@ class ut(unittest.TestCase):
             assert abs(10 - mean) < 1
             stddev = numpy.std(l)
             assert abs(stddev) < 1.1
+        def dist2a():
+            mean = 1000
+            sigma = 50
+            numsamples = 100
+            samples = []
+            for i in range(numsamples):
+                v = random.normalvariate(mean,sigma)
+                samples.append(v)
+            assert len(samples) == numsamples
+            l = []
+            for f in samples:
+                rounded = round(f,3)
+                l.append(rounded)
+            assert len(l) == numsamples
+            calc_mean = numpy.mean(l)
+            assert abs(calc_mean - mean) < sigma
+            stddev = numpy.std(l)
+            calc_stddev = mean + sigma/mean
+            assert abs(stddev) < calc_stddev
+            print_distribtion(l,do_round=True)
+
         def d3():
             '''
             # 3-sigma rule: 68-95-99.7 (empirical) for 1,2,3 standard deviation
@@ -118,7 +139,21 @@ class ut(unittest.TestCase):
         def d5():
             # multivariate normal distribution
             pass
-        d3()
+        def print_distribtion(l,do_round=True):
+            d = {}
+            for v in l:
+                if do_round:
+                    v = int(v)
+                if v not in d:
+                    d[v] = 0
+                d[v] += 1
+            sorted_keys = sorted(d.keys())
+            for k in sorted_keys:
+                p('{:2} = {:.2f} = {}'.format(k,d[k]/1000.0,d[k]))
+
+        dist2a()
+        #d3()
+
         time.sleep(1)
         pass
     def test_random(self):
@@ -175,5 +210,4 @@ class ut(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main() # not ut.main()!
-dist2()
 

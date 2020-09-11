@@ -40,45 +40,6 @@ sqlite3 old_database.db
 > .dump
 > .exit
 
-addresses         ( id,     unit,         addr_num,     street_id, city_id, province_id, country_id, zip );
-streets           ( id,     name,         city_id,      province_id,  country_id );
-cities            ( id,     name,         province_id,  country_id );
-provinces         ( id,     name,         country_id );
-countries         ( id,     name,         abbrev,       prefix );
-companies         ( id,     govid,        name,         address_id,   domainname, country_id );
-departments       ( id,     companyid,    deptid,       deptname,     deptcategory );
-employees         ( govid,  employee_id,  company_id,   email,        dept_id,    country_id, employer_id );
-entities          ( govid,  namefirst,    namelast,     phone,        email,      gender, address_id,     country_id, datestart, dateend, entity_type );
-products          ( sku,company_product_id,version,quality,category,description,manufacturer_id,country_id,price_cost,price_sale,seller_id,seller_country_id)
-receipts_seller   ( date,id,sales_record_id,from_country_id,from_company_id,qty,price_per_item,price_total,to_entity_id,to_country_id,product_id,category_id,version)
-receipts_customer ( date,id,sales_record_id,from_country_id,from_company_id,qty,price_per_item,price_total,to_entity_id,to_country_id,product_id,category_id)
-
-db details snapshot:
-9 countries
-0 2  companies   14 cities  5 provinces
-1 8  companies   20 cities  5 provinces
-2 3  companies   15 cities  4 provinces
-3 2  companies   7  cities  2 provinces
-4 2  companies   8  cities  2 provinces
-5 9  companies   14 cities  4 provinces
-6 6  companies   6  cities  2 provinces
-7 2  companies   5  cities  2 provinces
-8 12 companies   10 cities  3 provinces
-9 13 companies   12 cities  3 provinces
-
-create table addresses ( gid integer primary key autoincrement, id integer, unit integer, addr_num integer, street_id integer, city_id integer, province_id integer, country_id integer, zip text);
-create table cities ( gid integer primary key autoincrement, id integer, name text, province_id integer, country_id integer);
-create table companies ( gid integer primary key autoincrement, id integer, govid integer, name text, address_id integer, domainname text, country_id integer);
-create table countries ( gid integer primary key autoincrement, id integer, name text, abbrev text, prefix integer);
-create table departments ( gid integer primary key autoincrement, id integer, companyid integer, deptid integer, deptname text, deptcategory text);
-create table employees ( gid integer primary key autoincrement, govid integer, employee_id integer, company_id integer, email text, dept_id integer, country_id integer, employer_id integer);
-create table entities ( gid integer primary key autoincrement, govid integer, namefirst text, namelast text, phone text, email text, gender text, address_id integer, country_id integer, datestart integer, dateend integer, entity_type integer);
-create table provinces ( gid integer primary key autoincrement, id integer, name text, country_id integer);
-create table streets            ( gid integer primary key autoincrement, id integer, name text, city_id integer, province_id integer, country_id integer);
-create table products           ( gid integer primary key autoincrement, sku integer,company_product_id integer,version integer,quality integer,category integer,description text,manufacturer_id integer,country_id integer,price_cost integer,price_sale integer,seller_id integer,seller_country_id integer);
-create table receipts_seller    ( gid integer primary key autoincrement, date integer, id integer,sales_record_id integer,from_country_id integer,from_company_id integer,qty integer,price_per_item integer,price_total integer,to_entity_id integer,to_country_id integer,product_id integer,category_id integer,version integer);
-create table receipts_customer  ( gid integer primary key autoincrement, date integer,id integer,sales_record_id integer,from_country_id integer,from_company_id integer,qty integer,price_per_item integer,price_total integer,to_entity_id integer,to_country_id integer,product_id integer,category_id integer);
-
 schema for input_tiny_multitable_db.txt
 {
 instructions:
@@ -123,116 +84,6 @@ drop table <tablename>
 .output <filename>
 .databases
 
-from online:
-select distinct ProductName, UnitPrice from products where UnitPrice>(select avg(UnitPrice) from products) order by UnitPrice desc;
-
-select OrderID, CustomerID from orders where ShippedDate = (select max(ShippedDate) from orders);
-
-select ProductID, ProductName, concat((UnitsInStock / (select sum(UnitsInStock) from products))*100, '%') as Percent_of_total_units_in_stock from products order by ProductID;
-
-select a.ShipperID, a.CompanyName, b.Freight from shippers as a inner join orders as b on a.ShipperID=b.ShipVia where b.Freight = (select max(Freight) from orders);
-
-select distinct a.ProductID, a.UnitPrice as Max_unit_price_sold from order_details as a where a.UnitPrice = ( select max(UnitPrice) from order_details as b where a.ProductID = b.ProductID) order by a.ProductID;
-
-select distinct a.ProductID, a.UnitPrice as Max_unit_price_sold from order_details as a inner join ( select ProductID, max(UnitPrice) as Max_unit_price_sold from order_details group by ProductID) as b on a.ProductID=b.ProductID and a.UnitPrice=b.Max_unit_price_sold order by a.ProductID;
-
-select distinct a.ProductID, p.ProductName, a.UnitPrice as Max_unit_price_sold from order_details as a inner join products as p on a.ProductID = p.ProductID where a.UnitPrice = ( select max(UnitPrice) from order_details as b where a.ProductID = b.ProductID) order by a.ProductID;
-
-select a.OrderID, a.CustomerID from orders as a where ( select Quantity from order_details as b where a.OrderID = b.OrderID and b.ProductID = 6) > 20;
-
-select CustomerID, CompanyName from customers as a where exists ( select * from orders as b where a.CustomerID = b.CustomerID and ShipCountry = 'UK');
-
-select CustomerID, CompanyName from customers as a where not exists
-(
-    select * from orders as b where a.CustomerID = b.CustomerID and ShipCountry <> 'UK'
-);
-
-select distinct a.CustomerID, a.CompanyName from customers as a left join orders as b on a.CustomerID = b.CustomerID where b.ShipCountry = 'UK' or b.ShipCountry is null;
-
-select x.ProductID, y.ProductName, x.max_unit_price from
-( select ProductID, max(UnitPrice) as max_unit_price from order_details group by ProductID) as x inner join products as y on x.ProductID = y.ProductID
-
-select ProductID, ProductName, concat((UnitsInStock / (select sum(UnitsInStock) from products))*100, '%') as Percent_of_total_units_in_stock from products order by ProductID;
-
-select ProductID, ProductName, concat((UnitsInStock / 3119)*100, '%') as Percent_of_total_units_in_stock from products order by ProductID;
-
-select CustomerID, CompanyName from customers where CustomerID in
-( select CustomerID from orders where orderDate > '1998-05-01');
-
-select a.CustomerID, a.CompanyName from customers as a inner join orders as b on a.CustomerID = b.CustomerID where b.orderDate > '1998-05-01'
-
-select EmployeeID, FirstName, LastName, City, Country from employees where row(City, Country) in (select City, Country from customers);
-
-select distinct a.ProductID, a.UnitPrice as Max_unit_price_sold from order_details as a inner join
-( select ProductID, max(UnitPrice) as Max_unit_price_sold from order_details group by ProductID) as b
-on a.ProductID=b.ProductID and a.UnitPrice=b.Max_unit_price_sold order by a.ProductID;
-
-select y.CategoryID, y.CategoryName, round(x.actual_unit_price, 2) as "Actual Avg Unit Price", round(y.planned_unit_price, 2) as "Would-Like Avg Unit Price" from
-(
-    select avg(a.UnitPrice) as actual_unit_price, c.CategoryID from order_details as a inner join products as b on b.ProductID = a.ProductID inner join categories as c on b.CategoryID = c.CategoryID group by c.CategoryID
-) as x
-inner join
-(
-    select a.CategoryID, b.CategoryName, avg(a.UnitPrice) as planned_unit_price from products as a inner join categories as b on b.CategoryID = a.CategoryID group by a.CategoryID
-) as y on x.CategoryID = y.CategoryID
-
-select * from sql.oilrsrvs o where exists (select Continent from sql.countries c where o.Country = c.Name and Continent = 'Africa');
-
-select * from sql.oilrsrvs o where 'Africa' = (select Continent from sql.countries c where c.Name = o.Country);
-
-select name 'Country', Population format=comma15.  from sql.countries where Name in (select Country from sql.oilprod);
-
-select Name 'State' , population format=comma10.  from sql.unitedstates where population gt (select population from sql.countries where name = "Belgium");
-
-select Name 'State', population format=comma10.  from sql.unitedstates where population gt 10162614;
-
-select s_name, score, status, address_city, email_id, accomplishments from student s inner join marks m on s.s_id = m.s_id inner join details d on d.school_id = m.school_id;
-
-select s_name, score, status, address_city, email_id, accomplishments from student s, marks m, details d where s.s_id = m.s_id and m.school_id = d.school_id;
-
-SELECT wp_woocommerce_order_items.order_id As No_Commande
-FROM  wp_woocommerce_order_items
-LEFT JOIN
-    (
-        SELECT meta_value As Prenom, post_id  -- <----- this
-        FROM wp_postmeta
-        WHERE meta_key = '_shipping_first_name'
-    ) AS a
-ON wp_woocommerce_order_items.order_id = a.post_id
-WHERE  wp_woocommerce_order_items.order_id =2198
-
-SELECT <fieldlist>  FROM Faculty AS f
-INNER JOIN Division AS d ON d.FacultyID = f.FacultyID
-INNER JOIN Country AS c ON c.FacultyID = f.FacultyID
-INNER JOIN Nationality AS n ON n.FacultyID = f.FacultyID
-
-SELECT A.SalesOrderID, B.Foo
-FROM A
-JOIN B bo ON bo.id = (
-     SELECT TOP 1 id
-     FROM B bi
-     WHERE bi.SalesOrderID = a.SalesOrderID
-     ORDER BY bi.whatever
-     )
-WHERE A.Date BETWEEN '2000-1-4' AND '2010-1-4'
-
-select count(*) from departments;
-117
-
-select count(*) from departments where deptcategory = 'R&D';
-59
-
-select count(*) from departments where deptcategory != 'R&D';
-58
-
-select count(*) from departments where deptcategory like 'Executive';
-7
-
-select count(*) from departments group by companyid;
-22 10 9 19 13 23 21
-
-select count(*) from companies;
-7
 
 get all employees belonging to companyid
 select * from employees where company_id = 1;
@@ -296,45 +147,14 @@ SELECT * FROM runners WHERE id NOT IN (SELECT winner_id FROM races WHERE winner_
 group entities by companies for each country.
 
 select entity_type, count(*) from entities;
-entity_type  count(*)
------------  ----------
-2            107
 
 select entity_type, count(country_id) from entities group by entity_type;
-entity_type  count(country_id)
------------  -----------------
-1            7
-2            100
 
 select country_id, count(entity_type) from entities group by country_id;
-country_id  count(entity_type)
-----------  ------------------
-0           31
-1           30
-2           46
 
 select country_id, count(entity_type) from entities group by country_id,entity_type;
-country_id  count(entity_type)
-----------  ------------------
-0           2
-0           29
-1           2
-1           28
-2           3
-2           43
 
 select country_id, entity_type,count(entity_type) from entities group by country_id,entity_type;
-country_id  entity_type  count(entity_type)
-----------  -----------  ------------------
-0           1            2
-0           2            29
-1           1            2
-1           2            28
-2           1            3
-2           2            43
-
-
-
 
 select cities.name as cname,
   cities.province_id,
@@ -436,34 +256,11 @@ wrong:
   select countries.name,count(*),from cities
 
 select count(*),province_id from addresses where unit != "" group by province_id;
-count(*)    province_id
-----------  -----------
-2           0
-10          1
-5           2
 
 select count(*),city_id,province_id from addresses where unit != "" group by province_id,city_id;
-count(*)    city_id     province_id
-----------  ----------  -----------
-2           1           0
-6           2           1
-2           3           1
-2           5           1
-2           5           2
-3           7           2
 
 employees per company:
 select count(*),company_id from employees group by company_id;
-count(*)    company_id
-----------  ----------
-8           0
-10          1
-8           2
-18          3
-6           4
-12          5
-9           6
-
 
 select count(*),employees.company_id,countries.name
   from employees
@@ -472,12 +269,6 @@ select count(*),employees.company_id,countries.name
   group by countries.name,employees.company_id
   order by countries.name,employees.company_id;
 
-count(*)    company_id  name
-----------  ----------  ----------
-1           4           Country 0
-12          5           Country 0
-...
-
 select employees.email,employees.company_id,countries.name
   from employees
   join entities on entities.govid = employees.govid
@@ -485,12 +276,6 @@ select employees.email,employees.company_id,countries.name
   where countries.name = 'Country 0'
   order by countries.name,employees.company_id;
 
-email                  company_id  name
----------------------  ----------  ----------
-jyw.mhul.5@company2.2  4           Country 0
-hpo.tblc.11@company0.  5           Country 0
-oof.chqn.0@company0.0  5           Country 0
-...
 
 addresses of employees by city
 workemail entityemail cities.name
@@ -512,9 +297,6 @@ select employees.email,entities.email,cities.name from employees
 select employees.email,entities.email,cities.name from employees join entities on entities.govid = employees.govid and entities.country_id = employees.country_id join addresses on entities.address_id = addresses.id and entities.country_id = addresses.country_id join cities on addresses.city_id = cities.id and addresses.country_id = cities.country_id and cities.province_id = addresses.province_id and entities.country_id = cities.country_id;
 
 count addresses and provinces and name of country
-numaddresses  numprovinces  countryname
-8             3             c0              8 addresses in 3 provinces in c0
-6             2             c1              6 addresses in 2 provinces in c1
 
 use subqueries to do multiple counts
 select
@@ -531,12 +313,6 @@ select
 from addresses b
   group by country_id;
 
-numaddr     numprov     country_id
-----------  ----------  ----------
-42          4           0
-30          3           1
-49          4           2
-33          3           3
 
 
 select count(distinct province_id) from addresses group by country_id;
@@ -620,71 +396,6 @@ select * from products where manufacturer_id = 2780 order by category,quality;
 select count(*),category from products group by category;
 select count(*),category,quality from products group by category,quality order by category;
 
-schema for input_tiny_multitable_db.txt
-{
-
-schema summary
-addresses1/2    ( gid integer,
-                  id integer,
-                  unit integer,
-                  addr_num integer,
-                  street_id integer,
-                  city_id integer,
-                  province_id integer,
-                  country_id integer,
-                  zip text);
-cities1/2       ( gid integer,
-                  id integer,
-                  name text,
-                  province_id integer,
-                  country_id integer);
-companies1/2    ( gid integer,
-                  id integer,
-                  govid integer,
-                  name text,
-                  address_id integer,
-                  domainname text,
-                  country_id integer);
-countries1/2    ( gid integer,
-                  id integer,
-                  name text,
-                  abbrev text,
-                  prefix integer);
-departments1/2  ( gid integer,
-                  id integer,
-                  companyid integer,
-                  deptid integer,
-                  deptname text,
-                  deptcategory text);
-employees1/2    ( gid integer,
-                  govid integer,
-                  employee_id integer,
-                  company_id integer,
-                  email text,
-                  dept_id integer,
-                  country_id integer,
-                  employer_id integer);
-entities1/2     ( gid integer,
-                  govid integer,
-                  namefirst text,
-                  namelast text,
-                  phone text,
-                  email text,
-                  address_id integer,
-                  country_id integer,
-                  datestart integer,
-                  dateend integer,
-                  entity_type integer);
-provinces1/2    ( gid integer,
-                  id integer,
-                  name text,
-                  country_id integer);
-streets1/2      ( gid integer,
-                  id integer,
-                  name text,
-                  city_id integer,
-                  province_id integer,
-                  country_id integer);
 
 sql queries for this schema: {
 
@@ -772,10 +483,6 @@ this is right: {
 
 {
 good sql statements
-
-provinces1 has 7 entries
-cities1 has 17 entries
-countries1 has 4 entries
 
 select * from countries1 inner join provinces1 on countries1.id = provinces1.country_id;
 
@@ -896,38 +603,314 @@ select min(price), * from products_prices group by name order by price;
 select max(price), * from products_prices group by name order by price;
 
 update tablename set k1=v1, k2=v2 where k3=id;
-update cities set name='mad3', province_id=1 where gid=2;
-{
-- characteristics of input_tiny_db.txt
-
-countries: 4
-  id, name, abbrev, prefix
-provinces: 14
-  id, name, country_id
-  select count(*), country_id from provinces group by country_id;
-cities: 34 cities
-  id, name, province_id, country_id
-  select count(*), province_id, country_id from cities group by province_id, country_id;
-streets: 52
-  id, name, city_id, province_id, country_id
-addresses: 154
-  id, unit, addr_num, street_id, city_id, province_id, country_id, zip
-entities: 241
-  govid, namefirst, namelast, phone, email, address_id, country_id,
-  datestart, dateend, entity_type
-companies: 10
-  id, govid, name, address_id, domainname, country_id
-departments: 121
-  id, companyid, deptid, deptname, deptcategory
-employees: 136
-  govid, employee_id, company_id, email, dept_id, country_id, employer_id
-
-
-
-}
-
 select count(*),lastname from entities where (lastname='momo' or lastname='om') group by lastname;
 select  sum(case when lastname='momo' then 1 else 0 end) as sum_momo,
         sum(case when lastname='om' then 1 else 0 end) as sum_om,
         lastname from entities where (lastname='momo' or lastname='om') group by lastname;
+{
+- notes
+--  regex
+    expr NOT REGEXP pat <=> NOT (expr REGEXP pat)
+    REGEXP
+    RLIKE
+    NO_REGEXP
+--- examples
+    select * REGEXP '^\w+$'
+--- syntax
+    a+            match 1 or more
+    a*            match 0 or more
+    a?            match 0 or 1
+    pat1|pat2     alternation,either
+    (abc)*        match 0 or more of sequence abc
+    (abc){2}      match twice of sequence abc
+    (abc){2,3}    match t or 2 times abc
+    (abc)+        <=> (abc){1,}
+    (abc){1,}     <=> (abc)+
+    (abc)?        <=> (abc){0,1}
+    [charclass]
+--  pattern match but not regex
+    LIKE          like 'abc', like 'abc%'
+    NOT LIKE      not like 'abc'
+    STRCMP
+--- in pattern match, % and _ are the only wildcard designations
+    %             match any number <=> *
+    _             match exactly 1 <=> {1}
+
+
+
+--  login
+    brew install mysql
+    brew reinstall mysql
+    /usr/local/mysql/bin/mysql -u ...
+    mysql -u root -p <RETURN> // get the prompt for pass
+    dont do sudo mysql -u, only mysql -u X -p
+    mysqladmin shutdown
+    sudo mysqld_safe --skip-grant-tables &  // start mysql with no pw
+    sudo /usr/local/mysql/support-files/mysql.server start
+    sudo /usr/local/mysql/support-files/mysql.server stop
+    /etc/init.d/mysqld start
+    /etc/init.d/mysqld stop
+    /etc/init.d/mysqld restart
+    flush privileges;           // after pw change
+--  create table
+    create table tablename (
+        f1 int autoincrement primary key,
+        f2 varchar(100) not null,
+        f3 int default 1,
+        f4 int,
+        f5 enum('e1','e2','e3') default null,
+        f6 boolean default false,
+        ts timestamp not null default CURRENT_TIMESTAMP,
+        index (f3),             // individual index
+        index (f4)
+    );
+
+    create table tablename (
+        f1 int autoincrement primary key,
+        f2 varchar(100) not null,
+        f3 int default 1,
+        f4 int,
+        ts timestamp not null default CURRENT_TIMESTAMP,
+        index (f3,f4)           // multicolumn index
+    );
+
+
+    describe db.tablename;              // the output format of schema
+    show create table db.tablename;     // the sql create statement
+    show index from db.tablename;       // show the index format (this + describe)
+
+    varchar(n)
+    tinyint(n)
+    int(n)
+    text
+    longtext
+    datetime
+    timestamp
+
+--- insert/select enum into enum table
+    insert into tablename(c1,cenum) values('blah','e1'); // 'e1' is predefined enum value
+    insert into tablename(c1,cenum) values('blah',1);    // index 1 == 'e1', 2 == 'e2'
+    select * from tablename where cenum = 'e1';
+    // dont use enum because of portability. alter is also expensive!
+
+--- select
+    // does this work as join instead of join?
+    select tbl1.*,tbl2.* from tbl1,tbl2 where tbl1.f1 = tbl2.f1 limit 10;
+
+    select t1.c1,t2.c2 from t1 join t2 on c1=c2;
+    select t1.c1,t2.c2 from t1 left join t2 on c1=c2 where c1='x';
+    select t1.c1,t2.c2 from t1 left join t2 on t1.c1=t2.c1 and t1.c2 = t2.c2 where c1='x';
+
+    // join 3 tables, test this out to see if it works
+    select t1.*,t2.*,t3.* from t1 join t2 on t1.c1=t2.c1 join t3 on t1.c2 = t3.c2 where c1='x';
+
+    select * from t1 where c1 in ('v1','v2');           // multiple match
+    select * from t1 where c1 not in ('v1','v2');       // multiple match
+    select * from t1 where c1 in (
+        select * from t2 group by c2);
+    select *, count(*) from t1 group by x;
+
+--- copy
+    create table if not exists db.newtablename like db.oldtablename;        // copies indexes and triggers, doesnt overwrite
+
+    create table db.newtablename like db.oldtablename;        // copies indexes and triggers
+    insert db.newtablename select * from db.oldtablename;
+
+    create table db.newtablename as select * from db.oldtablename;    // copies column structure and data but not indexes
+
+--- alter/drop table/add column
+    // mysql will name the indexes for you even if you dont give one, you can
+    alter table <tablename> add column <columnname> <datatype> <datatype qualification> first|after <existingcolumnname>, add index (columnname);
+    alter table t1 add column c11 varchar(10) after c10;
+    alter table t1 add column c11 varchar(10) not null after c10;
+    alter table t1 add column c11 varchar(10) not null default 'abc' after c10;
+    alter table t1 add column c11 varchar(10) not null after c10, add index (c11);
+    alter table t1 add index [named_indexname] (c11);
+    alter table t1 add index (c11); // mysql autonames it unless conflict
+    alter table t1 add index indexname (c11,c12,c13);   // multicolumn should be named
+
+    see the column name with: show index from db.tablename;
+
+    creating index after create table:
+    create index idxname on tablename(c1);
+    create index idxname on tablename(c1,c2,c3);    // multicolumn index
+    create index idxname on tablename(c1) using BTREE;
+
+    alter table tablename add index(c1);
+    alter table tablename add index(c1,c2);
+    alter table tablename add primary key(c1);
+
+    alter table tablename drop column c1,c2;
+    drop index idxname on tablename; // use show index from db.tablename to see index names
+    drop index `primary` on tablename;
+
+
+--- delete
+    delete from tablename where a = 'b';
+    delete from tablename where a in (1,2,3);
+    delete from tablename;                              // delete ALL entries from tablename;
+    delete from tablename where condition order by c1 limit 100;
+    // when deleting, order is not specified, so always delete by order if using limit
+
+
+    
+--  copy table from one database to another, copy data
+    create table tabledst like dbsrc.tablesrc;
+    create table if not exists tabledst like tablesrc;
+    create table tabledst like tablesrc;                      // use this
+    create table tabledst select col1,col2 from tablesrc;
+    create table tabledst select col1,col2 from tablesrc where condition;
+    insert into tabledst select * from tablesrc;              // use this
+    insert into dbdst.tabledst select * from dbsrc.tablesrc;
+    insert tabledst select * from tablesrc;                   // this looks wrong
+    insert into tabledst (col1,col2) select col1,col2 from tablesrc;
+    insert into tabledst select * from tablesrc where condition;
+    insert into tabledst select * from tablesrc where condition on duplicate key update col1=val;
+    insert ignore into tabledst select * from tablesrc where condition;
+      // warning and no insert if duplicate key or unique constraints, insert row to partitioned table,
+      // but values dont map to a partition
+    insert into tabledst 
+      select * from tablesrc T1 
+      left join tabledst T2 on T1.col_prim = T2.col_prim where T2.col_prim is null;
+      // do left join and insert records from T1 to T2 where col_prim don't match
+--  add column
+    alter table tabledst add column <colname> varchar(255) not null after <existing_col> 
+    alter table tabledst add column <colname> varchar(255) not null default 0 after <existing_col> 
+    alter table tabledst add column <colname> varchar(255) not null default 0 primary key after <existing_col> 
+    alter table tabledst add column <colname> varchar(255) not null default 0
+    alter table db.tabledst add primary key(c1,c2,c3);    // make composite primary key
+    alter table db.tabledst drop primary key, add primary key(c1,c2,c3); // drop previous primary key, create new composite
+    alter table db.tabledst add column col1 int auto increment add primary key(col1); 
+    alter table db.tabledst modify column colx int unsigned primary key auto increment;
+    alter table db.tabledst drop primary key, add primary key (col1,col2);
+    https://dev.mysql.com/doc/refman/5.6/en/alter-table.html
+    alter table db.tabledst 
+      add column col1 int(5) not null after col3,
+      add column col2 int(5) not null after col3;
+    
+--  dump
+    mysqldump -u <u> -p<p> dbname > dump.sql
+    mysql -u <u> -p<p> dbname < dump.sql
+    mysqldump -u <u> -p<p> dbame tblsrc | mysql -u <u> -p<p> tbldst
+--  count rows
+    select count(*) from tablesrc;
+    select count(col) from tablesrc;
+    show table status like 'tablesrc';
+    select count(distinct val) from tablesrc;
+    select col,count(*) from tablesrc group by col;
+    select sum(table_rows) from information_schema.tables where table_schema = '{db}';
+    select tablename,tablerows from information_schema.tables where table_schema = '**yourschema**';
+--  select distinct c1,c2 from db.tablesrc where c1 is not null and c2 is not null group by c1, order by c1,c2;
+    select distinct c1 from db.table <==> select c1 from db.table group by c1;
+--  date select
+    select * from db.tablesrc where datename > '2020-01-01' limit 100;
+--  union
+    select c1,c2 from t1 union [all] select c3,c4 from t2; // the columns must have the same type and same order. 
+    // all retains duplicates. not having all does not retain duplicate
+    
+
+
+select dist_group, count(*)
+from
+(
+ select case when distance between 0  and 10 then '(0, 10)'
+             when distance between 10 and 50 then '(10, 50)'
+             ...
+             when distance between 5000 and 10000 then '(5000, 10000)' end as dist_group
+ from distances
+)
+group by dist_group
+
+SELECT COUNT( CASE WHEN   0 <= distance AND distance <=   10 THEN distance END ) AS in_range_0_10,
+       COUNT( CASE WHEN  10 <  distance AND distance <=   50 THEN distance END ) AS in_range_10_50,
+       COUNT( CASE WHEN  50 <  distance AND distance <=  100 THEN distance END ) AS in_range_50_100,
+       COUNT( CASE WHEN 100 <  distance AND distance <=  500 THEN distance END ) AS in_range_100_500,
+       COUNT( CASE WHEN 500 <  distance AND distance <= 1000 THEN distance END ) AS in_range_500_1000
+FROM   Distance
+
+persons:id,last,first,age,city
+
+SELECT Age, COUNT(Age)AS Frequency
+  FROM Persons
+  GROUP BY Age
+  ORDER BY
+  COUNT(Age) DESC
+
+select concat(s, '-', e) as range, sum(num) as total, count(*) as num
+from ranges
+inner join (
+   select s.id, count(*) as num
+   from subcategory as s
+      inner join item as i on i.subcategory = s.id
+   where s.category = @category
+   group by s.id
+) as x on x.num between ranges.s and ranges.e
+group by ranges.s, ranges.e
+
+cross join returns combination of possible results. when you cross join,
+you're given set containing every possible combination of rows which are
+not join restricted. you can use ORDER BY to control the way these data
+are returned. or fully join to avoid cross ojin.
+
+inner join drops rows.
+
+select a.a1,b.b1,c.c1 from a
+  join c on a.id = c.id
+  join b on a.id = b.id
+  where a.id = b.id
+union
+select d.d1,e.e1 from d
+  join d on d.id = e.id
+  join a.id = d.id
+
+you can also replace join with where clauses
+
+select a.a1,b.b1,c.c1 from a
+  where a.id = b.id and
+  b.id = c.id and
+  a.id = c.id
+union
+select ...
+
+
+copy table:
+{
+  CREATE TABLE IF NOT EXISTS new_table LIKE existing_table;
+  INSERT new_table SELECT * FROM existing_table;
+}
+
+select all distinct rows selected by either query:
+SELECT * FROM
+(SELECT NAME FROM EMP WHERE JOB = 'blah2' UNION SELECT NAME FROM EMP WHERE JOB = 'blah1'); 
+
+
+select all rows, including duplicates, selected by either query:
+SELECT * FROM (SELECT SAL FROM EMP WHERE JOB = 'v1' UNION SELECT SAL FROM EMP WHERE JOB = 'v2'); 
+
+select all distinct rows selected by both queries:
+SELECT * FROM orders_list1 INTERSECT SELECT * FROM orders_list2 
+
+select all distinct rows from first query minus the rows from the second:
+SELECT * FROM (SELECT SAL FROM EMP WHERE JOB = 'v1' MINUS SELECT SAL FROM EMP WHERE JOB = 'v2'); 
+
+
+}
+
+{
+- hive notes
+
+select count(*),c1 from db1.t1 where condition group by x;
+select * from db1.t1 lateral view explode(c1_array) v as aliasname where condition;
+select * from db1.t1 lateral view json_path_tuple(c1,"$.json_key") v as aliasname where x like '%Y%';
+select * from db1.t1 lateral view explode(c1_array) v as alias1 lateral view explode (alias1.json_struct) v2 as alias2 lateral view json_path_tuple(alias2,"$.key") v3 as alias3 where condition;
+select * from db1.t1 where c1 rlike 'X';
+select * from t1 join t2 on t1.c1 = t2.c1 where condition;
+select * from t1 join t2 on t1.c1 = t2.c1 join t3 on t1.c1 = t3.c1 and t2.c1 = t3.c1 where condition;
+
+presto notes
+select * from db.table cross join unnest(djsonarray) as a (datastruct) where datastruct.x='y' and a='b' limit 10;
+
+
+
+}
 
