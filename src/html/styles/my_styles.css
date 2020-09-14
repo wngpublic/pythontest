@@ -1,0 +1,52 @@
+
+#cid3 {
+
+}
+
+#tid3 {
+    border-collapse: collapse;
+    border-color: blue;
+    border:1; /* this doesnt work */
+    padding:0;
+    border-spacing:1;
+    counter-reset: ctr1;
+}
+
+#tbodyid3 {
+    border:1; /* this doesnt work */
+    padding:0;
+    border-spacing:1;
+}
+
+/*
+    counter only for tid3 table rows
+    divid1tid3 doesnt work
+*/
+#tid3 tr:before {
+    counter-increment: ctr1;
+    content: counter(ctr1);
+}
+
+/* this column selector doesnt work */
+#tid3 [id$="_1"] {
+    background-color:blue;
+}
+
+/* column selector, n starts at 1, not 0 */
+#tid3 td:nth-child(1) {
+    background-color:green;
+}
+
+code {
+    font-size:90%;
+    background-color: yellow;
+}
+
+#tid3 tr {
+    font-size:100%;
+    background-color: orange;
+}
+
+/*
+#tid3 td
+*/

@@ -36,10 +36,16 @@ import base64
 import site
 import bisect
 import matplotlib
-# install pycrypto
+import secrets
+# install pycrypto, dont use crypto, use cryptodome
+# install cryptodomex
 #import Crypto.Hash.SHA256 # from Crypto.Hash import SHA256
-#import Crypto.Cipher.AES # from Crypto.Cipher import AES
-#import Crypto.Random
+#import Cryptodome.Cipher.AES # from Crypto.Cipher import AES
+#import Cryptodome.Random
+from Crypto.Hash import SHA256
+from Crypto.Cipher import AES
+from Crypto import Random
+from Crypto.Util import Padding
 
 '''
 python3 -m unittest syntax_unittests.ut.test_method
@@ -344,6 +350,20 @@ class ut(unittest.TestCase):
 
     def test_list(self):
         # push and pop
+        l = []
+        l.append(1)
+        l.append(2)
+        l.insert(0,10)
+        l.insert(0,20)
+        l.insert(-1,30)
+        l.insert(len(l),40)
+        l.append(50)
+        assert l == [20,10,1,30,2,40,50]
+        l.pop()
+        assert l == [20,10,1,30,2,40]
+        l.pop(0)
+        assert l == [10,1,30,2,40]
+
         l = []
         l.append(1)
         l.append(2)
@@ -935,6 +955,11 @@ class ut(unittest.TestCase):
         v = l.pop()
         assert v == 6
 
+        v1,v2,v3 = 10,20,30
+        assert v1 == 10
+        assert v2 == 20
+        assert v3 == 30
+
         return
 
     def test_numpy(self):
@@ -1255,6 +1280,8 @@ class ut(unittest.TestCase):
         assert s == 'aaa'
         s = 'a ' * 3
         assert s == 'a a a '
+        s = 'abc' * 3
+        assert s == 'abcabcabc'
 
         s = """
         this is a multiline
@@ -1482,6 +1509,41 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         assert a == ['1','2','3','4','5']
 
         s = 'the cat in the hat is fat'
+
+        s0 =    '00 abcdefg hijklmnop qrstuv wxyz 1234567890 x0000\n' + \
+                '01 abcdefg hijklmnop qrstuv wxyz 1234567890 x0001\n' + \
+                '02 abcdefg hijklmnop qrstuv wxyz 1234567890 x0002\n' + \
+                '03 abcdefg hijklmnop qrstuv wxyz 1234567890 x0003\n' + \
+                '04 abcdefg hijklmnop qrstuv wxyz 1234567890 x0004\n' + \
+                '05 abcdefg hijklmnop qrstuv wxyz 1234567890 x0005\n' + \
+                '06 abcdefg hijklmnop qrstuv wxyz 1234567890 x0006\n' + \
+                '07 abcdefg hijklmnop qrstuv wxyz 1234567890 x0007\n' + \
+                '08 abcdefg hijklmnop qrstuv wxyz 1234567890 x0008\n' + \
+                '09 abcdefg hijklmnop qrstuv wxyz 1234567890 x0009\n' + \
+                '0A abcdefg hijklmnop qrstuv wxyz 1234567890 x000A\n' + \
+                '0B abcdefg hijklmnop qrstuv wxyz 1234567890 x000B\n' + \
+                '0C abcdefg hijklmnop qrstuv wxyz 1234567890 x000C\n' + \
+                '0D abcdefg hijklmnop qrstuv wxyz 1234567890 x000D\n' + \
+                '0E abcdefg hijklmnop qrstuv wxyz 1234567890 x000E\n' + \
+                '0F abcdefg hijklmnop qrstuv wxyz 1234567890 x000F\n' + \
+                '10 abcdefg hijklmnop qrstuv wxyz 1234567890 x0012\n'
+
+
+        i = 1234
+        si = str(i)
+        assert si == '1234'
+        rsi = list(reversed(si))
+        assert rsi == ['4','3','2','1']
+        rs = ''.join(rsi)
+        assert rs == '4321'
+        ri = int(rs)
+        assert ri == 4321
+
+        assert int(str(i)[::-1]) == 4321
+
+        s = 'abcdefghijk'
+        assert 'def' in s
+        assert 'fed' not in s
 
         p('pass regex')
 
@@ -1841,6 +1903,94 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         h2 = ba2.hex()
         assert h2 == '68656c6c6f20746865726520'
 
+        slc = 'abcdefghijklmnopqrstuvwxyz'
+        suc = slc.upper()
+        assert suc == 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        dlc = {}
+        duc = {}
+        sz = len(slc)
+        # a-97=0, A-65=0
+        for i in range(sz):
+            vlc = ord(slc[i]) - 97
+            vuc = ord(suc[i]) - 65
+            dlc[i]=vlc
+            duc[i]=vuc
+        assert dlc == duc
+        assert dlc[25] == 25
+        assert 'A' == 'a'.upper()
+        assert 'a' == 'A'.lower()
+
+
+        s0 =    '00 abcdefg hijklmnop qrstuv wxyz 1234567890 x0000\n' + \
+                '01 abcdefg hijklmnop qrstuv wxyz 1234567890 x0001\n' + \
+                '02 abcdefg hijklmnop qrstuv wxyz 1234567890 x0002\n' + \
+                '03 abcdefg hijklmnop qrstuv wxyz 1234567890 x0003\n' + \
+                '04 abcdefg hijklmnop qrstuv wxyz 1234567890 x0004\n' + \
+                '05 abcdefg hijklmnop qrstuv wxyz 1234567890 x0005\n' + \
+                '06 abcdefg hijklmnop qrstuv wxyz 1234567890 x0006\n' + \
+                '07 abcdefg hijklmnop qrstuv wxyz 1234567890 x0007\n' + \
+                '08 abcdefg hijklmnop qrstuv wxyz 1234567890 x0008\n' + \
+                '09 abcdefg hijklmnop qrstuv wxyz 1234567890 x0009\n' + \
+                '0A abcdefg hijklmnop qrstuv wxyz 1234567890 x000A\n' + \
+                '0B abcdefg hijklmnop qrstuv wxyz 1234567890 x000B\n' + \
+                '0C abcdefg hijklmnop qrstuv wxyz 1234567890 x000C\n' + \
+                '0D abcdefg hijklmnop qrstuv wxyz 1234567890 x000D\n' + \
+                '0E abcdefg hijklmnop qrstuv wxyz 1234567890 x000E\n' + \
+                '0F abcdefg hijklmnop qrstuv wxyz 1234567890 x000F\n' + \
+                '10 abcdefg hijklmnop qrstuv wxyz 1234567890 x0012\n'
+
+        # string to byte array and byte array to string
+
+        ba0 = bytes(s0,'utf-8')
+        ba1 = s0.encode('utf-8')
+        ba2 = bytearray(s0,'utf-8')
+
+        vs0 = ba0.decode('utf-8')
+        vs1 = ba1.decode('utf-8')
+        vs2 = ba2.decode('utf-8')
+
+        assert vs0 == s0
+        assert vs1 == s0
+        assert vs2 == s0
+
+        sz = len(ba1)
+        szchunk = 16
+        szmod = sz % szchunk
+        bchunks = [ ba1[i:i+szchunk] for i in range(0, len(ba1), szchunk) ]
+        for chunk in bchunks:
+            if len(chunk) != szchunk:   # for final chunk
+                assert len(chunk) == szmod
+
+        ba = bytearray()                # bytes immutable, use bytearray
+        for chunk in bchunks:
+            ba += bytearray(chunk)      # append bytes
+        bv0 = bytes(ba)
+        assert len(bv0) == sz
+        vs = bv0.decode('utf-8')
+        assert vs == s0
+
+        ba = bytearray()
+        for chunk in bchunks:
+            ba.extend(chunk)            # extend bytes
+        bv0 = bytes(ba)
+        assert len(bv0) == sz
+        vs = bv0.decode('utf-8')
+        assert vs == s0
+
+        bins = s0.encode('utf-8')
+        b64e = base64.b64encode(bins)
+        b64d = base64.b64decode(b64e)
+        vs   = b64d.decode('utf-8')
+        assert vs == s0
+
+        b64e = base64.encodebytes(bins) # inserts newline after every 76 bytes
+        b64d = base64.decodebytes(b64e)
+        vs   = b64d.decode('utf-8')
+        assert vs == s0
+        b64d = base64.b64decode(b64e)   # this seems to remove newline too!
+        vs   = b64d.decode('utf-8')
+        assert vs == s0
+
         return
 
 
@@ -1881,6 +2031,35 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         s = set(l)
         assert len(s) == 5
         assert len(l) == 7
+        assert s == {1,2,3,4,5}
+        assert l == [1,2,3,3,4,5,5]
+
+        assert 3 in s
+        s.remove(3)
+        assert 3 not in s
+        assert s == {1,2,4,5}
+
+        try:
+            flag = False
+            s.remove(10)
+        except KeyError as e:
+            flag = True
+        assert flag == True
+
+        s.remove(1)
+        s.remove(2)
+        s.remove(4)
+        s.remove(5)
+        assert len(s) == 0
+        assert s != {}      # there is no literal for empty set, this is empty dict
+        assert s == set()
+
+        l = []
+        l.append(None)
+        l.append(1)
+        l.append(None)
+        l.append(1)
+        assert l == [None,1,None,1]
 
         s1 = {1,2,3,4,5}
         s2 = {3,2,4,5,1}
@@ -1898,6 +2077,7 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         assert len(s1) == 4
         assert 3 not in s1
 
+        s1 = {1,2,3,4,5}
         s2 = {3,2,4,5,1,6}
         s3 = s1.difference(s2)
         assert len(s3) == 0         # because s1-s2 is empty
@@ -1913,6 +2093,13 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         s3 = s1.symmetric_difference(s2)
         assert len(s3) == 0
         s2.discard(6)               # no KeyError
+        flag = False
+        try:
+            s2.remove(6)            # error
+        except Exception as e:
+            flag = True
+        assert flag
+        s2.discard(6)               # no error
         s3 = s1.symmetric_difference(s2)
         assert len(s3) == 0
 
@@ -1937,6 +2124,44 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         assert len(d) == 6
         assert 2 in d
         assert d[2] == 3    # Counter stores count only
+
+        d = { i:(i+1) for i in range(5) }
+        assert len(d) == 5
+        assert d[0] == 1
+        s1 = set(d.keys())
+        s2 = set(d.values())
+        assert s1 == {0,1,2,3,4}
+        assert s2 == {1,2,3,4,5}
+
+        d = {1:2,2:2,3:4,4:5,5:4}
+        assert len(d) == 5
+        s1 = set(d.keys())
+        s2 = set(d.values())
+        assert s1 == {1,2,3,4,5}
+        assert s2 == {2,4,5}
+
+        flag = False
+        d = {1:10,2:20,3:30,4:40,5:50}
+        assert len(d) == 5
+        v = d.pop(2,None)
+        assert v == 20
+        v = d.pop(10,None)      # no key error raised here
+        assert v == None
+        try:
+            d.pop(10)
+        except Exception as e:
+            flag = True
+        assert flag == True
+        d.pop(10,None)      # no key error raised here
+        assert 10 not in d
+        assert len(d) == 4
+        del d[3]            # no key error raised here
+        flag = False
+        try:
+            del d[10]
+        except Exception as e:
+            flag = True
+        assert flag == True
 
         l = []
         l.append(1)
@@ -1980,7 +2205,7 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         assert len(l) == 7
         s = set(l)
         assert len(s) == 5
-        l = list(s)
+        l = list(s)                 # set to list
         assert len(l) == 5
 
         # merge dict
@@ -2326,6 +2551,28 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         assert set_vals == {'v1','v2','v3','v5','v7','v8'}
         assert set_vals != ('v1','v2','v3','v5','v7','v8')
 
+        s = set()
+        s.add((1,2))
+        s.add((2,3))
+        s.add((4,5))
+        assert (1,2) in s
+        assert (2,1) not in s
+
+        s = '10 20 30 40 50'
+
+        # maps string to type int
+        l = list(map(int, s.rstrip().split()))
+        assert l == [10,20,30,40,50]
+
+        l = list(s.rstrip().split())
+        assert l == ['10','20','30','40','50']
+
+        s = 'aa bb cc dd ee '
+        l = list(s.rstrip().split())
+        assert l == ['aa','bb','cc','dd','ee']
+
+        return
+
     def test_struct_pack_unpack(self):
         '''
         c = 1B
@@ -2506,11 +2753,20 @@ str:  var{k1s}end with {k2i} and {k4s}blah
             l.append(i)
         assert l == [2,3]
 
-        v = 10//3       # floored 10/3 = 3
-        assert v == 3
+        assert (10//3) == 3         # floored 10/3 = 3
+        assert int(10/3) == 3
+        assert int(11/3) == 3
+        assert int(10/2) == 5
+        assert int(11/2) == 5
+        assert (10//2) == 5
+        assert (11//2) == 5
+        assert (12//2) == 6
+        assert (10//2) == int(10/2)
+        assert (11//2) == int(11/2)
+        assert (10/3) != 3.33
+        assert round(10/3,2) == 3.33
 
         v = 10/3
-        assert v != 3.33
         assert '{:.2f}'.format(v) == '3.33'
         assert float('{:.2f}'.format(v)) == 3.33
         assert round(v,2) == 3.33
@@ -2530,6 +2786,11 @@ str:  var{k1s}end with {k2i} and {k4s}blah
 
         assert abs(-10) == 10
         assert abs(10) == 10
+
+        assert (2**0) == 1
+        assert (2**1) == 2
+        assert (2**3) == 8
+        assert (2**4) == 16
 
         #p('pass test_math_functions')
 
@@ -2999,6 +3260,16 @@ str:  var{k1s}end with {k2i} and {k4s}blah
             lmin.append(o.k)
         assert lmin == ['k1','k12','k2','k21','k23']
 
+        hqmin = []
+        for o in l:
+            heapq.heappush(hqmin,o)
+        lmin = []
+        while len(hqmin) != 0:
+            o = heapq.heappop(hqmin)
+            lmin.append(o.k)
+        assert lmin == ['k1','k12','k2','k21','k23']
+
+
         # max priority queue, just create class where __lt__ self.k > other.k
         class TMAX:
             def __init__(self,k,v):
@@ -3007,6 +3278,7 @@ str:  var{k1s}end with {k2i} and {k4s}blah
             def __lt__(self,other):
                 return self.k > other.k
         l = [TMAX('k12','vx'),TMAX('k23','v11'),TMAX('k1','vy'),TMAX('k2','v2'),TMAX('k21','v32')]
+
         hqmax = queue.PriorityQueue()
         for o in l:
             hqmax.put(o)
@@ -3016,6 +3288,14 @@ str:  var{k1s}end with {k2i} and {k4s}blah
             lmax.append(o.k)
         assert lmax == ['k23','k21','k2','k12','k1']
 
+        hqmax = []
+        for o in l:
+            heapq.heappush(hqmax,o)
+        lmax = []
+        while len(hqmax) != 0:
+            o = heapq.heappop(hqmax)
+            lmax.append(o.k)
+        assert lmax == ['k23','k21','k2','k12','k1']
 
         # heapq
         li = ['k4','k0','k11','k3','k1','k2']
@@ -3190,6 +3470,15 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         assert ln == [bn0,bn1,bn2,bn3,bn4,bn5]
         assert lnk == [1,10,13,5,6,7]
 
+        so = 'hgfedcba'
+        ss = sorted(so)
+        rs = reversed(ss)
+        ls = [c for c in 'abcdefgh']
+        assert ss == ls
+        joinss = ''.join(ss)
+        assert joinss == 'abcdefgh'
+        joinrs = ''.join(rs)
+        assert joinrs == 'hgfedcba'
         pass
 
 
@@ -3461,6 +3750,26 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         inner_func()
         assert cnt == 20
 
+    def test_secrets(self):
+        v = 0x1000_2000
+        r = secrets.randbelow(v)
+        assert r <= v
+        r = secrets.token_hex(32)
+        v = str(r)
+        assert len(r) == 64
+        assert len(v) == 64
+        r = secrets.token_bytes(32)
+        v = str(r)
+        l = bytes(r)
+        assert len(r) == 32
+        assert len(l) == 32
+        v0 = secrets.randbits(16)
+        v1 = secrets.randbits(32)
+        v2 = secrets.randbits(64)
+        v3 = secrets.randbits(128)
+
+        return
+
     def testHash(self):
         m1 = hashlib.sha1()
         m2 = hashlib.sha1()
@@ -3509,16 +3818,74 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         # ivt must be 16 bytes long
         # key must be 16,24,32 bytes long
         # input string must be multiple of 16 in length
-        iv16 = Crypto.Random.new().read(Crypto.Cipher.AES.block_size)
+        #iv16 = Crypto.Random.new().read(Crypto.Cipher.AES.block_size)
+
+        v = 1000000
+        assert sys.getsizeof(v) == 28
+
+        s0 =    '00 abcdefg hijklmnop qrstuv wxyz 1234567890\n' + \
+                '01 abcdefg hijklmnop qrstuv wxyz 1234567890\n' + \
+                '02 abcdefg hijklmnop qrstuv wxyz 1234567890\n' + \
+                '03 abcdefg hijklmnop qrstuv wxyz 1234567890\n' + \
+                '04 abcdefg hijklmnop qrstuv wxyz 1234567890\n' + \
+                '05 abcdefg hijklmnop qrstuv wxyz 1234567890\n' + \
+                '06 abcdefg hijklmnop qrstuv wxyz 1234567890\n' + \
+                '07 abcdefg hijklmnop qrstuv wxyz 1234567890\n' + \
+                '08 abcdefg hijklmnop qrstuv wxyz 1234567890\n' + \
+                '09 abcdefg hijklmnop qrstuv wxyz 1234567890\n' + \
+                '0A abcdefg hijklmnop qrstuv wxyz 1234567890\n' + \
+                '0B abcdefg hijklmnop qrstuv wxyz 1234567890\n' + \
+                '0C abcdefg hijklmnop qrstuv wxyz 1234567890\n' + \
+                '0D abcdefg hijklmnop qrstuv wxyz 1234567890\n' + \
+                '0E abcdefg hijklmnop qrstuv wxyz 1234567890\n' + \
+                '0F abcdefg hijklmnop qrstuv wxyz 1234567890\n' + \
+                '10 abcdefg hijklmnop qrstuv wxyz 1234567890\n'
+
+        keyword = 'mykeyword'
+        # AES is 16B aligned, so you either need to pad it, or turn it to basey64, which is 64B align
+        salt = Random.get_random_bytes(AES.block_size)
+        private_key = hashlib.scrypt(keyword.encode('utf-8'),salt=salt,n=2**14,r=8,p=1,dklen=32)
+        cipher = AES.new(private_key,AES.MODE_EAX)
+        # nonce for CCM/GCM/OCB
+        nonce = cipher.nonce
+        sutfe = s0.encode('utf-8')
+        b64ev = base64.b64encode(sutfe)
+        #txtenc = cipher.encrypt(Padding.pad(sutfe, AES.block_size))
+        txtenc,tag = cipher.encrypt_and_digest(b64ev)
+
+        assert len(tag) == 16
+
+        cipherd = AES.new(private_key,AES.MODE_EAX,nonce)
+        sutfd = cipherd.decrypt(txtenc)
+        b64dv = base64.b64decode(sutfd)
+        sval = b64dv.decode('utf-8')
+        assert sval == s0
+
+        # sha256
+        sha256 = SHA256.new()
+        sha256.update(sutfe)
+        sha256_val = sha256.hexdigest()
+        sz = len(sha256_val)
+        assert sz == 64
+        assert 64 != (256/8)
+
+        # this doesnt work!
+        cipherd = AES.new(private_key,AES.MODE_EAX,nonce)
+        sval = cipher.decrypt_and_verify(txtenc,tag)
+        verify = cipherd.verify(sutfd)
+
+
+        # iv16 for MODE_CBC/CFB/OFB/OPENPGP only, not GCM
+        # for CBC/CFB/OFB, must be 16B long
         iv16 = 'whatisiv must16b'
         key16 = '0123456789abcdef'
         key32 = '0123456789abcdef0123456789abcdef'  # this is AES 256? 32*8 = 256
 
-        aes_cbc_1 = Crypto.Cipher.AES.new(key16,Crypto.Cipher.AES.MODE_CBC,iv16)
+        aes_cbc_1 = AES.new(key16,AES.MODE_CBC,iv16)
         b_encrypted_1 = aes_cbc_1.encrypt('hello there bye ') # this is 16B
         b_encrypted_2 = aes_cbc_1.encrypt('this is another ') # this is 16B
         b_encrypted_3 = aes_cbc_1.encrypt('hello there bye ') # this is 16B
-        aes_cbc_2 = Crypto.Cipher.AES.new(key16,Crypto.Cipher.AES.MODE_CBC,'whatisiv must16b')
+        aes_cbc_2 = AES.new(key16,AES.MODE_CBC,iv16)
         b_decrypted_1 = aes_cbc_1.decrypt(b_encrypted_1)
         b_decrypted_2 = aes_cbc_1.decrypt(b_encrypted_2)
         b_decrypted_3 = aes_cbc_1.decrypt(b_encrypted_3)
@@ -3526,18 +3893,17 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         b_decrypted_5 = aes_cbc_2.decrypt(b_encrypted_2)
         b_decrypted_6 = aes_cbc_2.decrypt(b_encrypted_3)
 
-        aes_cbc_32_1 = Crypto.Cipher.AES.new(key32,Crypto.Cipher.AES.MODE_CBC,iv16)
+        aes_cbc_32_1 = AES.new(key32,AES.MODE_CBC,iv16)
         b_encrypted_32_1 = aes_cbc_32_1.encrypt('hello there bye ') # this is 16B
         b_encrypted_32_2 = aes_cbc_32_1.encrypt('hello there bye ') # this is 16B
         b_encrypted_32_3 = aes_cbc_32_1.encrypt('hello there bye ') # this is 16B
-        aes_cbc_32_2 = Crypto.Cipher.AES.new(key32,Crypto.Cipher.AES.MODE_CBC,iv16)
+        aes_cbc_32_2 = AES.new(key32,AES.MODE_CBC,iv16)
         b_decrypted_32_1_1 = aes_cbc_32_1.decrypt(b_encrypted_32_1)
         b_decrypted_32_1_2 = aes_cbc_32_1.decrypt(b_encrypted_32_2)
         b_decrypted_32_1_3 = aes_cbc_32_1.decrypt(b_encrypted_32_3)
         b_decrypted_32_2_1 = aes_cbc_32_2.decrypt(b_encrypted_32_1)
         b_decrypted_32_2_2 = aes_cbc_32_2.decrypt(b_encrypted_32_2)
         b_decrypted_32_2_3 = aes_cbc_32_2.decrypt(b_encrypted_32_3)
-
 
         return
 

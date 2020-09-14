@@ -20,6 +20,7 @@ import scipy
 import copy
 import re
 import numpy
+import bisect
 #from __future__ import annotations
 
 '''
@@ -6272,16 +6273,172 @@ class ut(unittest.TestCase):
             if listval[m] < v:
                 return binary_search_recursive(v,listval,m+1,r)
             return binary_search_recursive(v,listval,l,m-1)
-        def binary_search_iterative(v,listval):
+        def binary_search_iterative(listval,v):
             l = 0
-            r = len(listval)
-
-            while(l <= r):
-                pass
-            return None
+            r = len(listval)-1
+            while(l < r):
+                m = int((l+r+1)/2)
+                if listval[m] == v:
+                    return m
+                if listval[m] < v:
+                    l = m+1
+                else:
+                    r = m-1
+            return l
+        def binary_search_iterative_v1(listval,v):
+            l = 0
+            r = len(listval)-1
+            while(l <= r):                  # this is the difference l < r vs l <= r
+                m = int((l+r+1)/2)
+                if listval[m] == v:
+                    return m
+                if listval[m] < v:
+                    l = m+1
+                else:
+                    r = m-1
+            return l
+        def binary_search_iterative_v2(listval,v):  # same as binary_search_iterative but r = m
+            l = 0
+            r = len(listval)-1
+            while(l < r):
+                m = (l+r)//2                        # quotient from floor division of x,y
+                if listval[m] == v:
+                    return m
+                if listval[m] < v:
+                    l = m+1
+                else:
+                    r = m
+            return l
+        def test_bisect(l,v):
+            i = bisect.bisect_left(l,v)
+            j = bisect.bisect_right(l,v)
+            return [i,j]
         def t0():
-            pass
-        pass
+            sz = 10
+            l = [i*5 for i in range(sz)]
+            assert len(l) == 10
+            idx = binary_search_iterative(l,-10)
+            assert idx == 0
+            idx = binary_search_iterative(l,0)
+            assert idx == 0
+            idx = binary_search_iterative(l,15)
+            assert idx == 3
+            idx = binary_search_iterative(l,17)
+            assert idx == 3
+            idx = binary_search_iterative(l,20)
+            assert idx == 4
+            idx = binary_search_iterative(l,45)
+            assert idx == 9
+            idx = binary_search_iterative(l,100)
+            assert idx == 9
+            assert idx <= (len(l)-1)                    # this gives different answer if list is odd size
+        def t0_v1():
+            sz = 10
+            l = [i*5 for i in range(sz)]
+            assert len(l) == 10
+            idx = binary_search_iterative_v1(l,-10)
+            assert idx == 0
+            idx = binary_search_iterative_v1(l,0)
+            assert idx == 0
+            idx = binary_search_iterative_v1(l,15)
+            assert idx == 3
+            idx = binary_search_iterative_v1(l,17)
+            assert idx == 4
+            idx = binary_search_iterative_v1(l,20)
+            assert idx == 4
+            idx = binary_search_iterative_v1(l,45)
+            assert idx == 9
+            idx = binary_search_iterative_v1(l,100)
+            assert idx == 10
+            assert idx > (len(l)-1)
+        def t0_v2():
+            sz = 10
+            l = [i*5 for i in range(sz)]
+            assert len(l) == 10
+            idx = binary_search_iterative_v2(l,-10)
+            assert idx == 0
+            idx = binary_search_iterative_v2(l,0)
+            assert idx == 0
+            idx = binary_search_iterative_v2(l,15)
+            assert idx == 3
+            idx = binary_search_iterative_v2(l,17)
+            assert idx == 4
+            idx = binary_search_iterative_v2(l,20)
+            assert idx == 4
+            idx = binary_search_iterative_v2(l,45)
+            assert idx == 9
+            idx = binary_search_iterative_v2(l,100)
+            assert idx == 9
+            assert idx <= (len(l)-1)                    # this gives different answer if list is odd size
+        def t1():
+            sz = 11
+            l = [i*5 for i in range(sz)]
+            assert len(l) == 11
+            idx = binary_search_iterative(l,-10)
+            assert idx == 0
+            idx = binary_search_iterative(l,0)
+            assert idx == 0
+            idx = binary_search_iterative(l,15)
+            assert idx == 3
+            idx = binary_search_iterative(l,17)
+            assert idx == 3
+            idx = binary_search_iterative(l,20)
+            assert idx == 4
+            idx = binary_search_iterative(l,45)
+            assert idx == 9
+            idx = binary_search_iterative(l,50)
+            assert idx == 10
+            idx = binary_search_iterative(l,100)
+            assert idx == 11
+            assert idx > (len(l)-1)                    # this gives different answer if list is even size
+        def t1_v1():
+            sz = 11
+            l = [i*5 for i in range(sz)]
+            assert len(l) == 11
+            idx = binary_search_iterative_v1(l,-10)
+            assert idx == 0
+            idx = binary_search_iterative_v1(l,0)
+            assert idx == 0
+            idx = binary_search_iterative_v1(l,15)
+            assert idx == 3
+            idx = binary_search_iterative_v1(l,17)
+            assert idx == 4
+            idx = binary_search_iterative_v1(l,20)
+            assert idx == 4
+            idx = binary_search_iterative_v1(l,45)
+            assert idx == 9
+            idx = binary_search_iterative(l,50)
+            assert idx == 10
+            idx = binary_search_iterative_v1(l,100)
+            assert idx == 11
+            assert idx > (len(l)-1)
+        def t1_v2():
+            sz = 11
+            l = [i*5 for i in range(sz)]
+            assert len(l) == 11
+            idx = binary_search_iterative_v2(l,-10)
+            assert idx == 0
+            idx = binary_search_iterative_v2(l,0)
+            assert idx == 0
+            idx = binary_search_iterative_v2(l,15)
+            assert idx == 3
+            idx = binary_search_iterative_v2(l,17)
+            assert idx == 4
+            idx = binary_search_iterative_v2(l,20)
+            assert idx == 4
+            idx = binary_search_iterative_v2(l,45)
+            assert idx == 9
+            idx = binary_search_iterative_v2(l,50)
+            assert idx == 10
+            idx = binary_search_iterative_v2(l,100)
+            assert idx == 10
+            assert idx == (len(l)-1)                    # this gives different answer if list is even size
+        t0()
+        t0_v1()
+        t0_v2()
+        t1()
+        t1_v1()
+        t1_v2()
 
     def test_basic_sort(self):
         '''
@@ -8596,12 +8753,1530 @@ class ut(unittest.TestCase):
                 pass
             t0()
 
+        def test_repeat_string():
+            def repeat_string(s,n):
+                # get number of 'a' in a repeating string s that extends to n chars
+                # n % len(s) = remainder. how many in remainder?
+                sz = len(s)
+                cnt = 0
+                refc = 'a'
+                mod = n % sz
+                cnt_mod = 0
+                for i in range(sz):
+                    if s[i] == refc:
+                        cnt += 1
+                        if i < mod:
+                            cnt_mod += 1
+                    if (i+1) == n:
+                        break
+                if n <= sz:
+                    return cnt
+                v = int((n-mod)/sz)
+                res = cnt*v+cnt_mod
+                return res
+            def t0():
+                s = 'a'
+                n = 10
+                r = repeat_string(s,n)
+                assert r == 10
+                s = 'aba'
+                n = 10
+                r = repeat_string(s,n)
+                assert r == 7
+            t0()
+        def test_cut_sticks():
+            def cut_sticks(arr):
+                l = []
+                sz = len(arr)
+                while True:
+                    min = None
+                    for v in arr:
+                        if v == 0:
+                            continue
+                        if min == None or v < min:
+                            min = v
+                    if min == None:
+                        return l
+                    cnt = 0
+                    for i in range(sz):
+                        if arr[i] != 0:
+                            arr[i] -= min
+                            cnt += 1
+                    if cnt == 0:
+                        return l
+                    else:
+                        l.append(cnt)
+            def t0():
+                a = [5,4,4,2,2,8]
+                l = cut_sticks(a)
+                print(l)
+                pass
+            t0()
+        def test_max_num_topics():
+            def max_topics(lines):
+                sz_lines = len(lines)
+                sz_line  = len(lines[0])
+                d = {}
+                max_num = 0
+                for i in range(sz_lines):
+                    li = lines[i]
+                    for j in range(i+1,sz_lines):
+                        cnt = 0
+                        lj = lines[j]
+                        for idx in range(sz_line):
+                            if (li[idx] == '1' or lj[idx] == '1'):
+                                cnt += 1
+                        if cnt > max_num:
+                            max_num = cnt
+                        if cnt not in d:
+                            d[cnt] = 0
+                        d[cnt] += 1
+                return [max_num,d[max_num]]
+            def t0():
+                l = ['10101','11100','11010','00101']
+                r = max_topics(l)
+                assert r == [5,2]
+            t0()
+        def test_min_distance():
+            def min_distance(l):
+                d = {}
+                sz = len(l)
+                min_d = None
+                for i in range(sz):
+                    c = l[i]
+                    if c not in d:
+                        d[c] = [i]
+                    else:
+                        dist = i - d[c][-1]
+                        if min_d == None or dist < min_d:
+                            min_d = dist
+                return min_d
+            def t0():
+                pass
+            t0()
+        def test_kaprekar_numbers():
+            def kaprekar_numbers(p,q):
+                r = []
+                for i in range(p,q+1):
+                    sqrd = i ** 2
+                    s = str(sqrd)
+                    szs = len(s)
+                    szi = len(str(i))
+                    if(szs < szi):
+                        continue
+                    idxb = szs-szi
+                    vsum = None
+                    if idxb == 0:
+                        vsum = int(s[0:szs])
+                    else:
+                        vsum = int(s[0:szs-szi]) + int(s[szs-szi:szs])
+                    if vsum == i:
+                        r.append(i)
+                return r
+            def t0():
+                r = kaprekar_numbers(1,100)
+                assert r == [1,9,45,55,99]
+        def test_3d_surface_area():
+            '''
+            given ll of nxm, each value represents height in matrix, where each cube is 1x1x1
+            return the surface area.
+            '''
+            def surface_area(ll):
+                numrows = len(ll)
+                numcols = len(ll[0])
+                sa = 0
+                for i in range(numrows):
+                    for j in range(numcols):
+                        hc = ll[i][j]
+                        hn = 0 if (i-1) <  0       else ll[i-1][j]
+                        hs = 0 if (i+1) >= numrows else ll[i+1][j]
+                        he = 0 if (j+1) >= numcols else ll[i][j+1]
+                        hw = 0 if (j-1) <  0       else ll[i][j-1]
+
+                        if hc != 0:
+                            # bot
+                            sa += 1
+                            # top
+                            sa += 1
+
+                        # is this N?
+                        if i == 0:
+                            sa += hc
+                            if hc > hs:
+                                sa += (hc-hs)
+
+                        # is this S?
+                        elif i == (numrows-1):
+                            sa += hc
+                            if hc > hn:
+                                sa += (hc-hn)
+
+                        # this is middle row
+                        else:
+                            if hc > hn:
+                                sa += (hc-hn)
+                            if hc > hs:
+                                sa += (hc-hs)
+
+                        # is this E?
+                        if j == (numcols-1):
+                            sa += hc
+                            if hc > hw:
+                                sa += (hc-hw)
+
+                        # is this W?
+                        elif j == 0:
+                            sa += hc
+                            if hc > he:
+                                sa += (hc-he)
+
+                        # this is middle col
+                        else:
+                            if hc > hw:
+                                sa += (hc-hw)
+                            if hc > he:
+                                sa += (hc-he)
+
+                return sa
+            def t0():
+                ll = [[1,3,4],[2,2,3],[1,2,4]]
+                a = surface_area(ll)
+                assert a == 60
+            t0()
+        def test_absolute_permutation():
+            def swap(l,i,j):
+                t    = l[i]
+                l[i] = l[j]
+                l[j] = t
+
+            def absolute_permutation(n,k):
+                '''
+                idxs:           {idx1,idx2}     remaining idxs
+                sidx:           {val1,val2}     remaining vals
+                didx2vals:      idx1 -> {val1,val2}
+                dval2idxs:      val1 -> {idx1,idx2}
+                                val2 -> {idx3}
+                def perm(l,k,r,doptions,reversemap,lidx,s,i):
+                    if i >= len(lidx) and len(s) == 0:
+                        return
+                    idx = lidx[i]
+                    v = l[idx]
+                    diff1 = abs(v-k)
+                    diff2 = abs(v+k)
+                    if diff1 in s:
+                        s.remove(diff1)
+                        r[idx] = diff1
+                        perm(l,k,r,doptions,reversemap,lidx,s,i+1)
+                        if len(s) == 0:
+                            return
+                        s.add(diff1)
+                        r[idx] = None
+                    if diff2 in s:
+                        s.remove(diff2)
+                        r[idx] = diff2
+                        perm(l,k,r,doptions,reversemap,lidx,s,i+1)
+                        if len(s) == 0:
+                            return
+                        s.add(diff2)
+                        r[idx] = None
+                '''
+
+                def eliminate(d,k,sz,didx2vals,dval2idxs,res):
+                    dval2idxcopy = copy.deepcopy(dval2idxs)
+                    dtmp = {}
+                    num_reduced = 0
+                    for val,idxs in dval2idxs.items():
+                        if len(idxs) == 1:
+                            idx = idxs.pop()
+                            try:
+                                num_reduced += 1
+                                res[idx] = val
+                                vals = didx2vals.pop(idx)
+                                for v in vals:
+                                    if v in dval2idxs:
+                                        if v not in dtmp:
+                                            dtmp[v] = set()
+                                        dtmp[v].add(idx)
+                            except Exception as e:
+                                raise e
+                    if num_reduced == 0:
+                        return
+                    for val,idxs in dtmp.items():
+                        if val in dval2idxs:
+                            for idx in idxs:
+                                dval2idxs[val].discard(idx)
+                    eliminate(d,k,sz,didx2vals,dval2idxs,res)
+                def init(n,k):
+                    res = [None for i in range(n)]
+                    d = { i:(i+1) for i in range(n) }
+                    sz = len(d)
+                    sidxs = set(d.keys())                       # set of available idxs
+                    svals = set(d.values())                     # set of available vals
+                    didx2vals = {}                              # dict of set
+                    dval2idxs = {}                              # dict of set
+
+                    for i,v in d.items():
+                        diff1 = abs(v-k)
+                        diff2 = abs(v+k)
+                        if diff1 in svals and diff2 in svals:
+                            didx2vals[i] = {diff1,diff2}
+                            if diff1 not in dval2idxs:
+                                dval2idxs[diff1] = set()
+                            if diff2 not in dval2idxs:
+                                dval2idxs[diff2] = set()
+                            dval2idxs[diff1].add(i)
+                            dval2idxs[diff2].add(i)
+                            res[i] = None
+                        elif diff1 in svals:
+                            res[i] = diff1
+                            svals.remove(diff1)
+                            idxs = dval2idxs.pop(diff1,None)
+                            if idxs != None:
+                                for idx in idxs:
+                                    if idx in didx2vals:
+                                        didx2vals[idx].discard(diff1)
+                        elif diff2 in svals:
+                            res[i] = diff2
+                            svals.remove(diff2)
+                            idxs = dval2idxs.pop(diff2,None)            # val -> {idx1,idx2}
+                            if idxs != None:
+                                for idx in idxs:
+                                    if idx in didx2vals:
+                                        didx2vals[idx].discard(diff2)   # idx -> {val1,val2)
+                        else:
+                            return [-1]
+
+                    eliminate(d,k,sz,didx2vals,dval2idxs,res)
+                    if len(didx2vals) == 0:
+                        return res
+                    return [-1]
+
+                r = init(n,k)
+                return r
+
+            def absolute_permutation_5(n,k):
+                def init(n,k):
+                    res = []
+                    d = { i:(i+1) for i in range(n) }
+                    sz = len(d)
+                    sidxs = set(d.keys())                       # set of available idxs
+                    svals = set(d.values())                     # set of available vals
+                    for i,v in d.items():
+                        # (3-5) == 2 or (3-1) == 2
+                        pass
+
+            def absolute_permutation_4(n,k):
+                '''
+                idxs:           {idx1,idx2}     remaining idxs
+                sidx:           {val1,val2}     remaining vals
+                didx2vals:      idx1 -> {val1,val2}
+                dval2idxs:      val1 -> {idx1,idx2}
+                                val2 -> {idx3}
+                def perm(l,k,r,doptions,reversemap,lidx,s,i):
+                    if i >= len(lidx) and len(s) == 0:
+                        return
+                    idx = lidx[i]
+                    v = l[idx]
+                    diff1 = abs(v-k)
+                    diff2 = abs(v+k)
+                    if diff1 in s:
+                        s.remove(diff1)
+                        r[idx] = diff1
+                        perm(l,k,r,doptions,reversemap,lidx,s,i+1)
+                        if len(s) == 0:
+                            return
+                        s.add(diff1)
+                        r[idx] = None
+                    if diff2 in s:
+                        s.remove(diff2)
+                        r[idx] = diff2
+                        perm(l,k,r,doptions,reversemap,lidx,s,i+1)
+                        if len(s) == 0:
+                            return
+                        s.add(diff2)
+                        r[idx] = None
+                '''
+
+                def eliminate(d,k,sz,sidxs,svals,didx2vals,dval2idxs,res):
+                    dval2idxcopy = copy.deepcopy(dval2idxs)
+                    num_reduced = 0
+                    for val,idxs in dval2idxcopy.items():
+                        if len(idxs) == 1:
+                            idx = idxs.pop()
+                            try:
+                                num_reduced += 1
+                                res[idx] = val
+                                sidxs.remove(idx)
+                                svals.remove(val)
+                                vals = didx2vals.pop(idx)
+                                for v in vals:
+                                    if v in dval2idxs:
+                                        dval2idxs[v].discard(idx)
+                            except Exception as e:
+                                raise e
+                    if num_reduced == 0:
+                        return
+                    eliminate(d,k,sz,sidxs,svals,didx2vals,dval2idxs,res)
+                def init(n,k):
+                    res = [None for i in range(n)]
+                    d = { i:(i+1) for i in range(n) }
+                    sz = len(d)
+                    sidxs = set(d.keys())                       # set of available idxs
+                    svals = set(d.values())                     # set of available vals
+                    didx2vals = {}                              # dict of set
+                    dval2idxs = {}                              # dict of set
+
+                    for i,v in d.items():
+                        diff1 = abs(v-k)
+                        diff2 = abs(v+k)
+                        if diff1 in svals and diff2 in svals:
+                            didx2vals[i] = {diff1,diff2}
+                            if diff1 not in dval2idxs:
+                                dval2idxs[diff1] = set()
+                            if diff2 not in dval2idxs:
+                                dval2idxs[diff2] = set()
+                            dval2idxs[diff1].add(i)
+                            dval2idxs[diff2].add(i)
+                            res[i] = None
+                        elif diff1 in svals:
+                            sidxs.remove(i)
+                            svals.remove(diff1)
+                            res[i] = diff1
+                            idxs = dval2idxs.pop(diff1,None)
+                            if idxs != None:
+                                for idx in idxs:
+                                    if idx in didx2vals:
+                                        didx2vals[idx].discard(diff1)
+                        elif diff2 in svals:
+                            sidxs.remove(i)
+                            svals.remove(diff2)
+                            res[i] = diff2
+                            idxs = dval2idxs.pop(diff2,None)            # val -> {idx1,idx2}
+                            if idxs != None:
+                                for idx in idxs:
+                                    if idx in didx2vals:
+                                        didx2vals[idx].discard(diff2)   # idx -> {val1,val2)
+                        else:
+                            return [-1]
+
+                    eliminate(d,k,sz,sidxs,svals,didx2vals,dval2idxs,res)
+                    if len(sidxs) == 0:
+                        return res
+                    return [-1]
+
+                r = init(n,k)
+                return r
+
+            def absolute_permutation_3(n,k):
+                def perm(l,k,r,i,s):
+                    sz = len(l)
+                    if i >= sz or len(l) == len(r) and len(s) == 0:
+                        return
+
+                    v = l[i]
+                    diff1 = abs(v-k)
+                    diff2 = abs(v+k)
+                    if diff1 in s:
+                        s.remove(diff1)
+                        r.append(diff1)
+                        perm(l,k,r,i+1,s)
+                        if len(l) == len(r) and len(s) == 0:
+                            return
+                        r.pop()
+                        s.add(diff1)
+                    if diff2 in s:
+                        s.remove(diff2)
+                        r.append(diff2)
+                        perm(l,k,r,i+1,s)
+                        if len(l) == len(r) and len(s) == 0:
+                            return
+                        r.pop()
+                        s.add(diff2)
+
+                    return
+                def init(n,k):
+                    l = [(i+1) for i in range(n)]
+                    r = []
+                    s = set(l)
+                    perm(l,k,r,0,s)
+                    if len(l) != len(r) or len(s) != 0:
+                        return [-1]
+                    return r
+                r = init(n,k)
+                return r
+            def absolute_permutation_2(n,k):
+                l = [(i+1) for i in range(n)]
+                r = []
+                s = set(l)
+                used = set()
+                d_val2idx = {}
+                d_other = {}
+                flag = True
+                for i in range(len(l)):
+                    v = l[i]
+                    diff1 = abs(v-k)
+                    diff2 = abs(v+k)
+                    if diff1 in s and diff2 in s:
+                        if diff1 in d_other or diff2 in d_other:
+                            flag = False
+                            break
+                        d_other[diff1] = diff2
+                        d_other[diff2] = diff1
+                        s.remove(diff1)
+                        r.append(diff1)
+                        d_val2idx[diff1] = i
+                    elif diff1 in s:
+                        s.remove(diff1)
+                        r.append(diff1)
+                    elif diff2 in s:
+                        s.remove(diff2)
+                        r.append(diff2)
+                    elif diff1 in d_other:
+                        other = d_other[diff1]
+                        if other not in s:
+                            flag = False
+                            break
+                        idx_other = d_val2idx[diff1]
+                        r[idx_other] = other
+                        r.append(diff1)
+                        s.remove(other)
+                    elif diff2 in d_other:
+                        other = d_other[diff2]
+                        if other not in s:
+                            flag = False
+                            break
+                        idx_other = d_val2idx[diff2]
+                        r[idx_other] = other
+                        r.append(diff2)
+                        s.remove(other)
+                    else:
+                        flag = False
+                        break
+                if flag == False:
+                    return [-1]
+                return r
+
+            def absolute_permutation_1(n,k):
+                l = [(i+1) for i in range(n)]
+                r = []
+                s = set(l)
+                flag = True
+                for v in l:
+                    diff = abs(v-k)
+                    if diff in s:
+                        s.remove(diff)
+                        r.append(diff)
+                    else:
+                        diff = abs(v+k)
+                        if diff in s:
+                            s.remove(diff)
+                            r.append(diff)
+                        else:
+                            flag = False
+                            break
+                    pass
+                if flag == True:
+                    return r
+                r = []
+                flag = True
+                s = set(l)
+                for v in l:
+                    diff = abs(k+v)
+                    if diff in s:
+                        s.remove(diff)
+                        r.append(diff)
+                    else:
+                        diff = abs(v-k)
+                        if diff in s:
+                            s.remove(diff)
+                            r.append(diff)
+                        else:
+                            flag = False
+                            break
+                    pass
+                if flag == False:
+                    return [-1]
+                return r
+            def t0():
+                l = absolute_permutation(2,1)
+                print(l)
+                assert l == [2,1]
+                l = absolute_permutation(3,0)
+                print(l)
+                assert l == [1,2,3]
+                l = absolute_permutation(3,2)
+                print(l)
+                assert l == [-1]
+                l = absolute_permutation(10,5)
+                print(l)
+                assert l == [6,7,8,9,10,1,2,3,4,5]
+                l = absolute_permutation(10,0)
+                print(l)
+                assert l != None
+                l = absolute_permutation(10,1)
+                print(l)
+                assert l != None
+                l = absolute_permutation(7,0)
+                print(l)
+                assert l != None
+                l = absolute_permutation(10,9)
+                print(l)
+                assert l != None
+                l = absolute_permutation(9,0)
+                print(l)
+                assert l != None
+                l = absolute_permutation(10,3)
+                print(l)
+                assert l != None
+                l = absolute_permutation(8,2)
+                print(l)
+                assert l == [3,4,1,2,7,8,5,6]
+                l = absolute_permutation(8,0)
+                print(l)
+                assert l != None
+                l = absolute_permutation(7,0)
+                print(l)
+                assert l != None
+                l = absolute_permutation(10,1)
+                print(l)
+                assert l != None
+                l = absolute_permutation(95,22)
+                print(l)
+                assert l != None
+                l = absolute_permutation(94,47)
+                print(l)
+                assert l != None
+                l = absolute_permutation(66,60)
+                print(l)
+                assert l != None
+                l = absolute_permutation(69187,0)
+                print(l)
+                assert l != None
+                l = absolute_permutation(55596,42041)
+                print(l)
+                assert l != None
+                l = absolute_permutation(68546,34273)
+                print(l)
+                assert l != None
+            t0()
+        def test_time_in_words():
+            def time_in_words(h,m):
+                dh = {
+                    1:'one',
+                    2:'two',
+                    3:'three',
+                    4:'four',
+                    5:'five',
+                    6:'six',
+                    7:'seven',
+                    8:'eight',
+                    9:'nine',
+                    10:'ten',
+                    11:'eleven',
+                    12:'twelve'
+                }
+                dm = {
+                    1:'one',
+                    2:'two',
+                    3:'three',
+                    4:'four',
+                    5:'five',
+                    6:'six',
+                    7:'seven',
+                    8:'eight',
+                    9:'nine',
+                    10:'ten',
+                    11:'eleven',
+                    12:'twelve',
+                    13:'thirteen',
+                    14:'fourteen',
+                    15:'quarter',
+                    16:'sixteen',
+                    17:'seventeen',
+                    18:'eightteen',
+                    19:'nineteen',
+                    20:'twenty',
+                    21:'twenty one',
+                    22:'twenty two',
+                    23:'twenty three',
+                    24:'twenty four',
+                    25:'twenty five',
+                    26:'twenty six',
+                    27:'twenty seven',
+                    28:'twenty eight',
+                    29:'twenty nine',
+                    30:'half'
+                }
+                s = ''
+                if m == 0:
+                    s = "{} o' clock".format(dh[h])
+                elif m == 15:
+                    s = "{} past {}".format(dm[m],dh[h])
+                elif m == 30:
+                    s = "{} past {}".format(dm[m],dh[h])
+                elif m > 30:
+                    rm = 60-m
+                    hh = (h+1)%12
+                    if rm == 15:
+                        s = "{} to {}".format(dm[rm],dh[hh])
+                    elif rm == 1:
+                        s = "{} minute to {}".format(dm[rm],dh[hh])
+                    else:
+                        s = "{} minutes to {}".format(dm[rm],dh[hh])
+                else:
+                    if m == 1:
+                        s = "{} minute past {}".format(dm[m],dh[h])
+                    else:
+                        s = "{} minutes past {}".format(dm[m],dh[h])
+                return s
+            def t0():
+                s = time_in_words(5,0)
+                assert s == "five o' clock"
+                s = time_in_words(5,1)
+                assert s == "one minute past five"
+                s = time_in_words(5,15)
+                assert s == "quarter past five"
+                s = time_in_words(5,30)
+                assert s == "half past five"
+                s = time_in_words(5,45)
+                assert s == "quarter to six"
+                s = time_in_words(5,47)
+                assert s == "thirteen minutes to six"
+                s = time_in_words(5,28)
+                assert s == "twenty eight minutes past five"
+            t0()
+
+
+        def test_find_midpoint():
+            # 0 1 2 3 4 5 6
+            #   |   |   |
+            def find_midpoint(n):
+                v = int(n/2) if (n % 2 == 0) else int(n/2)
+                if n % 2 == 0:
+                    # 4/2 = 2 in [0 1 2 3] so 2 == idr and 2-1 == idxl
+                    idxr = int(n/2)
+                    idxl = idxr - 1
+                else:
+                    # 5/2 = 2 in [0 1 2 3 4] so 2-1 = idxl and 2+1 = idxr
+                    # 3/2 = 1 in [0 1 2] so 1-1 = idxl
+                    idxr = int(n/2) + 1
+                    idxl = int(n/2) - 1
+                    idxl = idxr-2
+        def test_num_to_palindrome():
+            def num_to_palindrome(s):
+                sz = len(s)
+                if sz == 1:
+                    return 0
+                idxl,idxr = 0,0
+                if sz % 2 == 0:
+                    idxr = int(sz/2)
+                    idxl = idxr - 1
+                else:
+                    idxr = int(sz/2) + 1
+                    idxl = int(sz/2) - 1
+                cnt = 0
+                while idxl >= 0:
+                    il = ord(s[idxl])
+                    ir = ord(s[idxr])
+                    if il != ir:
+                        v  = abs(ir-il)
+                        cnt += v
+                    idxl -= 1
+                    idxr += 1
+                return cnt
+            def t0():
+                v = num_to_palindrome('abcd')
+                assert v == 4
+            t0()
+
+        def test_min_abs_diff():
+            def min_abs_diff(arr):
+                l = arr
+                l.sort()
+                sz = len(l)
+                vmin = None
+                for i in range(sz):
+                    prv = None
+                    for j in range(i+1,sz):
+                        v = abs(l[i]-l[j])
+                        if vmin == None or v < vmin:
+                            vmin = v
+                        if prv != None and prv < v:
+                            break
+                        prv = v
+                return vmin
+            min_abs_diff([1,2,3])
+
+        def test_min_bins():
+            def min_bins(w):
+                ls = sorted(w)
+                sz = len(ls)
+                ll = []
+                i = 0
+                j = 0
+                for j in range(sz):
+                    if (ls[j]-ls[i]) > 4:
+                        l = ls[i:j]
+                        ll.append(l)
+                        i = j
+                l = ls[i:j]
+                ll.append(l)
+
+                return len(ll)
+            def t0():
+                l = [1, 2, 3, 21, 7, 12, 14, 21]
+                v = min_bins(l)
+                assert v == 4
+                l = [12, 15, 7, 8, 19, 24]
+                v = min_bins(l)
+                assert v == 4
+            t0()
+        def test_anagram_pairs():
+            # return the number of unordered anagram pairs
+            def unique_anagrams(l,lkeys,d,i,d_res):
+                sz = len(l)
+                if i >= sz:
+                    return
+                for j in range(i,sz):
+                    unique_anagrams(l,lkeys,d,j,d_res)
+                pass
+            def anagram_pairs(s):
+                d = {}
+                for c in s:
+                    if c not in d:
+                        d[c] = 0
+                    d[c] += 1
+
+                # remove keys with only 1 char
+                # decrement odd numbered values
+                # divide remaining by 2
+                keys = list(d.keys())
+                for k in keys:
+                    if d[k] == 1:
+                        del d[k]
+                        continue
+                    if d[k] % 2 == 1:
+                        d[k] -= 1
+                    d[k] = int(d[k]/2)
+
+                # now calculate all distinct permutations of the divided number
+
+                pass
+            def t0():
+                v = anagram_pairs('banana')
+                pass
+            t0()
+        def test_anagram_1():
+            def anagram(s):
+                sz = len(s)
+                if sz % 2 == 1:
+                    return -1
+                half = int(sz/2)
+                d = {}
+                for i in range(sz):
+                    c = s[i]
+                    if i < half:
+                        if c not in d:
+                            d[c] = 0
+                        d[c] += 1
+                    else:
+                        if c not in d:
+                            d[c] = -1
+                        else:
+                            d[c] -= 1
+                sump = 0
+                sumn = 0
+                for k,v in d.items():
+                    if v < 0:
+                        sumn += v
+                    else:
+                        sump += v
+                sumn = abs(sumn)
+                sump = abs(sump)
+                return sump
+            def t0():
+                v = anagram('abcd')
+                assert v == 2
+            t0()
+
+        def test_connected_cells():
+            def connected_cells_iter(ll):
+                debug = False
+                mem = set()
+                curarea = 0
+                maxarea = 0
+                maxr = len(ll)
+                maxc = len(ll[0])
+                q = []
+                i = 0
+                j = 0
+                mem.add((i,j,ll[i][j]))
+                q.append((i,j,ll[i][j]))
+                lones = []
+                marker = 0
+                while len(q) != 0:
+                    #print(q)
+                    #print(curarea)
+                    tup = q.pop(0)
+                    i = tup[0]
+                    j = tup[1]
+                    v = ll[i][j]
+                    #print(v)
+                    if v == 1:
+                        #lones.append('{},{},{}'.format(i,j,curarea))
+                        curarea += 1
+                        if curarea >= maxarea:
+                            maxarea = curarea
+                    else:
+                        curarea = 0
+                    if i > 0:
+                        if (i-1,j,ll[i-1][j]) not in mem:
+                            t = (i-1,j,ll[i-1][j])
+                            mem.add(t)
+                            if ll[i-1][j] == 0:
+                                q.append(t)
+                            else:
+                                q.insert(0,t)
+                        if j > 0 and (i-1,j-1,ll[i-1][j-1]) not in mem:
+                            t = (i-1,j-1,ll[i-1][j-1])
+                            mem.add(t)
+                            if ll[i-1][j-1] == 0:
+                                q.append(t)
+                            else:
+                                q.insert(0,t)
+                        if (j+1) < maxc and (i-1,j+1,ll[i-1][j+1]) not in mem:
+                            t = (i-1,j+1,ll[i-1][j+1])
+                            mem.add(t)
+                            if ll[i-1][j+1] == 0:
+                                q.append(t)
+                            else:
+                                q.insert(0,t)
+                    if (i+1) < maxr:
+                        if (i+1,j,ll[i+1][j]) not in mem:
+                            t = (i+1,j,ll[i+1][j])
+                            mem.add(t)
+                            if ll[i+1][j] == 0:
+                                q.append(t)
+                            else:
+                                q.insert(0,t)
+                        if j > 0 and (i+1,j-1,ll[i+1][j-1]) not in mem:
+                            t = (i+1,j-1,ll[i+1][j-1])
+                            mem.add(t)
+                            if ll[i+1][j-1] == 0:
+                                q.append(t)
+                            else:
+                                q.insert(0,t)
+                        if (j+1) < maxc and (i+1,j+1,ll[i+1][j+1]) not in mem:
+                            t = (i+1,j+1,ll[i+1][j+1])
+                            mem.add(t)
+                            if ll[i+1][j+1] == 0:
+                                q.append(t)
+                            else:
+                                q.insert(0,t)
+
+                    if j > 0 and (i,j-1,ll[i][j-1]) not in mem:
+                        t = (i,j-1,ll[i][j-1])
+                        mem.add(t)
+                        if ll[i][j-1] == 0:
+                            q.append(t)
+                        else:
+                            q.insert(0,t)
+                    if (j+1) < maxc and (i,j+1,ll[i][j+1]) not in mem:
+                        t = (i,j+1,ll[i][j+1])
+                        mem.add(t)
+                        if ll[i][j+1] == 0:
+                            q.append(t)
+                        else:
+                            q.insert(0,t)
+                #for t in lones:
+                #    print(t)
+                #print('')
+
+                return maxarea
+
+            def connected_cells_rec(ll):
+                def largest_area(ll,maxr,maxc,mem,r,c,area):
+                    if r > 0:
+                        pass
+                    if r < maxr:
+                        pass
+                pass
+            def t0():
+                ll = [
+                    [1,1,0,0],
+                    [0,1,1,0],
+                    [0,0,1,0],
+                    [1,0,0,0]
+                ]
+                v = connected_cells_iter(ll)
+                print('')
+
+                ll = [
+                    [0,0,1,1],
+                    [0,0,1,0],
+                    [0,1,1,0],
+                    [0,1,0,0],
+                    [1,1,0,0]
+                ]
+                v = connected_cells_iter(ll)
+
+                ll = [
+                    #    2   4   6   8
+                    [0,1,0,0,0,0,1,1,0], #
+                    [1,1,0,0,1,0,0,0,1], #
+                    [0,0,0,0,1,0,1,0,0], # 2
+                    [0,1,1,1,0,1,0,1,1], #
+                    [0,1,1,1,0,0,1,1,0], # 4
+                    [0,1,0,1,1,0,1,1,0], #
+                    [0,1,0,0,1,1,0,1,1], # 6
+                    [1,0,1,1,1,1,0,0,0]  #
+                ]
+                v = connected_cells_iter(ll)
+                return
+            t0()
+
+        def test_cut_tree():
+            '''
+            data is list of weights of each node
+            edges are connections from i to j (not weights): [[s,d],[s,d],...]
+            '''
+            def cut_tree(data,edges):
+
+                class N:
+                    def __init__(self,v,id):
+                        self.id = id
+                        self.v = v
+                        self.c = set()
+                        self.sum = v
+                    def setSum(self,sum):
+                        self.sum = sum
+                    def getSum(self):
+                        return self.sum
+                    def addSum(self,sum):
+                        self.sum += sum
+                    def addConn(self,id):
+                        self.c.add(id)
+                    def getConns(self):
+                        return self.c
+                    def isConn(self,id):
+                        return id in self.c
+                    def getV(self):
+                        return self.v
+                    def getId(self):
+                        return self.id
+
+                def make_tree(data,edges):
+                    d = {}
+                    i = 1
+                    dn = {}
+                    sum = 0
+                    for v in data:
+                        d[i] = v
+                        sum += v
+                        i += 1
+                    for p in edges:
+                        src = p[0]
+                        dst = p[1]
+                        if src not in dn:
+                            dn[src] = N(d[src],src)
+                        if dst not in dn:
+                            dn[dst] = N(d[dst],dst)
+                        dn[src].addConn(dst)
+                        dn[dst].addConn(src)
+                    # assert 1 in dn
+                    mem = set()
+                    mem.add(1)
+                    subsum = compute_subsum(dn,dn[1],mem)
+                    # assert sum == subsum
+                    return (dn,sum)
+
+                def compute_subsum(dn,n,mem):
+                    if n == None:
+                        return 0
+                    conns = n.getConns()
+                    subsum = n.getV()
+                    for conn in conns:
+                        if conn not in mem:
+                            mem.add(conn)
+                            vsum = compute_subsum(dn,dn[conn],mem)
+                            subsum += vsum
+                    n.setSum(subsum)
+                    return n.getSum()
+
+                def cut_get_min(n,sum,mem):
+                    if n == None:
+                        return None
+                    conns = n.getConns()
+                    vmin = sum
+                    for conn in conns:
+                        if conn not in mem:
+                            subsum = dn[conn].getSum()
+                            diff = abs(sum - subsum)
+                            diff = abs(subsum - diff)
+                            if vmin == None:
+                                vmin = diff
+                            elif diff < vmin:
+                                vmin = diff
+                            mem.add(conn)
+                            tmin = cut_get_min(dn[conn],sum,mem)
+                            if tmin < vmin:
+                                vmin = tmin
+                    return vmin
+
+                (dn,sum) = make_tree(data,edges)
+                mem = set()
+                mem.add(1)
+                vmin = cut_get_min(dn[1],sum,mem)
+                return vmin
+
+            def t0():
+                data = [100,200,100,500,100,600]
+                edges = [[1,2],[2,3],[2,5],[4,5],[5,6]]
+                vmin = 0
+                try:
+                    vmin = cut_tree(data,edges)
+                except Exception as e:
+                    vmin = 0
+                assert vmin != 0
+                return
+            t0()
+
+        def test_same_or_different():
+            '''
+            given 1 line of [1-3]{1}[A|B|C]+, are there 3 conditions:
+            [1-3] all same or all different
+            [A|B|C] all same or all different
+            length of letters all same or all different
+
+            1AA 2B 3CC 2BB: 123 all different, AA,B,CC,BB all different, but length is either 1 or 2
+            1A 2B 3C 1AA: 123 all different, ABC all different, length all 1
+            find first match where
+                1-3 all same or different
+                A|B|C all same or different
+                length all same or all different
+            '''
+            def get_first_match(list_tuples):
+                def all_same_or_all_different(l):
+                    vset = set(l)
+                    return True if len(vset) == len(l) or len(vset) == 1 else False
+                def get_3_match(tuples):
+                    sz = len(tuples)
+                    for i in range(sz):
+                        for j in range(sz):
+                            if j == i: continue
+                            for k in range(sz):
+                                if i == k or j == k: continue
+
+                                tuple0 = [tuples[i][0],tuples[j][0],tuples[k][0]]
+                                tuple1 = [tuples[i][1],tuples[j][1],tuples[k][1]]
+                                tuple2 = [tuples[i][2],tuples[j][2],tuples[k][2]]
+
+                                if  all_same_or_all_different(tuple0) == True and \
+                                    all_same_or_all_different(tuple1) == True and \
+                                    all_same_or_all_different(tuple2) == True:
+                                    res = '{} {} {}'.format(tuples[i][3],tuples[j][3],tuples[k][3])
+                                    return res
+                    return None
+                return get_3_match(list_tuples)
+            def parse_string_2_tuples(s):
+                tokens = s.split()
+                l = []
+                for token in tokens:
+                    v1 = token[:1]
+                    v2 = token[1:2]
+                    v3 = str(len(token)-1)
+                    v4 = token
+                    tup = (v1,v2,v3,v4)
+                    l.append(tup)
+                return l
+
+            def t0():
+                s = '1AA 2B 3CC 2BBB 3CC 2BB'
+                l = parse_string_2_tuples(s)
+                v = get_first_match(l)
+                assert v == '1AA 3CC 2BB'
+            t0()
+
+        def test_array_left_right_equal():
+            def array_equal(l):
+                def array_equal_brute(l):
+                    sz = len(l)
+                    sum = 0
+                    for v in l:
+                        sum += v
+                    subsum = 0
+                    for i in range(sz):
+                        v = l[i]
+                        diff = sum - subsum - v
+                        if diff == subsum:
+                            return i
+                        subsum += v
+                    return None
+                def array_equal_parts(l):
+                    sz = len(l)
+                    il = 0
+                    ir = sz-1
+                    subsuml = 0
+                    subsumr = 0
+                    while (il+1) < ir:
+                        vl = l[il]
+                        vr = l[ir]
+
+                        il += 1
+                        ir -= 1
+                    pass
+
+                res = array_equal_brute(l)
+                return 'NO' if res == None else 'YES'
+            def t0():
+                pass
+            t0()
+
+        def test_alternating_chars():
+            def alternating_chars(l):
+                p = None
+                r = []
+                for c in l:
+                    if p == None:
+                        r.append(c)
+                    else:
+                        if p != c:
+                            r.append(c)
+                    p = c
+                sz = len(r)
+                szdf = len(l) - sz
+                return szdf
+            def t0():
+                r = alternating_chars('AAAA')
+                r = alternating_chars('BBBBB')
+                r = alternating_chars('ABABABABABA')
+                r = alternating_chars('AAABBB')
+                r = alternating_chars('AAABBBB')
+                return
+            t0()
+        def test_making_anagrams():
+            def making_anagrams(s1,s2):
+                d1 = {}
+                d2 = {}
+                for c in s1:
+                    if c not in d1:
+                        d1[c] = 0
+                    d1[c] += 1
+                for c in s2:
+                    if c not in d2:
+                        d2[c] = 0
+                    d2[c] += 1
+                for c,sz in d2.items():
+                    if c not in d1:
+                        d1[c] = sz
+                    else:
+                        d1[c] = abs(d1[c]-sz)
+                        if d1[c] == 0:
+                            del d1[c]
+                cnt = 0
+                for c,sz in d1.items():
+                    cnt += sz
+                return cnt
+            def t0():
+                pass
+            t0()
+
+        def test_longest_subsequence():
+            '''
+            011122333
+            012222333
+            012223344
+            012334555
+            '''
+            def trace_backward_recurse(ll,buf,i,j):
+                if i == 0 and j == 0:
+                    return buf
+                sz1 = len(ll)
+                sz2 = len(ll[0])
+                seq = ''
+
+                while i != 0 and j != 0:
+                    if i != 0 and j != 0:
+                        pass
+                    elif i != 0:
+                        pass
+                    elif j != 0:
+                        pass
+                    else:
+                        pass
+                pass
+            def longest_subsequence_1(s1,s2):
+                sz1 = len(s1)   # Row
+                sz2 = len(s2)   # Col
+                ll = [[0 for j in range(sz2)] for i in range(sz1)]
+                d1 = {}
+                d2 = {}
+                for c in s1:
+                    if c not in d1:
+                        d1[c] = 0
+                    d1[c] += 1
+                for c in s2:
+                    if c not in d2:
+                        d2[c] = 0
+                    d2[c] += 1
+                num_overlap = 0
+                for c,v in d1.items():
+                    if c in d2:
+                        num_overlap += 1
+                if num_overlap == 0:
+                    return 0
+                for i in range(sz1):
+                    ci = s1[i]
+                    for j in range(sz2):
+                        cj = s2[j]
+                        pv = None
+                        vnw = None
+                        if i == 0 and j == 0:
+                            pv = 0
+                        elif i == 0:
+                            pv = ll[i][j-1]
+                        elif j == 0:
+                            pv = ll[i-1][j]
+                        else:
+                            vn = ll[i-1][j]
+                            vw = ll[i][j-1]
+                            vnw = ll[i-1][j-1]
+                            pv = vn if vn > vw else vw
+                            #pv = pv if pv > vnw else vnw
+                        ll[i][j] = pv
+                        if ci == cj:
+                            ll[i][j] = vnw+1 if vnw != None else 1
+                            #print('{},i:{},j:{}'.format(ci,i,j))
+                #print('s1:{},s2:{}'.format(s1,s2))
+                #print(ll[sz1-1][sz2-1])
+                return ll[sz1-1][sz2-1]
+
+            def longest_subsequence(s1,s2):
+                d1 = {}
+                d2 = {}
+                d3 = {}
+                for c in s1:
+                    if c not in d1:
+                        d1[c] = 0
+                    d1[c] += 1
+                for c in s2:
+                    if c in d1:
+                        d3[c] = 1
+                    if c not in d2:
+                        d2[c] = 0
+                    d2[c] += 1
+                if len(d3) == 0:
+                    return 0
+
+                if s1 == s2:
+                    return len(s1)
+
+                s1n = ''
+                s2n = ''
+                for c in s1:
+                    if c in d3:
+                        s1n += c
+                for c in s2:
+                    if c in d3:
+                        s2n += c
+                sz1 = len(s1n)   # Row
+                sz2 = len(s2n)   # Col
+                ll = [[0 for j in range(sz2)] for i in range(sz1)]
+
+
+                for i in range(sz1):
+                    ci = s1n[i]
+                    for j in range(sz2):
+                        cj = s2n[j]
+                        pv = None
+                        vnw = None
+                        if i == 0 and j == 0:
+                            pv = 0
+                        elif i == 0:
+                            pv = ll[i][j-1]
+                        elif j == 0:
+                            pv = ll[i-1][j]
+                        else:
+                            vn = ll[i-1][j]
+                            vw = ll[i][j-1]
+                            vnw = ll[i-1][j-1]
+                            pv = vn if vn > vw else vw
+                        ll[i][j] = pv
+                        if ci == cj:
+                            ll[i][j] = vnw+1 if vnw != None else 1
+                return ll[sz1-1][sz2-1]
+            def t0():
+                r = longest_subsequence('SHINCHAN','NOHARAA')
+                return
+            t0()
+
+        def test_hi_val_palindrome():
+            def hi_val_palindrome(s,n,k):
+                '''
+                :param s: string
+                :param n: length of string
+                :param k: max num changes allowed
+                :return: -1 if more than max, else string representation of palindrome
+                '''
+                il = None
+                ir = None
+                l = [None for i in range(n)]
+                if n % 2 == 0:
+                    i = int(n/2)
+                    ir = i
+                    il = i-1
+                else:
+                    i = int(n/2)
+                    l[i] = s[i]
+                    il = i-1
+                    ir = i+1
+                cnt = 0
+
+                l_idx_changed = []
+                while il >= 0 and ir < n:
+                    cl = s[il]
+                    cr = s[ir]
+                    if cl != cr:
+                        cnt += 1
+                        if cnt > k:
+                            return '-1'
+                        if cl < cr:
+                            l[il] = cr
+                            l[ir] = cr
+                        else:
+                            l[il] = cl
+                            l[ir] = cl
+                        l_idx_changed.insert(0,il)
+                        l_idx_changed.append(ir)
+                    else:
+                        l[il] = cl
+                        l[ir] = cr
+                    il -= 1
+                    ir += 1
+                cnt_diff = k - cnt
+                for i in range(cnt_diff):
+                    l[i] = '9'
+                    l[n-1-i] = '9'
+                r = ''.join(l)
+                return r
+            def t0():
+                try:
+                    r = hi_val_palindrome('11331',5,4)
+                    r = hi_val_palindrome('5',1,1)
+                    r = hi_val_palindrome('777',3,0)
+                    r = hi_val_palindrome('0011',4,1)
+                    r = hi_val_palindrome('3943',4,1)
+                    r = hi_val_palindrome('092282',6,3)
+                except Exception as e:
+                    return
+                return
+            t0()
+
         def test():
             #test_encrypt()
             #test_super_reduce_string()
-            test_unique_pair()
+            #test_unique_pair()
+            #test_repeat_string()
+            #test_cut_sticks()
+            #test_max_num_topics()
+            #test_absolute_permutation()
+            #test_3d_surface_area()
+            #test_time_in_words()
+            #test_num_to_palindrome()
+            #test_min_bins()
+            #test_anagram_pairs()
+            #test_anagram_1()
+            #test_connected_cells()
+            #test_cut_tree()
+            #test_same_or_different()
+            #test_array_left_right_equal()
+            #test_alternating_chars()
+            #test_making_anagrams()
+            #test_longest_subsequence()
+            test_hi_val_palindrome()
         test()
 
+    def test_combinatorics(self):
+        def test_permutations_brute(n,k):
+            pass
+        def test_permutations_with_multisets_brute(n,k):
+            pass
+        def test_combinations_brute(n,k):
+            pass
+        def test_combinations_with_multisets_brute(n,k):
+            pass
+        def test_permutations_calc(n,k):
+            numerator = math.factorial(n)
+            denominator = math.factorial(n-k)
+            r = int(numerator/denominator)
+            return r
+        def test_permutations_with_multisets_calc(d):
+            denominator = 1
+            n = 0
+            for k,v in d.items():
+                n += v
+                f = math.factorial(v)
+                denominator *= f
+            numerator = math.factorial(n)
+            # number of distinct arrangements
+            r = int(numerator/denominator)
+            return r
+        def test_combinations_calc(n,k):
+            numerator = math.factorial(n)
+            denominator = math.factorial(k)*math.factorial(n-k)
+            r = int(numerator/denominator)
+            return r
+        def test_combinations_with_multisets_calc(d,k):
+            pass
+        def test_math_calc():
+            x = math.factorial(5)
+            assert x == (5*4*3*2*1)
+            x = math.comb(5,2)  # version 3.8 + only!
+            assert x == math.factorial(5)/(math.factorial(2)*math.factorial(5-2))
+        def t0():
+            test_math()
+            pass
+        def test():
+            t0()
+        test()
+
+
+    def test_is_subsequence(self):
+        '''
+        is v a subsequence of s?
+        '''
+        def is_subsequence(s,v):
+            def is_subsequence_recursive(s,v,idxs,idxv):
+                if idxv >= len(v):
+                    return True
+                if idxs >= len(s):
+                    return False
+                if s[idxs] == v[idxv]:
+                    if is_subsequence_recursive(s,v,idxs+1,idxv+1) == True:
+                        return True
+                return is_subsequence_recursive(s,v,idxs+1,idxv)
+            def is_subsequence_iterative(s,v):
+                szs = len(s)
+                szv = len(v)
+                j = 0
+                for i in range(szs):
+                    if s[i] == v[j]:
+                        j += 1
+                        if j == szv:
+                            return True
+                return False
+            #return is_subsequence_recursive(s,v,0,0)
+            return is_subsequence_iterative(s,v)
+
+        def t0():
+            s = 'tththitisiahanakjssuwbbssthisqnueqncequence'
+            v = 'thisisasubsequence'
+            r = is_subsequence(s,v)
+            assert r == False
+            v = 'thisissubsequence'
+            r = is_subsequence(s,v)
+            assert r == True
+        t0()
     def test_counting_valleys(self):
         def counting_valley(n,s):
             h = 0
