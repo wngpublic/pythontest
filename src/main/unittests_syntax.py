@@ -18,9 +18,11 @@ import numpy
 import calendar
 import string           # this is for string templates
 import enum
-from src.main.utils import myutils
 #import utils.myutils    # test import from utils directory
-#import utils.myutils as myutils1
+#from src.main import utils     # this works
+#from src.main.utils import myutils     # this works
+import src.main.utils.myutils as myutils1   # this works
+from .utils.myutils import my_utils   # this works
 import zlib
 import hashlib
 import typing
@@ -37,15 +39,21 @@ import site
 import bisect
 import matplotlib
 import secrets
+import asyncio
+import concurrent.futures
+import threading
+import difflib
+import pprint
+
 # install pycrypto, dont use crypto, use cryptodome
 # install cryptodomex
 #import Crypto.Hash.SHA256 # from Crypto.Hash import SHA256
 #import Cryptodome.Cipher.AES # from Crypto.Cipher import AES
 #import Cryptodome.Random
-from Crypto.Hash import SHA256
-from Crypto.Cipher import AES
-from Crypto import Random
-from Crypto.Util import Padding
+#from Crypto.Hash import SHA256
+#from Crypto.Cipher import AES
+#from Crypto import Random
+#from Crypto.Util import Padding
 
 '''
 python3 -m unittest syntax_unittests.ut.test_method
@@ -158,11 +166,11 @@ class ut(unittest.TestCase):
         pass
 
     def test_import_class(self):
-        myutils = utils.myutils.my_utils()
+        myutils = my_utils()
         myutilsx = myutils1.my_utils()          # import AS something
         v = myutils.rand(1,2)                   # instance function
-        v = utils.myutils.my_utils.rand(1,2)    # static function
-        assert utils.myutils.my_utils.charset_num == '0123456789'
+        v = my_utils.rand(1,2)    # static function
+        assert my_utils.charset_num == '0123456789'
         assert myutils.charset_num == '0123456789'
         assert 1 == myutilsx.get(1)             # instance function
 
@@ -702,8 +710,29 @@ class ut(unittest.TestCase):
         l = array.array('i',(1,)*5)
         assert l == array.array('i',[1,1,1,1,1])
 
+        # is l2 a subpath of l1? not
+        def is_subpath(l1,l2):
+            if(len(l1) > len(l2)):
+                return False
+            flag = False
+            for k1,k2 in zip(l1,l2):
+                if k1 != k2:
+                    return False
+            return True
+
+        l1 = [2,4,6,8]
+        l2 = [2,4,6,8,10]
+        l3 = [2,6,7,8]
+        l4 = [2,4,6,8]
+
+        assert is_subpath(l1,l2) == True
+        assert is_subpath(l2,l1) == False
+        assert is_subpath(l1,l3) == False
+        assert is_subpath(l1,l4) == True
+
         l1 = [1,2,3,4,5]
         l2 = [2,3,4,5,6]
+
 
         l3 = []
         for x,y in zip(l1,l2): l3.append(x+y)
@@ -1545,6 +1574,11 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         assert 'def' in s
         assert 'fed' not in s
 
+        v1 = 'hello'
+        v2 = 'cat'
+        v3 = f"i said: {v1}, you are a {v2}"    # another way of formatting
+        assert v3 == 'i said: hello, you are a cat'
+
         p('pass regex')
 
     def test_byte_binary_conversion(self):
@@ -2344,7 +2378,7 @@ str:  var{k1s}end with {k2i} and {k4s}blah
 
         j1 = json.dumps(d1)
         json_pretty = json.dumps(d1,indent=4,sort_keys=True)
-        #print(json_pretty)
+        print(json_pretty)
         d4 = json.loads(j1)
 
         assert d1 == d4
@@ -2570,6 +2604,206 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         s = 'aa bb cc dd ee '
         l = list(s.rstrip().split())
         assert l == ['aa','bb','cc','dd','ee']
+
+        d1 = {1:1,2:2,3:3}
+        d2 = {1:1,2:2,3:3}
+        d3 = {1:1,2:2,3:4}
+
+        # this is one level copy, but use d2 = copy.deepcopy(d1) for complex nested dicts
+        # d2 = d1.copy() also works for one level copy of references
+        d4 = {k:v for k,v in d1.items()}
+        assert d1 == d2 and d1 != d3
+        assert d1 == d4
+        d5 = d1.copy()
+        d6 = copy.deepcopy(d1)
+        assert d1 == d5
+        assert d1 == d6
+
+        # delete key from map pop key from map
+        d1 = {'k1':'v1','k2':'v2','k3':'v3'}
+        flag = False
+        d1.pop('k1')
+        try:
+            d1.pop('k1')
+        except Exception as e:
+            flag = True
+        assert flag == True
+
+        flag = False
+        del d1['k2']
+        try:
+            del d1['k2']
+        except Exception as e:
+            flag = True
+        assert flag == True
+
+        assert d1 == {'k3':'v3'}
+
+        d1 = {1:1,2:2,3:3,4:4}
+        d2 = {1:1,2:2,3:3,5:5,6:6}
+
+        keys1 = d1.keys()
+        keys2 = d2.keys()
+        assert not isinstance(keys1,set)
+        assert not isinstance(keys2,set)
+        assert isinstance(d1,dict)
+
+        skeys1 = set(keys1)
+        skeys2 = set(keys2)
+        assert isinstance(skeys1,set)
+        assert isinstance(skeys2,set)
+
+        # set diff
+        keys_symdiff1 = skeys1.symmetric_difference(skeys2)
+        assert keys_symdiff1 == {4,5,6}
+
+        keys_diff2 = skeys1 ^ skeys2
+        assert keys_diff2 == {4,5,6}
+
+        keys_diff1 = skeys1.difference(skeys2)
+        assert keys_diff1 == {4}
+
+        keys_diff2 = skeys2.difference(skeys1)
+        assert keys_diff2 == {5,6}
+
+        keys_union1 = set(skeys1)
+        keys_union1.union(skeys2)
+        assert keys_union1 == {1,2,3,4}
+
+        keys_union2 = skeys1 | skeys2
+        assert keys_union2 == {1,2,3,4,5,6}
+
+        d1dump = json.dumps(d1)
+        d2dump = json.dumps(d2)
+        assert isinstance(d1,dict)
+        d1 = json.loads(d1dump)
+        d2 = json.loads(d2dump)
+        assert isinstance(d1,dict)
+
+        skeys1 = set(d1.keys())
+        skeys2 = set(d2.keys())
+        assert isinstance(skeys1,set)
+        assert isinstance(skeys2,set)
+
+        # set diff
+        keys_symdiff1 = skeys1.symmetric_difference(skeys2)
+        assert keys_symdiff1 == {'4','5','6'}
+
+        keys_diff2 = skeys1 ^ skeys2
+        assert keys_diff2 == {'4','5','6'}
+
+        keys_diff1 = skeys1.difference(skeys2)
+        assert keys_diff1 == {'4'}
+
+        keys_diff2 = skeys2.difference(skeys1)
+        assert keys_diff2 == {'5','6'}
+
+        keys_union1 = set(skeys1)
+        keys_union1.union(skeys2)
+        assert keys_union1 == {'1','2','3','4'}
+
+        keys_union2 = skeys1 | skeys2
+        assert keys_union2 == {'1','2','3','4','5','6'}
+
+        d = {}
+        keys = set(d.keys())
+        assert len(keys) == 0
+        return
+
+    def test_difflib(self):
+        str = 'this is line 1\n' + \
+            'this is line 2\n' + \
+            'this is line 3\n' + \
+            'this is line 4\n' + \
+            'this is line 5\n'
+        slist = str.split('\n')
+        json1 = {
+            'k1':[1,2,3],
+            'k2':[10,20,30],
+            'k3':   'this is line 1\n' + \
+                    'this is line 2\n' + \
+                    'this is line 3\n' + \
+                    'this is line 4\n' + \
+                    'this is line 5\n',
+            'k4':10,
+            'k5':20,
+            'k6':{
+                'k6a':[1,2,3],
+                'k6b':[10,20,30],
+                'k6c':20,
+                'k6d':30
+            },
+            'k8':'this is line 1\n' + \
+                 'this is line 2\n' + \
+                 'this is line 3\n' + \
+                 'this is line 4\n' +
+                 'this is line 5\n',
+            'k9':['1','2','3'],
+            'k10':['10','20','30']
+        }
+
+        json2 = {
+            'k1':[1,2,3],
+            'k2':[11,20,30,40],
+            'k3':   'this is line 1\n' + \
+                    'this is line 2\n' + \
+                    'this is line 3\n' + \
+                    'this is line 4\n' +
+                    'this is line 5\n',
+            'k4':10,
+            'k5':21,
+            'k6':{
+                'k6a':[1,2,3],
+                'k6b':[10,20,35,40],
+                'k6c':20,
+                'k6d':40
+            },
+            'k7':[2,3,4],
+            'k8':'this is line 1\n' + \
+                 'this is line 2\n' + \
+                 'this is a thing 3\n' + \
+                 'this is line 5\n' + \
+                 'this is line 6\n' + \
+                 'this is line 7\n',
+            'k9':['1','2','3'],
+            'k10':['10','20','25','34']
+        }
+        diff_sm = difflib.SequenceMatcher()
+        diff_text  = difflib.Differ()
+
+        result = list(diff_text.compare(json1['k3'].split('\n'),json2['k3'].split('\n')))
+        for line in result:
+            print(line)
+        #print(result)
+        #pprint.pprint(result)
+        #sys.stdout.writelines(result)
+        print('\n')
+
+        result = list(diff_text.compare(json1['k8'].split('\n'),json2['k8'].split('\n')))
+        for line in result:
+            print(line)
+        #print(result)
+        #pprint.pprint(result)
+        #sys.stdout.writelines(result)
+        print('\n')
+
+        #result = difflib.context_diff(json1['k1'],json2['k1'])
+        #for line in result:
+        #    print(line)
+        #pprint.pprint(result)
+        #sys.stdout.writelines(result)
+        #print(result)
+        print('\n')
+
+        result = list(difflib.unified_diff(json1['k8'].split('\n'),json2['k8'].split('\n')))
+        for line in result:
+                print(line)
+        print('\n')
+
+        result = list(difflib.unified_diff(json1['k10'],json2['k10']))
+        for line in result:
+            print(line)
+        print('\n')
 
         return
 
@@ -3741,8 +3975,10 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         cnt = 10
         def inner_func():
             def inner_inner_func():
+                nonlocal cnt
                 assert cnt == 0
                 cnt = 20
+            nonlocal cnt
             assert cnt == 10
             cnt = 0
             inner_inner_func()
@@ -3770,7 +4006,14 @@ str:  var{k1s}end with {k2i} and {k4s}blah
 
         return
 
+    '''
     def testHash(self):
+        from Crypto.Hash import SHA256
+        from Crypto.Cipher import AES
+        from Crypto import Random
+        from Crypto.Util import Padding
+
+
         m1 = hashlib.sha1()
         m2 = hashlib.sha1()
 
@@ -3906,6 +4149,7 @@ str:  var{k1s}end with {k2i} and {k4s}blah
         b_decrypted_32_2_3 = aes_cbc_32_2.decrypt(b_encrypted_32_3)
 
         return
+    '''
 
     def test_hints(self):
         def ret_tuple_1(i:int,j:int,k:int) -> tuple:
@@ -4401,6 +4645,421 @@ str:  var{k1s}end with {k2i} and {k4s}blah
             assert (l1,l2) == ((1,2,3),(2,3,4))
 
         t0()
+
+    def test_sleep(self):
+        def test_sync_sleep():
+            tbegms = time.time() * 1000
+            time.sleep(0.5) # this is blocking. sleep is for seconds, so 0.5 is 500ms
+            tendms = time.time() * 1000
+
+            tdiffms = tendms - tbegms
+            assert tdiffms > 500 and tdiffms < 800
+
+        async def test_async_sleep():
+            # this returns a function that waits, but this doesnt block. it pauses coroutine
+            tbegms = time.time() * 1000
+            # asyncio.sleep registers function to be called in x seconds,
+            # doesnt actually block. works like a yield.
+            # time.sleep() actually blocks and sleeps
+            await asyncio.sleep(0.5)
+            tendms = time.time() * 1000
+
+            tdiffms = tendms - tbegms
+            assert tdiffms > 500 and tdiffms < 800
+
+        async def test_get_async_sleep(s,v):
+            await asyncio.sleep(s)
+            return v
+
+        async def test_get_list_async_sleep(time_sec,int_beg,int_end):
+            await asyncio.sleep(time_sec)
+            l = [i for i in range(int_beg,int_end)]
+            return l
+
+        async def test_get_asyncio1():
+            tbegms = time.time() * 1000
+
+            coroutine_obj = test_get_async_sleep(0.5,10)
+
+            assert asyncio.iscoroutinefunction(test_get_async_sleep) == True
+            assert asyncio.iscoroutine(coroutine_obj) == True
+
+            tmidms = time.time() * 1000 # this returns before timer starts
+            res = await coroutine_obj
+
+            tendms = time.time() * 1000
+            tdiffms = tendms - tbegms
+
+            assert tdiffms > 500 and tdiffms < 800
+
+            tdiffmid = tendms - tmidms
+            assert tdiffmid > 500
+
+            assert res == 10
+
+            tbegms = time.time() * 1000
+            coroutine_obj = test_get_list_async_sleep(0.5,1,6)
+            res = await coroutine_obj
+            tendms = time.time() * 1000
+            tdiffms = tendms - tbegms
+            assert tdiffms > 500 and tdiffms < 800
+            assert res == [1,2,3,4,5]
+
+        async def test_get_asyncio2():
+            tbegms = time.time() * 1000
+            l_handlers = []
+            l_times = []
+            for i in range(3,7):
+                rand_time_s = random.randint(5,10)/10
+                handler = test_get_async_sleep(rand_time_s,i)
+                l_times.append(rand_time_s)
+                l_handlers.append(handler)
+            results = await asyncio.gather(*l_handlers)  # wait for all, there is no timeout
+            tendms = time.time() * 1000
+            tdiffms = tendms - tbegms
+            assert tdiffms > 500 and tdiffms < (1000 + 200)
+            assert results == [3,4,5,6]
+
+            '''
+
+            tbegms = time.time() * 1000
+            l_handlers = []
+            l_times = []
+            for i in range(3,7):
+                rand_time_s = random.randint(5,10)/10
+                handler = test_get_async_sleep(rand_time_s,i)
+                l_times.append(rand_time_s)
+                l_handlers.append(handler)
+            results = await asyncio.wait(*l_handlers,timeout=1)  # wait for all
+            tendms = time.time() * 1000
+            tdiffms = tendms - tbegms
+            assert tdiffms > 500 and tdiffms < (1000 + 200)
+            assert results == [3,4,5,6]
+            '''
+
+
+        async def test_get_async_timeout():
+            # multiple coroutines/futures
+            l_handlers = []
+            max_timeout = 1.0
+            l_return_vals  = [1,  2,  3,  4,  5]
+            l_timeout_vals = [1.5,0.5,0.8,1.8,0.5]
+            tbegms = time.time() * 1000
+            for i in range(len(l_return_vals)):
+                v = l_return_vals[i]
+                ms = l_timeout_vals[i]
+                handler = test_get_async_sleep(ms,v)
+                l_handlers.append(handler)
+            flag = False
+            try:
+                done,pending = await asyncio.wait(l_handlers,timeout=max_timeout)  # wait for all
+                tdiffms = time.time() * 1000 - tbegms
+                assert tdiffms > 500 and tdiffms < (1000 + 200)
+
+                results = set([f.result() for f in done])
+                assert results == set([2,3,5])
+            except asyncio.TimeoutError as e:
+                flag = True
+            except Exception as e:
+                flag = True
+            assert flag == False
+
+        async def test_get_async_timeout_single_cases():
+            # single cases
+
+            # this one times out
+            tbegms = time.time() * 1000
+            handler = test_get_async_sleep(1,5)
+            done,pending = await asyncio.wait({handler},timeout=0.5)
+            tdiffms = time.time() * 1000 - tbegms
+            assert tdiffms > 500 and tdiffms < (500 + 200)
+            assert len(done) == 0 and len(pending) == 1
+
+            # this one does not time out
+            tbegms = time.time() * 1000
+            handler = test_get_async_sleep(1,5)
+            done,pending = await asyncio.wait({handler},timeout=1.5)
+            tdiffms = time.time() * 1000 - tbegms
+            assert tdiffms > 1000 and tdiffms < (1000 + 200)
+            assert len(done) == 1 and len(pending) == 0
+            results = set([f.result() for f in done])
+            assert results == set([5])
+
+            # this one does not time out
+            tbegms = time.time() * 1000
+            handler = test_get_async_sleep(1,5)
+            result = await asyncio.wait_for(handler,timeout=1.5)
+            tdiffms = time.time() * 1000 - tbegms
+            assert tdiffms > 1000 and tdiffms < (1000 + 200)
+            assert result == 5
+
+            # this one times out
+            try:
+                flag = False
+                tbegms = time.time() * 1000
+                handler = test_get_async_sleep(1,5)
+                result = await asyncio.wait_for(handler,timeout=0.5)
+                assert flag
+            except asyncio.TimeoutError as e:
+                flag = True
+            assert flag == True
+
+
+            #assert isinstance(done,types.Set)
+            #assert isinstance(done,types.CoroutineType)
+
+        async def test_many_async_tasks():
+            lh = []
+            numcases = 10000
+            tbegms = time.time() * 1000
+            for i in range(numcases):
+                timeout = random.randint(1,20)/10 # 0.1-2 seconds
+                lh.append(test_get_async_sleep(timeout,i))
+            tmidms = time.time() * 1000
+            done,pending = await asyncio.wait(lh,timeout=2.5)
+            tendms = time.time() * 1000
+            tdiffms = tendms - tbegms
+            assert tdiffms < (2500+200)
+            assert len(pending) == 0
+            lres = [f.result() for f in done]
+            assert len(lres) == numcases
+            set_exp = set([i for i in range(numcases)])
+            assert set_exp == set(lres)
+
+        async def test_many_async_tasks_continuous_queue_til_drain():
+            # limit the number of in-flight tasks to X, with pending ones in queue
+            # allow 100 concurrent requests in flight with 10000 requests
+            # each request takes 0.1 seconds
+            # 10000request/100concurrent = 100 * 0.1 = 10 seconds expected to finish this job
+
+            num_cases = 10000
+            timems = 0.1
+            maxconcur = 100
+            refill = int(maxconcur*3/4)
+            lres = []
+
+            ctr = 0
+            num_completed = 0
+            num_submitted = 0
+            pending = set()
+
+            tbegms = time.time() * 1000
+
+            while num_submitted < num_cases:
+                while num_submitted < num_cases and len(pending) < maxconcur:
+                    coro = test_get_async_sleep(timems,num_submitted)
+                    pending.add(coro)
+                    num_submitted += 1
+                assert len(pending) <= maxconcur
+                while len(pending) > refill:
+                    done,pending = await asyncio.wait(pending,return_when=asyncio.FIRST_COMPLETED)
+                    for task in done:
+                        lres.append(task.result())
+                        num_completed += 1
+
+            if len(pending) != 0:
+                done,pending = await asyncio.wait(pending,return_when=asyncio.ALL_COMPLETED)
+                for result in done:
+                    lres.append(result.result())
+                    num_completed += 1
+
+            tendms = time.time() * 1000
+
+            assert num_completed == num_cases
+            set_act = set(lres)
+            set_exp = set([i for i in range(num_cases)])
+            set_dif = set_act.symmetric_difference(set_exp)
+
+            #print('num_completed:{}'.format(num_completed))
+            #print('set_dif:{}'.format(set_dif))
+
+            assert set_act == set_exp
+
+            tdiffms = tendms - tbegms
+            #print(tdiffms)
+            assert tdiffms < (10000+1000) # should be less than 11 seconds
+
+            pass
+
+        async def test_many_sync_tasks1():
+            # same as test_many_sync_tasks1 except FIRST_COMPLETED with many loops
+            # test_asyncio_sempahore is more sensible way of doing it
+            lh = []
+            numcases = 10000
+            tbegms = time.time() * 1000
+            for i in range(numcases):
+                timeout = random.randint(1,20)/10 # 0.1-2 seconds
+                lh.append(test_get_async_sleep(timeout,i))
+
+            num_completed = 0
+            remaining = lh
+            results = set()
+            num_loops_visited = 0
+            while num_completed < numcases:
+                done,pending = await asyncio.wait(remaining,return_when=asyncio.FIRST_COMPLETED)
+                for result in done:
+                    results.add(result.result())
+                    num_completed += 1
+                remaining = pending
+                num_loops_visited += 1
+            assert len(remaining) == 0
+            tendms = time.time() * 1000
+            tdiffms = tendms - tbegms
+            assert tdiffms < (2000+800)
+            set_exp = set([i for i in range(numcases)])
+            assert set_exp == set(results)
+
+        async def test_many_sync_tasks2():
+            # same as test_many_sync_tasks1 except ALL_COMPLETED with 1 loop
+            lh = []
+            numcases = 10000
+            tbegms = time.time() * 1000
+            for i in range(numcases):
+                timeout = random.randint(1,20)/10 # 0.1-2 seconds
+                lh.append(test_get_async_sleep(timeout,i))
+
+            num_completed = 0
+            remaining = lh
+            results = set()
+            num_loops_visited = 0
+            while num_completed < numcases:
+                done,pending = await asyncio.wait(remaining,return_when=asyncio.ALL_COMPLETED)
+                for result in done:
+                    results.add(result.result())
+                    num_completed += 1
+                remaining = pending
+                num_loops_visited += 1
+            assert len(remaining) == 0
+            assert num_loops_visited == 1
+            tendms = time.time() * 1000
+            tdiffms = tendms - tbegms
+            assert tdiffms < (2000+800)
+            set_exp = set([i for i in range(numcases)])
+            assert set_exp == set(results)
+
+        async def test_many_sync_tasks3():
+            # same as test_many_sync_tasks1 except FIRST_COMPLETED and create_task with many loops
+            lh = []
+            numcases = 10000
+            tbegms = time.time() * 1000
+            for i in range(numcases):
+                timeout = random.randint(1,20)/10 # 0.1-2 seconds
+                lh.append(asyncio.create_task(test_get_async_sleep(timeout,i)))
+
+            num_completed = 0
+            remaining = lh
+            results = set()
+            num_loops_visited = 0
+            while num_completed < numcases:
+                done,pending = await asyncio.wait(remaining,return_when=asyncio.FIRST_COMPLETED)
+                for result in done:
+                    results.add(result.result())
+                    num_completed += 1
+                remaining = pending
+                num_loops_visited += 1
+            assert len(remaining) == 0
+            tendms = time.time() * 1000
+            tdiffms = tendms - tbegms
+            assert tdiffms < (2000+800)
+            set_exp = set([i for i in range(numcases)])
+            assert set_exp == set(results)
+
+        def test_sync_function_call_async1():
+            # cannot call await handler in sync function.
+
+            # need to create event loop. a new_event_loop or existing one is ok either way
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+            #loop = asyncio.get_event_loop() # existing one also works
+
+            tbegms = time.time() * 1000
+
+            coroutine_handler = test_get_async_sleep(0.5,10)
+            res = loop.run_until_complete(coroutine_handler)
+
+            tendms = time.time() * 1000
+            tdiffms = tendms - tbegms
+
+            assert tdiffms > 500 and tdiffms < 700
+            assert res == 10
+            #loop.close()
+
+        def test_sync_function_call_async2():
+            # cannot call await handler in sync function.
+
+            loop = asyncio.get_event_loop() # existing one also works
+
+            tbegms = time.time() * 1000
+
+            coroutine_handler = test_get_async_sleep(0.5,10)
+            res = loop.run_until_complete(coroutine_handler)
+
+            tendms = time.time() * 1000
+            tdiffms = tendms - tbegms
+
+            assert tdiffms > 500 and tdiffms < 700
+            assert res == 10
+            loop.close()
+
+
+        def test_call_get_asyncio():
+            # get_event_loop is for calling async within sync function
+            #loop = asyncio.get_event_loop()
+            #loop.run_until_complete(test_get_asyncio())
+            asyncio.run(test_get_asyncio1())
+            asyncio.run(test_get_asyncio2())
+
+
+        def test_await_async():
+            test_sync_sleep()
+            asyncio.run(test_async_sleep()) # asyncio.run on non async function to wait
+
+        def test_asyncio_sempahore():
+            async def return_bounded_by_semaphore(semaphore,ms,v):
+                async with semaphore:
+                    await asyncio.sleep(ms)
+                    return v
+            async def many_tasks():
+                semaphore = asyncio.Semaphore(100)
+                num_tasks = 1000
+                ltasks = [asyncio.create_task(return_bounded_by_semaphore(semaphore,0.1,i)) for i in range(num_tasks)]
+                results = await asyncio.gather(*ltasks)
+                set_exp = set([i for i in range(num_tasks)])
+                set_act = set(results)
+                assert set_exp == set_act
+
+            def test():
+                asyncio.run(many_tasks())
+
+            test()
+
+        def test():
+            assert asyncio.iscoroutinefunction(test_get_async_timeout) == True
+            assert asyncio.iscoroutine(test_get_async_timeout) == False
+            assert asyncio.iscoroutinefunction(test_sync_function_call_async1) == False
+            test_await_async()
+            test_call_get_asyncio()
+            asyncio.run(test_get_async_timeout())
+            asyncio.run(test_many_async_tasks())
+            asyncio.run(test_get_async_timeout_single_cases())
+            asyncio.run(test_many_sync_tasks1())
+            asyncio.run(test_many_sync_tasks2())
+            asyncio.run(test_many_sync_tasks3())
+            test_sync_function_call_async1()
+            test_sync_function_call_async2()
+            asyncio.run(test_many_async_tasks_continuous_queue_til_drain())
+            test_asyncio_sempahore()
+            #loop = asyncio.get_event_loop() # this will raise RuntimeError(there is no current event loop in thread
+
+        test()
+
+    def test_with_statement(self):
+        pass
+
+    async def async_ret_val(self,v,ms):
+
+        await asyncio.sleep()
 
 if __name__ == "__main__":
     unittest.main() # not ut.main()!

@@ -1,0 +1,135 @@
+httpd
+  /etc/httpd/conf/httpd.conf
+    serverroot      // root of apache server
+      /etc/httpd 
+    listen interface and port
+    include conf files
+    user/group to run as
+      default is apache, use IAM for which user
+    server token for error pages to override for product error instead of OS error
+    serversignature: server admin email
+    documentroot
+    ifmodule to include php and ssl modules
+    files to exclude:
+      htaccess,htpassword 
+  /etc/httpd/conf.d/*.conf
+    php.conf, ssl.conf, perl.conf
+  /var/log/httpd
+    access_log
+    error_log
+    ssl_access_log
+    ssl_error_log
+    ssl_request_log
+  /var/run/httpd/httpd.pid
+  startup scripts, depending on os type:
+    /usr/lib/systemd/system/httpd.service
+    /etc/init.d/httpd
+
+  systemctl reload httpd
+  httpd -t      // syntax check the scripts after editing
+  httpd -v
+  
+  name based virtual hosting vs ip based virtual hosting
+    name based is where multiple websites on same IP address, NameVirtualHost httpd.conf
+      for named DocumentRoot, add
+        mkdir /var/www/html/example.com/
+        chown apache:apache /var/www/html/example.com/
+        vim /var/www/html/example.com/index.html
+        modify /etc/hosts       // local dns
+          127.0.0.1 www.example.com
+    each website has its own IP
+
+  yum install links
+
+- linux
+  - kernels are programs that directly talk to hardware, all other applications have to talk to 
+    kernel to talk to hardware. all other bundles included with linux kernel together make up the
+    linux distribution OS: redhat,debain,ubuntu,etc
+  - rpm files are specific to redhat for management
+  - debain uses *.deb packages
+  - network, isnt the same on mac, which uses bsd unix
+    - ifconfig
+      network configuration
+      you can set values ifconfig eth0 up/down
+    - traceroute
+      all the nodes to where packet transfers
+    - netstat
+      routing tables, network connections
+    - ping
+    - hostname          
+      hostname -d       domain
+      hostname -f       full info
+    - nslookup        query dns
+      discovers hostname from ip address and vice versa
+      nslookup amazon.com returns a bunch of ip addresses
+    - dhclient        // release and renew ip address
+  - filesystem structure
+    - bin
+      binaries
+    - boot
+      bootloaders, everything needed for os to boot
+    - dev
+      - hardware
+      - cpu
+      - disk
+        - disk partition 1
+        - disk partition 2
+    - etc
+      where system configs are stored, not per user setting configs
+      - sudo /etc/init.d/networking restart
+        to restart networking after config change
+      - dhclient
+        release and renews ip address
+      - /etc/network/interfaces
+        controls the ip addresses for interfaces on system
+      - /etc/resolve.conf
+        edit dns here
+        ipaddress1
+        ipaddress2 ...
+        linux processes this in order
+        restart networking service
+      - /etc/hosts ? vs resolve.conf 
+        this is for host to ip translation
+    - home
+    - lib
+      libraries for applications, required by binaries in bin,sbin
+    - lib32
+    - media
+      mounted drives, system automounts such as memory sticks
+    - mnt
+      mounted drives, manual mounts
+    - opt
+      3rd party software, drivers, your own processes, etc
+    - proc
+      pseudo files for each process on system, go here for pids
+      kernel translates processes as process virtual files
+      can be used for applications to look up pids
+    - root
+      
+    - run
+      everything here runs in ram, and is gone when shutdown
+    - sbin
+      system binaries
+    - snap
+      self contained apps usually for ubuntu
+    - srv
+      service data, such as ftp server, where to store data for web
+    - sys
+      file system for every time system boots up, goes away on shutdown, similar to run but not
+      necessarily on ram
+    - usr
+      usr application space, for user specific apps, non essential 
+      - local
+        - bin
+        - sbin
+        - etc
+        - include
+    - var
+      log files
+      crash files
+      databases for mail
+      printer spool
+      cache
+
+  hostname <newhostname>      // set new hostname
+  

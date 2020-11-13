@@ -21,6 +21,7 @@ import copy
 import re
 import numpy
 import bisect
+import json
 #from __future__ import annotations
 
 '''
@@ -10300,6 +10301,326 @@ class ut(unittest.TestCase):
                         |___|
         '''
         pass
+
+
+    '''
+    each node has a set of tags that are hierarchically defined. 
+
+    tag levels are: l1,l2,l3,l4
+    each tag level has a tag value
+
+    example 
+    
+    l1                           v10                                                    v11
+    l2             v20                        v21                          v20                       v21
+    l3       v30          v31           v30          v31            v30          v31           v30          v31
+    l4    v40   v41    v40   v41     v40   v41    v40   v41      v40   v41    v40   v41     v40   v41    v40   v41
+
+    a node may be tagged like:
+    {
+        n0:{l1:v10},                    apply n0 on all l1:v10 children
+        n1:{l3,v30},                    apply n1 on all l3:v30 and children
+        n2:{l2:v21,l3:v31},             apply n2 on all l2:v21,l3:v31
+        n3:{l1:v11,l2:v20},             apply n3 on all l1:v11,l2:v20
+        n4:{l3:v31},                    apply n4 on all l2:v21 and chilren
+        n5:{l2:v21}                     apply n5 on all l2:v21,
+        n6:{l2:v20,l4:v41}              apply n6 on all l2:v20,l4:v41
+    }
+    
+    construct apply the n<X> onto the correct value tags in the tree above
+    
+    here are the evaluation points for each node:
+    v0:                    {n7},
+    v0/v10:                {n0},
+    v0/v10/v20:            {},
+    v0/v10/v20/v30:        {n1},
+    v0/v10/v20/v30/v40:    {},
+    v0/v10/v20/v30/v41:    {n6},
+    v0/v10/v20/v31:        {n4},    
+    v0/v10/v20/v31/v40:    {},
+    v0/v10/v20/v31/v41:    {n6},
+    v0/v10/v21:            {n5},
+    v0/v10/v21/v30:        {n1},
+    v0/v10/v21/v30/v40:    {},
+    v0/v10/v21/v30/v41:    {},
+    v0/v10/v21/v31:        {n2,n4},
+    v0/v10/v21/v31/v40:    {},
+    v0/v10/v21/v31/v41:    {},
+    v0/v11:                {},
+    v0/v11/v20:            {n3},
+    v0/v11/v20/v30:        {n1},
+    v0/v11/v20/v30/v40:    {n8},
+    v0/v11/v20/v30/v41:    {n6},
+    v0/v11/v20/v31:        {n4},
+    v0/v11/v20/v31/v40:    {n8},
+    v0/v11/v20/v31/v41:    {n6},
+    v0/v11/v21:            {n5,n9},
+    v0/v11/v21/v30:        {n1},
+    v0/v11/v21/v30/v40:    {n8},
+    v0/v11/v21/v30/v41:    {},
+    v0/v11/v21/v31:        {n2,n4},
+    v0/v11/v21/v31/v40:    {n8},
+    v0/v11/v21/v31/v41:    {}
+
+
+    the resulting tree should look like, as all nodes are inherited
+    v0:                    {n7},
+    v0/v10:                {n0,n7},
+    v0/v10/v20:            {n0,n7},
+    v0/v10/v20/v30:        {n0,n1,n7},
+    v0/v10/v20/v30/v40:    {n0,n1,n7},
+    v0/v10/v20/v30/v41:    {n0,n1,n6,n7},
+    v0/v10/v20/v31:        {n0,n4,n7},    
+    v0/v10/v20/v31/v40:    {n0,n4,n7},
+    v0/v10/v20/v31/v41:    {n0,n4,n6,n7},
+    v0/v10/v21:            {n0,n5,n7},
+    v0/v10/v21/v30:        {n0,n1,n5,n7},
+    v0/v10/v21/v30/v40:    {n0,n1,n5,n7},
+    v0/v10/v21/v30/v41:    {n0,n1,n5,n7},
+    v0/v10/v21/v31:        {n0,n2,n4,n5,n7},
+    v0/v10/v21/v31/v40:    {n0,n2,n4,n5,n7},
+    v0/v10/v21/v31/v41:    {n0,n2,n4,n5,n7},
+    v0/v11:                {n7},
+    v0/v11/v20:            {n3,n7},
+    v0/v11/v20/v30:        {n1,n3,n7},
+    v0/v11/v20/v30/v40:    {n1,n3,n7},
+    v0/v11/v20/v30/v41:    {n1,n3,n6,n7},
+    v0/v11/v20/v31:        {n3,n4,n7},
+    v0/v11/v20/v31/v40:    {n3,n4,n7},
+    v0/v11/v20/v31/v41:    {n3,n4,n6,n7},
+    v0/v11/v21:            {n5,n7},
+    v0/v11/v21/v30:        {n1,n5,n7},
+    v0/v11/v21/v30/v40:    {n1,n5,n7},
+    v0/v11/v21/v30/v41:    {n1,n5,n7},
+    v0/v11/v21/v31:        {n2,n4,n5,n7},
+    v0/v11/v21/v31/v40:    {n2,n4,n5,n7},
+    v0/v11/v21/v31/v41:    {n2,n4,n5,n7}
+
+
+    for each node, construct 
+    
+    '''
+    '''
+    tagged_tree
+    {
+        t.h:[],
+        t.node:{},
+        t.tag:{
+            t.h:[l0],
+            t.nodes:{n1:{th:v}},
+            t.tag:{
+                all:{
+                    t.h:[l1],
+                    t.nodes:{},
+                    t.tag:{
+                        v10:{
+                            t.h:[l2],
+                            t.nodes:{},
+                            t.tag:{
+                                v20:{...},
+                                v21:{...}
+                            }
+                        },
+                        v11:{
+                            t.h:[l2],
+                            t.nodes:{},
+                            t.tag:{
+                                v20:{...},
+                                v21:{...}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+        
+    '''
+
+    def test_tagging_tree(self):
+        class T:
+            TAG = 'tag'
+            ORDER = 'order'
+            NODES = 'nodes'
+            ORDER_MAP = 'order_map'
+            H = 'h'
+
+        tag_hierarchies = {
+            'h': {
+                'l0':['v0'],
+                'l1':['v10','v11'],
+                'l2':['v20','v21'],
+                'l3':['v30','v31'],
+                'l4':['v40','v41']
+            },
+            'order_map':{
+                'l0':0,
+                'l1':1,
+                'l2':2,
+                'l3':3,
+                'l4':4
+            },
+            'order': ['l0','l1','l2','l3','l4']
+        }
+
+        def get_next_tag(tag,tag_hierarchies):
+            sz = len(tag_hierarchies['order'])
+            for i in range(sz):
+                if tag == tag_hierarchies['order'][i]:
+                    if (i+1) < sz:
+                        return tag_hierarchies['order'][i+1]
+            return None
+
+        def generate_tagged_tree(tagged_tree,tag_hierarchies,subpath,tag_h=None):
+            cur_tag_h = tag_h
+            if cur_tag_h == None:
+                cur_tag_h = tag_hierarchies[T.ORDER][0]
+                cur_tag_values = tag_hierarchies[T.H][cur_tag_h]
+                for cur_tag_value in cur_tag_values:
+                    tagged_tree[T.TAG][cur_tag_value] = {T.H:[cur_tag_h],T.NODES:{},T.TAG:{}}
+                    subpath.append(cur_tag_value)
+                    generate_tagged_tree(tagged_tree[T.TAG][cur_tag_value],tag_hierarchies,subpath,cur_tag_h)
+                    subpath.pop()
+                return
+            next_tag_h = get_next_tag(cur_tag_h,tag_hierarchies)
+            if next_tag_h == None:
+                return
+            next_tag_h_vals = tag_hierarchies[T.H][next_tag_h]
+            for v in next_tag_h_vals:
+                tagged_tree[T.TAG][v] = {T.H:[next_tag_h],T.NODES:{},T.TAG:{}}
+                subpath.append(v)
+                generate_tagged_tree(tagged_tree[T.TAG][v],tag_hierarchies,subpath,next_tag_h)
+                subpath.pop()
+            return
+
+        def get_next_tag_hierarchy_in_set(set_hierarchies,tag_hierarchies,tag_h=None):
+            cur_tag_h = tag_h
+            if cur_tag_h == None:
+                cur_tag_h = tag_hierarchies[T.ORDER][0]
+            elif cur_tag_h not in tag_hierarchies[T.ORDER_MAP]:
+                return None
+
+            tag_h_idx = tag_hierarchies[T.ORDER_MAP][cur_tag_h]
+            sz = len(tag_hierarchies[T.ORDER_MAP])
+            if (tag_h_idx+1) > sz:
+                return None
+            for i in range(tag_h_idx+1,sz):
+                next_tag_h = tag_hierarchies[T.ORDER][i]
+                if next_tag_h in set_hierarchies:
+                    return next_tag_h
+            return None
+
+        def get_first_tag_hierarchy_from_node(node_k,node_v,tag_hierarchies,tag_h):
+            if tag_h in node_v:
+                return tag_h
+            set_hierarchies = set(node_v.keys())
+            result = get_next_tag_hierarchy_in_set(set_hierarchies,tag_hierarchies,tag_h)
+            return result
+
+        '''
+            T.TAG,T.NODES,T.H
+        '''
+        def place_node_in_tree(tagged_tree,node_k,node_v,tag_hierarchies,set_hierarchies=None,node_tag_h=None,tree_tag_v=None):
+            if set_hierarchies == None:
+                set_hierarchies = set(node_v.keys())
+            if len(set_hierarchies) == 0:
+                tagged_tree[T.NODES][node_k] = node_v
+                return
+            cur_node_tag_h = node_tag_h
+            if cur_node_tag_h == None:
+                cur_node_tag_h = get_first_tag_hierarchy_from_node(node_k,node_v,tag_hierarchies,tag_hierarchies[T.ORDER][0])
+                if cur_node_tag_h == None:
+                    return
+
+            if cur_node_tag_h in tagged_tree[T.H]:
+                if tree_tag_v != node_v[cur_node_tag_h]:
+                    return
+                next_tag_hierarchy = get_next_tag_hierarchy_in_set(set_hierarchies,tag_hierarchies,cur_node_tag_h)
+
+                # add only to most specific hierarchy, not any middle matching ones
+                # once there is leaf match, do not descend anymore
+                if next_tag_hierarchy == None:
+                    if node_v[cur_node_tag_h] == tree_tag_v:
+                        tagged_tree[T.NODES][node_k] = node_v
+                    return
+
+                # if there is a next_tag_hierarchy, traverse go to subtree only if node k:v matches the tree k:v
+                next_hierarchy_in_subtree = get_next_tag(cur_node_tag_h,tag_hierarchies)
+                if(next_hierarchy_in_subtree == next_tag_hierarchy):
+                    node_v_tag = node_v[next_tag_hierarchy]
+                    if node_v_tag in tagged_tree[T.TAG]:
+                        place_node_in_tree(tagged_tree[T.TAG][node_v_tag],node_k,node_v,tag_hierarchies,set_hierarchies,next_tag_hierarchy,node_v_tag)
+                else:
+                    for tree_tag_k,tree_tag_v in tagged_tree[T.TAG].items():
+                        place_node_in_tree(tree_tag_v,node_k,node_v,tag_hierarchies,set_hierarchies,next_tag_hierarchy,tree_tag_k)
+
+            else:
+                # cur_node_tag_h is not in current hierarchy, so traverse all children trees
+                for tag_k,tag_v_tree in tagged_tree[T.TAG].items():
+                    place_node_in_tree(tag_v_tree,node_k,node_v,tag_hierarchies,set_hierarchies,cur_node_tag_h,tag_k)
+
+            return
+
+        def place_nodes_in_tree(tagged_tree,nodes,tag_hierarchies):
+            for node_k,node_v in nodes.items():
+                try:
+                    place_node_in_tree(tagged_tree,node_k,node_v,tag_hierarchies)
+                except Exception as e:
+                    raise e
+            return
+
+        def print_tagged_tree(tagged_tree,subpath=None,tagk=None):
+            if subpath == None:
+                subpath = []
+            print('-------')
+            #if tagk != None:
+            #    print('tagk:{}'.format(tagk))
+            path_name = '/'.join(subpath)
+            print('path:{}'.format(path_name))
+            #print('tagged_tree_h:{}'.format(tagged_tree[T.H]))
+            buf = 'nodes: '
+            for k,n in tagged_tree[T.NODES].items():
+                buf += '{} '.format(k)
+            print(buf)
+            for tagk,tagv in tagged_tree[T.TAG].items():
+                if(tagk != None):
+                    subpath.append(tagk)
+                print_tagged_tree(tagv,subpath,tagk)
+                if(tagk != None):
+                    subpath.pop()
+        def process_nodes(nodes, tag_hierarchies):
+            populated_tree = {}
+            tag_h = 'l0'
+            tagged_tree = {T.H:[],T.NODES:{},T.TAG:{}}
+            subpath = []
+            generate_tagged_tree(tagged_tree,tag_hierarchies,subpath)
+            place_nodes_in_tree(tagged_tree,nodes,tag_hierarchies)
+            print_tagged_tree(tagged_tree)
+
+            return populated_tree
+        def tc1():
+            nodes = {
+                'n0':{'l1':'v10'},
+                'n1':{'l3':'v30'},
+                'n2':{'l2':'v21','l3':'v31'},
+                'n3':{'l1':'v11','l2':'v20'},
+                'n4':{'l3':'v31'},
+                'n5':{'l2':'v21'},
+                'n6':{'l2':'v20','l4':'v41'},
+                'n7':{'l0':'v0'},
+                'n8':{'l1':'v11','l4':'v40'},
+                'n9':{'l1':'v11','l2':'v21'}
+            }
+            nonlocal tag_hierarchies
+            try:
+                tree = process_nodes(nodes,tag_hierarchies)
+                assert tree != None
+            except Exception as e:
+                raise e
+
+        tc1()
+        return
+
 
     def main(self):
         p('main passed')

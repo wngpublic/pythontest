@@ -1,0 +1,29 @@
+<html>
+    <head>
+        <link rel='stylesheet' href='styles/rw_file.css'>
+        <script src='rw_file.js' type='text/javascript' defer></script><!-- defer keyword for script in header -->
+        <title>Simple file processing</title>
+    </head>
+    <!-- 
+        use a div to split instead of iframe for client side only. because you get cross origin exception. 
+        this results in Uncaught DOMException: Blocked a frame with origin "null" from accessing a cross-origin frame.
+        you have to host this, cannot do on client alone
+
+        <iframe id='id_iframe' frameborder='0' src='rw_file_upload_iframe.html' scrolling='yes' align='right' width='40%' height='100%'></iframe>
+    -->
+        <body>
+            <div class='class-split' id='id-split-left'>
+                <header>Simple file upload and print to screen with javascript.</header>
+                <input type='file' id='file-selector-i' multiple>
+                <br>
+                <button id='button-open-file' onclick='filerw.readInputFile(this)'>OpenFile</button>
+                <br>
+                <button id='button-save-file' onclick='filerw.saveInputFile(this)'>SaveFile</button>
+                <br>
+                <div id='jstxt'></div>
+            </div>
+            <div class='class-split' id='id-split-right'>
+                <p id='id-p-right'></p>
+            </div>
+        </body>
+</html>

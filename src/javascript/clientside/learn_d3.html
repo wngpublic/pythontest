@@ -1,0 +1,30 @@
+<html>
+    <head>
+        <link rel='stylesheet' href='styles/learn_d3.css'>
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/d3/6.2.0/d3.js'></script>
+        <script src='learn_d3.js' type='text/javascript' defer></script><!-- defer keyword for script in header -->
+        <title>Simple D3</title>
+    </head>
+    <body>
+        <div class='class-split' id='id-split-left'>
+            <header>Simple D3 Tree</header>
+            <div>
+                <label>Hierarchy File</label>
+                <input type='file' id='file-selector-hierarchy' multiple>
+            </div>
+            <div>
+                <label>Data File</label>
+                <input type='file' id='file-selector-data' multiple>
+            </div>
+            <br>
+            <button id='button-open-file' onclick='learnD3.renderData3(this)'>OpenFile</button>
+            <br>
+            <div id='id-div-left-txt'></div>
+            <br>
+            <div id='d3tree'></div>
+        </div>
+        <div class='class-split' id='id-split-right'>
+            <div id='id-div-right-1'></div>
+        </div>
+    </body>
+</html>
