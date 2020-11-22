@@ -1,0 +1,11 @@
+#id-table-1 {
+    counter-reset: ctr;
+    border: 1px black;
+}
+table {
+    counter-reset: ctr;
+    border: 1px black;
+}
+#ctr-1 {
+    counter-increment: ctr;
+}

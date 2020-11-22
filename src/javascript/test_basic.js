@@ -24,9 +24,9 @@ let gF5 = function(v) {
 class TestBasic {
     assert = require('assert');
 
-    assert = require('assert');
     constructor(v1) {
         this.v1 = v1;
+        this.v2 = 100;
         console.log('TestBasic constructor ' + v1);
     }
     hello() {
@@ -1236,6 +1236,55 @@ class TestBasic {
         let b64decoded = buffer.Buffer.from(b64encoded, 'base64').toString();
         this.assert(s === b64decoded);
     }
+    multiply(x,y) {
+        return z = x * y;
+    }
+    factor(x) {
+        return n => n * x;
+    }
+    wrapNumber(x) {
+        return () => x;
+    }
+    testClosure() {
+        let f1 = this.wrapNumber(10);
+        let f2 = this.wrapNumber(20);
+        this.assert(f1() == 10);
+        this.assert(f2() == 20);
+        let f3 = this.factor;
+        let f4 = this.factor(2);
+        let f5 = f4(3);
+        this.assert(f3(2)(3) == 6);
+        this.assert(f3(3)(4) == 12);
+        this.assert(f4(1) == 2);
+        this.assert(f4(3) == 6);
+        this.assert(f4(4) == 8);
+        this.assert(f5 == 6);
+    }
+    getV2() {
+        return this.v2;
+    }
+    testBind() {
+        let cb1 = this.getV2;
+        let cb1Bind = this.getV2.bind(this);
+        let flag = false;
+        let v = null;
+        try {
+            v = cb1();
+        } catch(e) {
+            flag = true;
+        }
+        this.assert(flag);
+        this.assert(v === null);
+
+        try {
+            flag = false;
+            v = cb1Bind();
+        } catch(e) {
+            flag = true;
+        }
+        this.assert(flag == false);
+        this.assert(v === 100);
+    }
     test() {
         this.test1();
         this.testSleep();
@@ -1250,12 +1299,6 @@ class TestBasic {
         this.testAsync5();
         this.testPromise1();
         this.testReturnFunc();
-        console.log('pass TestFunctions');
-    }
-}
-
-function test() {
-    let t = new TestBasic("c1");
     /*
     t.test_assert();
     t.test_array_map_set();
@@ -1265,7 +1308,16 @@ function test() {
     t.test_numberFormat();
     t.testDate();
     t.test_random();
-    */
     t.testBase64OnNode();
+    t.testClosure();
+    */
+
+        console.log('pass TestFunctions');
+    }
+}
+
+function test() {
+    let t = new TestBasic("c1");
+    t.testBind();
 }
 test();

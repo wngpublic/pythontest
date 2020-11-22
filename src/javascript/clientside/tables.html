@@ -1,0 +1,188 @@
+<html>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <head>
+        <style>
+            /*
+            counter-reset must be at main, and counter-increment must be before
+            no html-style comments allowed here
+
+            font size to body or html does not get same result as font-size table
+            */
+            @charset "UTF-8"; 
+            table, thead {
+                border: 1px solid black;
+                margin-left: auto;
+                margin-right: auto;
+                margin-top: 50px;
+                border-collapse: collapse;
+                font-size: 15px;
+            }
+            td {
+                padding: 2px;
+            }
+            #id-table-1 {
+                counter-reset: ctr;
+            }
+            .ctr-1:before {
+                counter-increment: ctr;
+                content: counter(ctr);
+            }
+            #id-table-1 .ctr-1 {
+                border: 1px solid black;
+            }
+            #id-table-2 td {
+                border: 1px solid black;
+                text-align: center;
+            }
+            #id-table-3 td {
+                border: 1px solid black;
+                text-align: right;
+            }
+            /* id-table-2-status doesnt work */
+            #id-table-2-status {
+                text-align: right;
+            }
+            button {
+                border: 1px solid black;
+            }
+            caption {
+                font-size: 14px;
+            }
+            #id-table-3 {
+                font-size: 12px;
+            }
+            #id-table-2-button-1 {
+                text-align: center;
+                margin: auto;
+                display: block;
+            }
+            /*
+            this td align doesnt do anything. the align has to be on the button, with display: block
+            #id-table-2-td-button {
+                text-align: center;
+                margin: auto;
+            }
+            */
+        </style>
+        <script defer>
+            class T {
+                idPrefix = 'id-tid-';
+                mem = {};
+                state = {};
+                dbg = false;
+                ctr1 = 0;
+                log(s) {
+                    if(this.dbg) {
+                        console.log(s);
+                    }
+                }
+                resetTable2Status() {
+                    let table = document.getElementById("id-table-2");
+                    let status = document.getElementById("id-table-2-status");
+                    if(status !== null) {
+                        table.deleteRow(-1);
+                    }
+                }
+                generateTable2(id) {
+                    let s = '<table id="id-table-2">';
+                    for(let i = 0; i < 3; i++) {
+                        s += '<tr>';
+                        for(let j = 0; j < 3; j++) {
+                            let v = i*3 + j + 1;
+                            let tdid = `${this.idPrefix}${v}`;
+                            this.mem[tdid] = v;
+                            this.state[tdid] = 0;
+                            s += `<td id="${tdid}" onclick="t.clickText(this.id)">${v}</td>`
+                        }
+                        s += '</tr>';
+                    }
+                    s += '<tr><td colspan=3 id="id-table-2-td-button">';
+                    s += '<input type="button" id="id-table-2-button-1" onclick="t.resetTable2Status()" value="Reset"></td></tr>';
+                    s += '</table>';
+                    document.getElementById(id).innerHTML = s;
+                    this.log(`generateTable21 called`);
+                }
+                appendRow3(id,inputId,tableId) {
+                    let tbody = document.getElementById(tableId).getElementsByTagName('tbody')[0];
+                    let txt = document.getElementById(inputId).value;
+                    let row = tbody.insertRow(-1);
+                    row.innerHTML = `<td>${this.ctr1}</td><td>${txt}</td>`;
+                    this.ctr1++;
+                    this.sortTable3();
+                }
+                sortTable3() {
+                    let table = document.getElementById('id-table-3');
+                    let rows = Array.from(table.rows);
+                    rows = rows.slice(1);
+                    let sorted = rows.sort((r1,r2) => (r1.cells[1].innerHTML > r2.cells[1].innerHTML) ? 1 : -1);
+                    
+                    for(let i = 0; i < rows.length; i++) {
+                        let row = rows[i];
+                        this.log(`row ${i}: ${row.cells[1].innerHTML}`);
+                    }
+
+                    // this doesnt remove the 0 row of button and input, which is what we want
+                    table.append(...sorted);
+                }
+                clickText(tdid) {
+                    this.log(`clicked ${tdid} ${this.mem[tdid]}`);
+                    if(this.state[tdid] == 0) {
+                        this.state[tdid] = 1;
+                        //document.getElementById(tdid).innerHTML = tdid;
+                    } else {
+                        this.state[tdid] = 0;
+                        //document.getElementById(tdid).innerHTML = this.mem[tdid];
+                    }
+                    let statusId = "id-table-2-status";
+                    let status = document.getElementById(statusId);
+                    if(status === null) {
+                        this.log('status row is null. creating status row');
+                        let table = document.getElementById("id-table-2");
+                        let row = table.insertRow(-1);
+                        row.innerHTML = `<tr><td colspan=3 id=${statusId}></td></tr>`;
+                    }
+                    document.getElementById(statusId).innerHTML += this.mem[tdid];
+                }
+                init(id1) {
+                    this.generateTable2(id1);
+                }
+            }
+
+            t = new T();
+        </script>
+        <title>Tables</title>
+    </head>
+    <body onload="t.init('id-div-table-2')">
+        <table id='id-table-1'>
+            <tr>
+                <td class='ctr-1'></td>
+                <td>hello1</td>
+            </tr>
+            <tr>
+                <td class='ctr-1'></td>
+                <td>hello2</td>
+            </tr>
+            <tr>
+                <td class='ctr-1'></td>
+                <td>hello3</td>
+            </tr>
+        </table>
+
+        <div id='id-div-table-2'></div>
+
+        <div id='id-div-table-3'>
+            <table id='id-table-3'>
+                <caption>Head Table Sorted 3</caption>
+                <tbody>
+                    <tr>
+                        <td><input type='button' id='id-button-1' onclick="t.appendRow3(this.id,'id-text-1','id-table-3')" value='Add Text'></td>
+                        <td><input type='text' id='id-text-1'></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id='id-div-table-4'></div>
+
+    </body>
+</html>
