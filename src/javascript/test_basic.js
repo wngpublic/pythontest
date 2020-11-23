@@ -677,6 +677,40 @@ class TestBasic {
         res = fGetVal('k2');
         assert(res == 'bb');
 
+        a = [1,2,3];
+        d = { k1: [1,2,3], k2: "abc" };
+        v = 'hello';
+        i = 23;
+        let fp = 3.14;
+        let f = this.hello;
+        s = new String('hello');
+
+        assert(Array.isArray(a));
+        assert(typeof a === 'object');
+        assert(typeof d === 'object');
+        assert(typeof v === 'string');
+        assert(typeof v !== 'object');
+        assert(typeof i === 'number');
+        assert(typeof fp === 'number');
+        assert(typeof f === 'function');
+        assert(typeof s === 'object');
+
+        assert(a instanceof Array);
+        assert(a instanceof Object);
+        assert(d instanceof Object);
+        assert(this instanceof TestBasic);
+        assert(!(v instanceof Object));
+        assert(!(v instanceof String));
+        assert(s instanceof String);
+
+        assert(s == v);
+        assert(s !== v);
+        assert(d.length === undefined);
+        assert((Object.keys(d).length) === 2);
+        assert((Object.keys(v).length) === 5);
+        assert(a.length === 3);
+        assert(v.length === 5);
+
         console.log('pass test_map');
     }
     test_random() {
@@ -1286,6 +1320,7 @@ class TestBasic {
         this.assert(v === 100);
     }
     test() {
+        /*
         this.test1();
         this.testSleep();
         this.testAsync1();
@@ -1299,25 +1334,25 @@ class TestBasic {
         this.testAsync5();
         this.testPromise1();
         this.testReturnFunc();
-    /*
-    t.test_assert();
-    t.test_array_map_set();
-    t.test_string();
-    t.test_control();
-    t.test_map();
-    t.test_numberFormat();
-    t.testDate();
-    t.test_random();
-    t.testBase64OnNode();
-    t.testClosure();
-    */
+        this.test_assert();
+        this.test_string();
+        this.test_control();
+        this.test_map();
+        this.test_numberFormat();
+        this.testDate();
+        this.test_random();
+        this.testBase64OnNode();
+        this.testClosure();
+        this.testBind();
+        */
 
+        this.test_array_map_set();
         console.log('pass TestFunctions');
     }
 }
 
 function test() {
     let t = new TestBasic("c1");
-    t.testBind();
+    t.test();
 }
 test();

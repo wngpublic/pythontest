@@ -99,7 +99,7 @@ class TestAlgos {
         }
     }
     jsonDiff(a,b) {
-        function jsonDiffMem(a,b,mem) {
+        function jsonDiffMem(a,b,mem,subpath) {
             if(a instanceof Array) {
 
             } 
@@ -111,7 +111,8 @@ class TestAlgos {
             }
         }
         let mem = {};
-        jsonDiffMem(a,b,mem);
+        let subpath = [];
+        jsonDiffMem(a,b,mem,subpath);
         return mem;
     }
     test() {
