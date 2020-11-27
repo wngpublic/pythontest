@@ -230,6 +230,9 @@ class TestBasic {
         assert(res[0] == '<h1>');
         assert(res[1] == '</h2>');
 
+        s = 'abcde';
+        assert(s.split('').reverse().join('') === 'edcba');
+
         s = ' the cat in  the  hat ';
         l = s.trim().split(/\s+/);
         assert(l.length == 5 && l.join(' ') == 'the cat in the hat');
@@ -256,16 +259,53 @@ class TestBasic {
         
         let a = ["abc","efg","ijk"];
         s = JSON.stringify(a);
-        console.log(s);
+        //console.log(s);
         a = '["abc","efg","ijk"]';
         s = JSON.stringify(a);
-        console.log(s);
+        //console.log(s);
         a = JSON.parse(s);
-        console.log(a);
+        //console.log(a);
         s = '[4,5,6]';
         a = JSON.parse(s);
-        console.log(a);
-        console.log(s);
+        //console.log(a);
+        //console.log(s);
+        assert(typeof s === 'string');
+        assert(typeof s !== 'object');
+        s = "a798e&*(&(*";
+        assert(typeof s === 'string');
+        assert(typeof s !== 'object');
+        assert(!(s instanceof String));
+        assert(s.constructor === String);
+        s = new String("a798e&*(&(*");
+        assert(typeof s !== 'string');
+        assert(typeof s === 'object');
+        assert(s.constructor === String);
+        assert(s instanceof String);
+
+        let d = null, n = 123, so = new String('1234');
+        s = "^&*!*@hkjsdha";
+        a = ['abc','def'];
+        d = {k1:'abc',k2:['v1','v2'],k3:{k31:'bcd',k32:['v31','v32']}};
+        n = 123;
+        assert(s.constructor === String);
+        assert(s.constructor !== Array);
+        assert(so.constructor === String);
+        assert(so.constructor !== Array);
+        assert(a.constructor === Array);
+        assert(a.constructor !== String);
+        assert(a.constructor !== Object);
+        assert(d.constructor === Object);
+        assert(d.constructor !== String);
+        assert(d.constructor !== Array);
+        assert(n.constructor === Number);
+        assert(n.constructor !== String);
+        assert(n.constructor !== Object);
+        assert(d['k1'].constructor === String);
+        assert(d['k2'].constructor === Array);
+        assert(d['k3'].constructor === Object);
+        assert(d['k3']['k31'].constructor === String);
+        assert(d['k3']['k32'].constructor === Array);
+
         console.log('pass test_string');
     }
 
@@ -493,6 +533,20 @@ class TestBasic {
         map.clear();
         assert(map.size == 0);
 
+        d = { 'k1':'v1', 'k2':'v2' };
+        let keys = Object.keys(d);
+        let ctr = 0;
+        this.assert(keys.constructor === Array);
+        for(let k of keys) {
+            ctr++;
+            this.assert(!(k in keys));
+            this.assert(k in d);
+            this.assert(keys.includes(k));
+            this.assert(!keys.hasOwnProperty(k));
+        }
+        this.assert(ctr == 2);
+
+
         m = {
             k1:'aa',
             k2:'bb',
@@ -604,6 +658,45 @@ class TestBasic {
         ];
         assert(aa1[2][0] == 5);
         assert(aa1[2][2] == 7);
+
+        let sz = 3;
+        a = new Array(sz);
+        for(let i = 0; i < sz; i++) {
+            a[i] = new Array(2);
+            for(let j = 0; j < 2; j++) {
+                a[i][j] = (j+i*sz);
+            }
+        }
+        buf = [];
+        for(let i = 0; i < a.length; i++) {
+            buf.push(a[i].join(','));
+        }
+        v = buf.join(',');
+        assert(v === '0,1,3,4,6,7');
+
+        a = new Array(sz);
+        for(let i = 0; i < sz; i++) {
+            a[i] = new Array(2);
+            a[i].fill(0);               // fill array with all 0
+        }
+        buf = [];
+        for(let i = 0; i < a.length; i++) {
+            buf.push(a[i].join(','));
+        }
+        v = buf.join(',');
+        assert(v === '0,0,0,0,0,0');
+
+        a = [1,2,3];
+        a1 = a.map(x => x * 2);
+        assert(a1.join(',') === '2,4,6');
+        a = Array.of(2,3,4,5,6,7);
+        assert(a.join(',') === '2,3,4,5,6,7');
+        a1 = a.filter(x => x > 3 && x % 2 == 0);
+        assert(a1.join(',') === '4,6');
+        a1 = a.slice(3,5);
+        assert(a1.join(',') === '5,6');
+        a1 = a.slice(3);
+        assert(a1.join(',') === '5,6,7');
 
         // find/search in and json
 
@@ -1319,6 +1412,69 @@ class TestBasic {
         this.assert(flag == false);
         this.assert(v === 100);
     }
+    static testReturnStatic(v) {
+        return v;
+    }
+    testReturnNonStatic(v) {
+        return v;
+    }
+    testInnerFunction() {
+        function testReturnNonStatic(v) {
+            return v+1;
+        }
+        function tcUnbinded() {
+            let assert = require('assert');
+            let v1 = testReturnNonStatic(10);
+            assert(v1 === 11);
+
+            let flag = false;
+            try {
+                let v2 = this.testReturnNonStatic(10);
+            } catch(e) {
+                flag = true;
+            } finally {
+                assert(flag);   // non binded doesnt have this keyword
+            }
+
+            try {
+                flag = false;
+                let v2 = TestBasic.testReturnStatic(10);
+            } catch(e) {
+                flag = true;
+            } finally {
+                assert(!flag); // non binded can use a class static function
+            }
+        }
+        function tcBinded() {
+            let v1 = testReturnNonStatic(10); // can still access inner function
+            this.assert(v1 === 11);
+
+            let flag = false;
+            let v2 = null;
+            try {
+                v2 = this.testReturnNonStatic(10);
+            } catch(e) {
+                flag = true;
+            } finally {
+                this.assert(v2 === 10); // this is binded
+                this.assert(!flag);
+            }
+
+            try {
+                v2 = null;
+                flag = false;
+                v2 = TestBasic.testReturnStatic(10);
+            } catch(e) {
+                flag = true;
+            } finally {
+                this.assert(v2 === 10);
+                this.assert(!flag);
+            }
+        }
+        tcUnbinded();
+        let cbTcBinded = tcBinded.bind(this);
+        cbTcBinded();
+    }
     test() {
         /*
         this.test1();
@@ -1335,7 +1491,6 @@ class TestBasic {
         this.testPromise1();
         this.testReturnFunc();
         this.test_assert();
-        this.test_string();
         this.test_control();
         this.test_map();
         this.test_numberFormat();
@@ -1345,8 +1500,9 @@ class TestBasic {
         this.testClosure();
         this.testBind();
         */
-
+        this.testInnerFunction();
         this.test_array_map_set();
+        this.test_string();
         console.log('pass TestFunctions');
     }
 }

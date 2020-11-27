@@ -99,21 +99,122 @@ class TestAlgos {
         }
     }
     jsonDiff(a,b) {
-        function jsonDiffMem(a,b,mem,subpath) {
-            if(a instanceof Array) {
+        function jsonDiffMem(src,dst,mem,subpath) {
+            let path = subpath.join('/');
+            if(src.constructor !== dst.constructor) {
+                mem[path] = {};
+                mem[path]['o'] = src;
+                mem[path]['n'] = dst;
+                return;
+            }
+            else if(src.constructor === Array) {
+                // values can be objects, string, array, number. just stringfiy and replace them completely.
+                // assume ordering does not matter in JSON. rewrite with levenshtein if ordering does matter
 
             } 
-            else if(a instanceof Object){
-
+            else if(src.constructor Object) {
+                let overlapKeys = [];
+                let tmpdel = [];
+                let tmpadd = [];
+                let oldKeys = Object.keys(src);
+                let newKeys = Object.keys(dst);
+                for(let k of oldKeys) {
+                    if(!(k in dst)) {
+                        tmpdel.push(k);
+                    } else {
+                        overlapKeys.push(k);
+                    }
+                }
+                if(tmpdel.length != 0) {
+                    mem[path]['-'] = tmpdel;
+                }
+                for(let k of newKeys) {
+                    if(!(k in src)) {
+                        tmpadd.push(k);
+                    }
+                }
+                if(tmpadd.length != 0) {
+                    mem[path]['+'] = tmpadd;
+                }
+                for(let k of overlapKeys) {
+                    let vOld = src[k];
+                    let vNew = dst[k];
+                    subpath.push(k);
+                    jsonDiffMem(vOld,vNew,mem,subpath);
+                    subpath.pop();
+                }
             }
-            else {
-
+            else if(src.constructor === String) {
+                if(src != dst) {
+                    mem[path] = {};
+                    mem[path]['o'] = src;
+                    mem[path]['n'] = dst;
+                }
+            }
+            else if(src.constructor === Number) {
+                if(src != dst) {
+                    mem[path] = {};
+                    mem[path]['o'] = src;
+                    mem[path]['n'] = dst;
+                }
             }
         }
         let mem = {};
         let subpath = [];
         jsonDiffMem(a,b,mem,subpath);
         return mem;
+    }
+    testEditDistance() {
+        function editDistance(a,b) {
+            this.assert(a.constructor === String && b.constructor === String);
+            let sza = a.length;
+            let szb = b.length;
+            let mem = new Array(sza);
+            for(let i = 0; i < sza; i++) {
+                mem[i] = new Array(szb);
+                mem[i].fill(0);
+            }
+            for(let i = 0; i < sza; i++) {
+                for(let j = 0; j < szb; j++) {
+                    let ca = a.charAt(i);
+                    let cb = b.charAt(j);
+                    let lasti = (i == 0) ? 0 : i-1;
+                    let lastj = (j == 0) ? 0 : j-1;
+                    if(ca === cb) {
+                        mem[i][j] = mem[lasti][lastj];
+                    } else {
+                        mem[i][j] = Math.min(mem[lasti][lastj],mem[i][lastj],mem[lasti][j]) + 1;
+                    }
+                }
+            }
+            // path to lowest cost, annotate mem
+            let i = sza-1, j = szb-1, buf = {};
+            while(i != 0 && j != 0) {
+                let lasti = (i == 0) ? 0 : i - 1;
+                let lastj = (j == 0) ? 0 : j - 1;
+                if(mem[i][lastj] < mem[lasti][j]) {
+                    if(mem[lasti][lastj] < mem[i][lastj]) {
+                        i--;
+                        j--;
+                    } else {
+                        buf[`${i},${j}`] = b.charAt(j);
+                        j--;
+                    }
+                } else {
+                    if(mem[lasti][lastj] < mem[lasti][j]) {
+                        i--;
+                        j--;
+                    } else {
+                        buf[`${i}${j}`] = a.charAt(i);
+                        i--;
+                    }
+                }
+            }
+        }
+        function tc() {
+            let bindedCB = editDistance.bind(this);
+        }
+        tc();
     }
     test() {
         //this.testRandom();
