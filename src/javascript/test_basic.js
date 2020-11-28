@@ -230,6 +230,7 @@ class TestBasic {
         assert(res[0] == '<h1>');
         assert(res[1] == '</h2>');
 
+        // reverse string
         s = 'abcde';
         assert(s.split('').reverse().join('') === 'edcba');
 

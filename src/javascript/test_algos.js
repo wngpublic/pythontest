@@ -1,8 +1,8 @@
 class TestAlgos {
     assert = require('assert');
-    debug = false;
+    debug = true;
 
-    logdbg(s) {
+    log(s) {
         if(this.debug) {
             console.log(s);
         }
@@ -35,7 +35,7 @@ class TestAlgos {
         // the min and max are likely to be 50% of middle numbers because it uses
         // round instead of floor or ceil
         for(let [k,v] of Object.entries(map)) {
-            this.logdbg(`${k}: ${v}`);
+            this.log(`${k}: ${v}`);
         }
         const l = [2,4,6];
         this.assert(l.length == 3);
@@ -59,7 +59,7 @@ class TestAlgos {
                 }
             }
             for(let [k,v] of Object.entries(map)) {
-                this.logdbg(`${k}: ${v}`);
+                this.log(`${k}: ${v}`);
             }
             const winPct = (map['win']/numRuns).toFixed(3);
             const deviation = Math.abs(1-winPct/0.33).toFixed(2);
@@ -91,7 +91,7 @@ class TestAlgos {
                 }
             }
             for(let [k,v] of Object.entries(map)) {
-                this.logdbg(`${k}: ${v}`);
+                this.log(`${k}: ${v}`);
             }
             const winPct = (map['win']/numRuns).toFixed(3);
             const deviation = Math.abs(1-winPct/0.5).toFixed(2);
@@ -112,7 +112,7 @@ class TestAlgos {
                 // assume ordering does not matter in JSON. rewrite with levenshtein if ordering does matter
 
             } 
-            else if(src.constructor Object) {
+            else if(src.constructor === Object) {
                 let overlapKeys = [];
                 let tmpdel = [];
                 let tmpadd = [];
@@ -192,33 +192,55 @@ class TestAlgos {
             while(i != 0 && j != 0) {
                 let lasti = (i == 0) ? 0 : i - 1;
                 let lastj = (j == 0) ? 0 : j - 1;
+                if(mem[lasti][lastj] < mem[i][j]) {
+                    buf[`${i},${j}`] = b.charAt(j);
+                }
                 if(mem[i][lastj] < mem[lasti][j]) {
                     if(mem[lasti][lastj] < mem[i][lastj]) {
                         i--;
                         j--;
                     } else {
-                        buf[`${i},${j}`] = b.charAt(j);
-                        j--;
+                        i--;
                     }
                 } else {
                     if(mem[lasti][lastj] < mem[lasti][j]) {
                         i--;
                         j--;
                     } else {
-                        buf[`${i}${j}`] = a.charAt(i);
-                        i--;
+                        j--;
                     }
                 }
             }
+            this.log(`  ${b.split('').join(' ')}`);
+            for(let i = 0; i < sza; i++) {
+                this.log(`${a[i]} ${mem[i].join(' ')}`);
+            }
+            this.log('-----');
+            this.log(`a: ${a}\nb: ${b}`);
+            for(let [k,v] of Object.entries(buf)) {
+                this.log(`${k}:${v}`);
+            }
         }
+        let bindedEditDistance = editDistance.bind(this);
         function tc() {
-            let bindedCB = editDistance.bind(this);
+            let localBindedEditDistance = editDistance.bind(this);
+            let a = 'abcdefg';
+            let b = 'abddefffg';
+            //editDistance(a,b); // definitely doesnt work!
+            //localBindedEditDistance(a,b); // doesnt work!
+            bindedEditDistance(a,b);
         }
-        tc();
+        let bindedTC = tc.bind(this);
+        //bindedTC(); // this works, but inner function doesnt bind anyway!
+        tc(); // bindedTC works, but cannot do inner binding, so why bother?
+
     }
     test() {
-        //this.testRandom();
+        /*
+        this.testRandom();
         this.testMontyHall();
+        */
+        this.testEditDistance();
     }
 }
 
