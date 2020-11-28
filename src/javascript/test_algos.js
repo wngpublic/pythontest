@@ -1,8 +1,8 @@
 class TestAlgos {
     assert = require('assert');
-    debug = false;
+    debug = true;
 
-    logdbg(s) {
+    log(s) {
         if(this.debug) {
             console.log(s);
         }
@@ -35,7 +35,7 @@ class TestAlgos {
         // the min and max are likely to be 50% of middle numbers because it uses
         // round instead of floor or ceil
         for(let [k,v] of Object.entries(map)) {
-            this.logdbg(`${k}: ${v}`);
+            this.log(`${k}: ${v}`);
         }
         const l = [2,4,6];
         this.assert(l.length == 3);
@@ -59,7 +59,7 @@ class TestAlgos {
                 }
             }
             for(let [k,v] of Object.entries(map)) {
-                this.logdbg(`${k}: ${v}`);
+                this.log(`${k}: ${v}`);
             }
             const winPct = (map['win']/numRuns).toFixed(3);
             const deviation = Math.abs(1-winPct/0.33).toFixed(2);
@@ -91,7 +91,7 @@ class TestAlgos {
                 }
             }
             for(let [k,v] of Object.entries(map)) {
-                this.logdbg(`${k}: ${v}`);
+                this.log(`${k}: ${v}`);
             }
             const winPct = (map['win']/numRuns).toFixed(3);
             const deviation = Math.abs(1-winPct/0.5).toFixed(2);
@@ -112,7 +112,7 @@ class TestAlgos {
                 // assume ordering does not matter in JSON. rewrite with levenshtein if ordering does matter
 
             } 
-            else if(src.constructor Object) {
+            else if(src.constructor === Object) {
                 let overlapKeys = [];
                 let tmpdel = [];
                 let tmpadd = [];
@@ -175,50 +175,147 @@ class TestAlgos {
                 mem[i].fill(0);
             }
             for(let i = 0; i < sza; i++) {
+                mem[i][0] = i+1;
+            }
+            for(let j = 0; j < szb; j++) {
+                mem[0][j] = j+1;
+            }
+            for(let i = 0; i < sza; i++) {
                 for(let j = 0; j < szb; j++) {
                     let ca = a.charAt(i);
                     let cb = b.charAt(j);
                     let lasti = (i == 0) ? 0 : i-1;
                     let lastj = (j == 0) ? 0 : j-1;
                     if(ca === cb) {
-                        mem[i][j] = mem[lasti][lastj];
+                        if(i == 0 && j == 0) {
+                            mem[i][j] = 0;
+                        } else {
+                            mem[i][j] = mem[lasti][lastj];
+                        }
                     } else {
                         mem[i][j] = Math.min(mem[lasti][lastj],mem[i][lastj],mem[lasti][j]) + 1;
                     }
                 }
             }
             // path to lowest cost, annotate mem
+            // i (row/vertical) change is -char
+            // j (col/horizontal) change is +char
+            // diag change is -char and +char
+            // always walk backward lower up, left, or diag.
+            // always choose diag if lower or equal to left/up
             let i = sza-1, j = szb-1, buf = {};
-            while(i != 0 && j != 0) {
+            let flag = true;
+            while(flag) {
                 let lasti = (i == 0) ? 0 : i - 1;
                 let lastj = (j == 0) ? 0 : j - 1;
-                if(mem[i][lastj] < mem[lasti][j]) {
-                    if(mem[lasti][lastj] < mem[i][lastj]) {
-                        i--;
-                        j--;
-                    } else {
-                        buf[`${i},${j}`] = b.charAt(j);
-                        j--;
+
+                if(i == 0 && j == 0) {
+                    if(mem[i][j] != 0) {
                     }
-                } else {
-                    if(mem[lasti][lastj] < mem[lasti][j]) {
-                        i--;
-                        j--;
+                    flag = false;
+                }
+                else if(mem[i][lastj] < mem[lasti][j]) {
+                    if(mem[lasti][lastj] <= mem[i][lastj]) {
+                        if(mem[lasti][lastj] < mem[i][j]) {
+                            buf[`${i},${j}->${lasti},${lastj}`] = `-${a[i]},+${b[j]}`;
+                        }
+                        i = lasti;
+                        j = lastj;
                     } else {
-                        buf[`${i}${j}`] = a.charAt(i);
-                        i--;
+                        if(mem[i][lastj] < mem[i][j]) {
+                            buf[`${i},${j}->${i},${lastj}`] = `+${b[j]}`;
+                        }
+                        j = lastj;
+                    }
+                }
+                else {
+                    if(mem[lasti][lastj] <= mem[lasti][j]) {
+                        if(mem[lasti][lastj] < mem[i][j]) {
+                            buf[`${i},${j}->${lasti},${lastj}`] = `-${a[i]},+${b[j]}`;
+                        }
+                        i = lasti;
+                        j = lastj;
+                    } else {
+                        if(mem[lasti][j] < mem[i][j]) {
+                            buf[`${i},${j}->${lasti},${j}`] = `-${a[i]}`;
+                        }
+                        i = lasti;
                     }
                 }
             }
+            let line = [];
+            for(let i = 0; i < szb; i++) {
+                line[i] = i;
+            }
+            this.log(`    ${line.join(' ')}`);
+            this.log(`    ${b.split('').join(' ')}`);
+            for(let i = 0; i < sza; i++) {
+                this.log(`${i} ${a[i]} ${mem[i].join(' ')}`);
+            }
+            this.log('-----');
+            this.log(`a: ${a}\nb: ${b}`);
+            for(let [k,v] of Object.entries(buf)) {
+                this.log(`${k}:${v}`);
+            }
         }
+        let bindedEditDistance = editDistance.bind(this);
         function tc() {
-            let bindedCB = editDistance.bind(this);
+            let localBindedEditDistance = editDistance.bind(this);
+            let a = 'abcdefg';
+            let b = 'abcdefg';
+
+            this.log('-------');    // need to use binded function
+            bindedEditDistance(a,b);
+            this.log('expect');
+
+            this.log('-------');    // need to use binded function
+            //editDistance(a,b); // definitely doesnt work!
+            //localBindedEditDistance(a,b); // doesnt work!
+            a = 'abcdefg';
+            b = 'abddegghh';
+            bindedEditDistance(a,b);
+            this.log('expect -c/+d,-f/+g,+h,+h');
+
+            this.log('-------');    // need to use binded function
+            bindedEditDistance(b,a);
+            this.log('expect -d/+c,-g/+f,-h,-h');
+
+            this.log('-------');    // need to use binded function
+            a = 'abcdefg';
+            b = 'bcdegg'
+            bindedEditDistance(a,b);
+            // getting wrong answer for this
+            this.log('expect -a,-f/+g');
+
+            this.log('-------');    // need to use binded function
+            bindedEditDistance(b,a);
+            // getting wrong answer for this
+            this.log('expect +a,-g/+f');
+
+            this.log('-------');    // need to use binded function
+            a = 'abcdefg';
+            b = 'cdegghij'
+            bindedEditDistance(a,b);
+            // getting wrong answer for this
+            this.log('expect -a,-b,-f/+g,+h,+i,+j');
+
+            this.log('-------');    // need to use binded function
+            bindedEditDistance(b,a);
+            // getting wrong answer for this
+            this.log('expect +a,+b,-g/+f,-h,-i,-j');
         }
-        tc();
+        let bindedTC = tc.bind(this);
+        bindedTC(); // this works, but inner function doesnt bind anyway!
+        //tc(); // bindedTC works, but cannot do inner binding, so why bother?
+        // if use tc, cannot use this.log, so using bindedTC
+
     }
     test() {
-        //this.testRandom();
+        /*
+        this.testRandom();
         this.testMontyHall();
+        */
+        this.testEditDistance();
     }
 }
 

@@ -62,7 +62,29 @@
                 text-align: center;
                 margin: auto;
             }
+            #id-div-textarea-5 > div {
+                display: inline-block;
+            }
+
             */
+            #id-textarea-5-1 {
+                overflow-y: hidden;
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+                text-align: right;
+            }
+            #id-textarea-5-2 {
+                width: 800px;
+                height: 700px;
+                overflow-y: auto;
+                overflow-x: auto;
+                padding: 5px;
+                /* display, margins needed for center */
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+            }
         </style>
         <script defer>
             class T {
@@ -184,5 +206,16 @@
 
         <div id='id-div-table-4'></div>
 
+        <br>
+        <div id='id-div-textarea-5'>
+            <!--
+            <div id='id-div-textarea-5-1'>
+                <textarea id='id-textarea-5-1' readonly></textarea>
+            </div>
+            -->
+            <div id='id-div-textarea-5-2'>
+                <textarea id='id-textarea-5-2'></textarea>
+            </div>
+        </div>
     </body>
 </html>

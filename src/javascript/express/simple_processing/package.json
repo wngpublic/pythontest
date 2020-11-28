@@ -1,0 +1,17 @@
+{
+  "name": "simple_processing",
+  "version": "1.0.0",
+  "description": "npm install -> creates package-lock.json and node_modules",
+  "main": "handle_https.js",
+  "dependencies": {
+    "express": "^4.17.1",
+    "jsdom": "^16.4.0",
+    "node-fetch": "^2.6.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
