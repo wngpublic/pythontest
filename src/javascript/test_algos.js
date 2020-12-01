@@ -208,7 +208,6 @@ class TestAlgos {
             while(flag) {
                 let lasti = (i == 0) ? 0 : i - 1;
                 let lastj = (j == 0) ? 0 : j - 1;
-
                 if(i == 0 && j == 0) {
                     if(mem[i][j] != 0) {
                     }
