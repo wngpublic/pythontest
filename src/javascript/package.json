@@ -9,9 +9,14 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@grpc/proto-loader": "^0.5.5",
+    "bytebuffer": "^5.0.1",
     "google-closure-library": "^20201102.0.1",
     "google-protobuf": "^3.14.0",
+    "grpc": "^1.24.4",
     "protobufjs": "^6.10.2",
+    "uuid": "^8.3.2",
+    "ws": "^7.4.1",
     "yargs": "^16.1.1"
   }
 }

@@ -12,6 +12,8 @@ protoc message-t1.proto --js_out=import_style=commonjs,binary:.
     npm i protobufjs -g     // this will not work
     npm i google-closure-library --save
     npm i google-protobuf --save
+    npm i @grpc/proto-loader --save // for directly loading *.proto defs
+    npm i grpc --save       // for server
 
     after installing these, just include the require
     const proto = require('./protobuf_lib/message-t1_pb.js')
