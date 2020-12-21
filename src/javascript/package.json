@@ -9,6 +9,9 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "google-closure-library": "^20201102.0.1",
+    "google-protobuf": "^3.14.0",
+    "protobufjs": "^6.10.2",
     "yargs": "^16.1.1"
   }
 }

@@ -1,6 +1,6 @@
 'use strict';
 const buffer = require('buffer');
-
+const assert = require('assert');
 let gF1 = function() {
     return 10;
 }
@@ -1476,6 +1476,57 @@ class TestBasic {
         let cbTcBinded = tcBinded.bind(this);
         cbTcBinded();
     }
+    async testStringFunction() {
+        // string to function, function to string
+        let sf0 = 'function f() { return 10; }';
+        let sf1 = 'function f(i1) { return i1+10; }';
+        let sf2 = '(i1) => i1+10';
+        let sf3 = '{ "f1": "function f() { return 10; }", "f2": "function(x) { return x + 10; }" }';
+        let jsonf3 = JSON.parse(sf3);
+        let f0 = eval(sf0);
+        let f1 = new Function('x', 'return x+10');
+        let f2 = new Function(sf0)();
+        let f4 = function fx() { return 10; };
+        let sf4 = f4.toString();
+        let sf4f1 = Function(sf4);
+        let sf4f2 = Function(sf4)();
+        let sf4f3 = new Function(sf4);
+        let sf4f4 = new Function(sf4)();
+
+        function func1() { return 10; }
+        function func2(x,y) { return x+y+10; }
+        let f5 = function() { return 10; };
+        let sf5 = f5.toString();
+
+        //let sf5f1 = new Function(sf5);
+        //let sf5f2 = Function(sf5)();
+        //let sf5f3 = new Function(sf5);
+        //let sf5f4 = new Function(sf5)();
+
+        let f6 = func1;
+        let sf6 = f6.toString();
+        let f6f1 = new Function('return ' + sf6)(); // this works!
+        let f6f2 = new Function(sf6)(); // this doesnt work! needs return
+
+        //let f6f3 = Function('return' + sf6)(); // throws error
+
+        let f7 = func2;
+        let sf7 = f7.toString();
+        let f7f1 = new Function(...arguments, 'return ' + sf7)(); // this works!
+        let f8f1 = new Function(...arguments, 'return ' + sf1)(); // this works!
+        let f9f1 = new Function('return ' + sf0)(); // this works!
+
+        assert(f6f1() == 10);   // this works
+        assert(f7f1(20,30) == 60);   // this works
+        assert(f8f1(20) == 30);   // this works
+        assert(f9f1() == 10);   // this works
+
+        assert(sf4f1() == undefined);
+
+        assert(f4() === 10);
+        assert(f5() === 10);
+    }
+
     test() {
         /*
         this.test1();
@@ -1500,10 +1551,11 @@ class TestBasic {
         this.testBase64OnNode();
         this.testClosure();
         this.testBind();
-        */
         this.testInnerFunction();
         this.test_array_map_set();
         this.test_string();
+        */
+        this.testStringFunction();
         console.log('pass TestFunctions');
     }
 }

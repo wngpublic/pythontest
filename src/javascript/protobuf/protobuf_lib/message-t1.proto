@@ -1,0 +1,18 @@
+syntax = "proto2";
+message Test1 {
+    required int32 id = 1;
+    repeated int32 rival = 2;
+    optional string sval1 = 3;
+    optional int32 ival2 = 4;
+    repeated string rsval = 5;
+    message InnerTest1 {
+      required int32 id = 1;
+      repeated int32 rival = 2;
+      optional string sval1 = 3;
+      optional int32 ival2 = 4;
+      repeated string rsval = 5;
+    }
+    optional InnerTest1 innert1 = 6;
+    optional InnerTest1 innert2 = 7;
+    repeated InnerTest1 rinnert = 8;
+}
