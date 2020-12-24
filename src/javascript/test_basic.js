@@ -28,6 +28,7 @@ class TestBasic {
         this.v1 = v1;
         this.v2 = 100;
         console.log('TestBasic constructor ' + v1);
+        this.ten = 10;
     }
     hello() {
         console.log('hello world')
@@ -922,7 +923,6 @@ class TestBasic {
 
         this.assert(v != null);
     }
-
     async testTimeoutCase2() {
         let x = 0;
         const cb = () => { this.assert(x == 100); };
@@ -932,10 +932,14 @@ class TestBasic {
         // dont need this, just to show what handler can be used for
         clearTimeout(handler);
     }
+    async testTimeoutCase3() {
+        
+    }
 
-    testTimeoutUse() {
-        this.testTimeoutCase1();
-        this.testTimeoutCase2();
+    async testTimeout() {
+        //this.testTimeoutCase1();
+        //this.testTimeoutCase2();
+        this.testTimeoutCase3();
     }
     testSleep() {
         let l = [];
@@ -1365,7 +1369,7 @@ class TestBasic {
         this.assert(s === b64decoded);
     }
     multiply(x,y) {
-        return z = x * y;
+        return x * y;
     }
     factor(x) {
         return n => n * x;
@@ -1421,8 +1425,9 @@ class TestBasic {
     }
     testInnerFunction() {
         function testReturnNonStatic(v) {
-            return v+1;
+            return v + 1;
         }
+
         function tcUnbinded() {
             let assert = require('assert');
             let v1 = testReturnNonStatic(10);
@@ -1431,7 +1436,7 @@ class TestBasic {
             let flag = false;
             try {
                 let v2 = this.testReturnNonStatic(10);
-            } catch(e) {
+            } catch (e) {
                 flag = true;
             } finally {
                 assert(flag);   // non binded doesnt have this keyword
@@ -1440,12 +1445,13 @@ class TestBasic {
             try {
                 flag = false;
                 let v2 = TestBasic.testReturnStatic(10);
-            } catch(e) {
+            } catch (e) {
                 flag = true;
             } finally {
                 assert(!flag); // non binded can use a class static function
             }
         }
+
         function tcBinded() {
             let v1 = testReturnNonStatic(10); // can still access inner function
             this.assert(v1 === 11);
@@ -1454,7 +1460,7 @@ class TestBasic {
             let v2 = null;
             try {
                 v2 = this.testReturnNonStatic(10);
-            } catch(e) {
+            } catch (e) {
                 flag = true;
             } finally {
                 this.assert(v2 === 10); // this is binded
@@ -1465,13 +1471,14 @@ class TestBasic {
                 v2 = null;
                 flag = false;
                 v2 = TestBasic.testReturnStatic(10);
-            } catch(e) {
+            } catch (e) {
                 flag = true;
             } finally {
                 this.assert(v2 === 10);
                 this.assert(!flag);
             }
         }
+
         tcUnbinded();
         let cbTcBinded = tcBinded.bind(this);
         cbTcBinded();
@@ -1513,11 +1520,13 @@ class TestBasic {
         let f7 = func2;
         let sf7 = f7.toString();
         let f7f1 = new Function(...arguments, 'return ' + sf7)(); // this works!
+        let f7f2 = new Function('return ' + sf7)(); // this works!
         let f8f1 = new Function(...arguments, 'return ' + sf1)(); // this works!
         let f9f1 = new Function('return ' + sf0)(); // this works!
 
         assert(f6f1() == 10);   // this works
         assert(f7f1(20,30) == 60);   // this works
+        assert(f7f2(20,30) == 60);   // this works
         assert(f8f1(20) == 30);   // this works
         assert(f9f1() == 10);   // this works
 
@@ -1527,6 +1536,159 @@ class TestBasic {
         assert(f5() === 10);
     }
 
+    addThisVar(x) {
+        return (x + this.ten);
+    }
+    thisCallback(cb) {
+        return cb(1);
+    }
+    testBindMethod() {
+        let bindThis = (this.addThisVar).bind(this);
+        this.assert(this.thisCallback(bindThis) == 11);
+        let flag = false;
+        try {
+            
+            this.assert(this.thisCallback(this.addThisVar) != 11);
+        } catch(e) {
+            if(e instanceof TypeError) {
+                flag = true;
+            }
+        }
+        this.assert(flag == true);
+    }
+    testNestedFunctions() {
+        function f1(a,b) {
+            function f2(a,b) {
+                return (a+b);
+            }
+            return f2(a,b);
+        }
+        this.assert(f1(1,2) == 3);
+    }
+    jsonDiff(jold,jnew) {
+        function jsonDiffTracker(jold,jnew,tracker) {
+            
+        }
+        const tracker = {};
+        jsonDiffTracker(jold,jnew,tracker);
+        return tracker;
+    }
+    testDiff() {
+        let lold = [1,2,3];
+        let lnew = [2,3,4];
+        let mold = {
+            k1: "v1",
+            k2: ["v21","v22","v23"],
+            k3: {
+                k31: "v31",
+                k32: ["v321","v322","v333"],
+                k33: {
+                    k331: "v331",
+                    k332: ["v3321","v3322","v3333"]
+                },
+                k34: 42
+            },
+            k4: 42
+        };
+        let mnew = {
+            k1: "v1",
+            k2: ["v22","v23","v24"],
+            k3: {
+                k31: "v311",
+                k32: ["v322","v323","v334"],
+                k33: {
+                    k331: "v332",
+                    k332: ["v3333","v3324","v3335"]
+                },
+                k34: 43
+            },
+            k4: 45
+        };
+    }
+    testJsonOps() {
+        let j1 = {
+            k1: "v1",
+            k2: ["v21","v22","v23"],
+            k3: {
+                k31: "v31",
+                k32: ["v321","v322","v333"],
+                k33: {
+                    k331: "v331",
+                    k332: ["v3321","v3322","v3333"]
+                },
+                k34: 42
+            },
+            k4: 42
+        };
+        let j2 = {
+            "k1": "v1",
+            "k2": ["v21","v22","v23"],
+            "k3": {
+                "k31": "v31",
+                "k32": ["v321","v322","v333"],
+                "k33": {
+                    "k331": "v331",
+                    "k332": ["v3321","v3322","v3333"]
+                },
+                "k34": 42
+            },
+            k4: 42
+        };
+        let bufk = [];
+        let bufv = [];
+        for(let [k,v] of Object.entries(j1)) {
+            bufk.push(k);
+            bufv.push(v);
+        }
+        this.assert(bufk.join() === 'k1,k2,k3,k4');
+        this.assert(bufk.length === 4);
+        bufk = [];
+        bufv = [];
+        this.assert(bufk.length === 0);
+        for(let [k,v] of Object.entries(j1['k3'])) {
+            bufk.push(k);
+            bufv.push(v);
+        }
+        this.assert(bufk.join() === 'k31,k32,k33,k34');
+        this.assert('k1' in j1);
+        this.assert('k31' in j1['k3']);
+        this.assert(!('k9' in j1));
+        this.assert(!('k99' in j1['k3']));
+
+        let s1 = "hello";
+        let s2 = new String("hello");
+        let s3 = "hello";
+        let s4 = new String("hello");
+        this.assert(!(s1 instanceof String));
+        this.assert((s2 instanceof String));
+        this.assert(typeof s1 === 'string');
+        this.assert(s1 === "hello");
+        this.assert(s2 !== "hello");
+        this.assert(s2 == "hello");
+        this.assert(s1 !== s2);
+        this.assert(s1 === s3);
+        this.assert(s2 !== s4);
+        this.assert(s2 != s4);
+        
+        this.assert(typeof j1['k1'] === 'string');
+        this.assert(typeof j1['k1'] !== 'object');
+        this.assert(!(j1['k1'] instanceof String));
+
+        this.assert(Array.isArray(j1['k2']));
+        this.assert(j1['k2'] instanceof Array);
+        this.assert(typeof j1['k2'] === 'object');
+
+        this.assert(j1['k3'] instanceof Object);
+        this.assert(typeof j1['k3'] === 'object');
+
+        this.assert(typeof j1['k4'] === 'number');
+    }
+    testUint8Array() {
+        
+    }
+    testByteBuffer() {
+        
+    }
     test() {
         /*
         this.test1();
@@ -1535,7 +1697,6 @@ class TestBasic {
         this.testTimeout1();
         this.testTimeout2SubAsync();
         this.testReturnAfterTimeoutPromise();
-        this.testTimeoutUse();
         this.testAsync2();
         this.testAsync3();
         this.testAsync4();
@@ -1554,13 +1715,30 @@ class TestBasic {
         this.testInnerFunction();
         this.test_array_map_set();
         this.test_string();
-        */
         this.testStringFunction();
-        console.log('pass TestFunctions');
+        this.testTimeout();
+        */
+       this.testUint8Array();
+       this.testByteBuffer();
+       console.log('pass TestFunctions');
     }
 }
 
 function test() {
+    /*
+    t.test_assert();
+    t.test_array_map_set();
+    t.test_string();
+    t.test_control();
+    t.test_map();
+    t.test_numberFormat();
+    t.testDate();
+    t.test_random();
+    t.testBase64OnNode();
+    t.testBindMethod();
+    t.testJsonOps();
+    t.testNestedFunctions();
+    */
     let t = new TestBasic("c1");
     t.test();
 }
