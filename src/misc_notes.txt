@@ -426,6 +426,7 @@ examples
   tcpdump dst ipaddr                  // capture only from dst == ipaddr
   tcpdump dst ipaddr and port 8000    // capture only from dst -> port 8000
   tcpdump -D                          // show available interfaces
+  tcpdump -i lo0 tcp port 8000        // mac has lo0 for loopback instead of lo
 
   options
     -A                                print each packet in ASCII

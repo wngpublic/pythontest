@@ -308,6 +308,17 @@ class TestBasic {
         assert(d['k3']['k31'].constructor === String);
         assert(d['k3']['k32'].constructor === Array);
 
+        // convert string to hex
+        s = 'hello there';
+        assert(s.toString('base64') === 'hello there');
+        assert(s.toString('base16') === 'hello there');
+        let buffer = Buffer.from(s);
+        assert(buffer.toString('hex') === '68656c6c6f207468657265');
+        assert(buffer.toString('base64') === 'aGVsbG8gdGhlcmU=');
+        assert(buffer.toString() === 'hello there');
+        assert(buffer.toString('binary') === 'hello there');
+        assert(buffer.toString('utf8') === 'hello there');
+        assert(buffer.toString('utf-8') === 'hello there');
         console.log('pass test_string');
     }
 
@@ -806,7 +817,42 @@ class TestBasic {
         assert(a.length === 3);
         assert(v.length === 5);
 
+        {
+            let json = {
+                data: {
+                    k1: 'v1',
+                    k2: 'v2'
+                }
+            }
+            assert('data' in json && json.hasOwnProperty('data'));
+            assert(!('data1' in json) && !(json.hasOwnProperty('data1')));
+
+        }
         console.log('pass test_map');
+    }
+    testDictRemoveInLoop() {
+        let  d = {};
+        for(let i = 0; i < 10; i++) {
+            d[i] = i;
+        }
+        let state = 0;
+        assert(Object.keys(d).length === 10);
+        while(Object.keys(d).length !== 0) {
+            for(let [k,v] of Object.entries(d)) {
+                if(state === 0) {
+                    if(k % 2 == 0) {
+                        delete d[k];
+                    }
+                } else {
+                    delete d[k];
+                }
+            }
+            if(state === 0){
+                assert(Object.keys(d).length === 5);
+            }
+            state++;
+        }
+        assert(Object.keys(d).length === 0);
     }
     test_random() {
         let min = 0;
@@ -1714,13 +1760,14 @@ class TestBasic {
         this.testBind();
         this.testInnerFunction();
         this.test_array_map_set();
-        this.test_string();
         this.testStringFunction();
         this.testTimeout();
+        this.testUint8Array();
+        this.testByteBuffer();
+        this.test_string();
         */
-       this.testUint8Array();
-       this.testByteBuffer();
-       console.log('pass TestFunctions');
+        this.testDictRemoveInLoop();
+        console.log('pass TestFunctions');
     }
 }
 
