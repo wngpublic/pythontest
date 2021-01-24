@@ -10,6 +10,7 @@ const assert = require('assert');
 const { SSL_OP_NO_TLSv1_1 } = require('constants');
 const abortController = require('abort-controller');
 const controller = new abortController();
+const axios = require('axios').default;
 const PORT = 3000;
 
 
@@ -153,6 +154,9 @@ class Test {
             }
             const body = await rsp.buffer();
             const uint8Array = new Uint8Array(body)
+            const buffer = Buffer.from(body);
+            console.log(buffer.join(','));
+            console.log(uint8Array.toString());
             //console.log(uint8Array);
             const response = ProtoPayload.Response.deserializeBinary(uint8Array);
             const json = response.toObject();
@@ -164,12 +168,87 @@ class Test {
         // this works, and is how to create new object
         const t4 = message.Test1.deserializeBinary(serializedData);
     }
-    test() {
+    async post(url, data, options) {
+        return new Promise((resolve,reject) => {
+            axios.post(url, data, options, {timeout: this.timeoutms})
+            .then(r => resolve(r))
+            .catch(e => {
+                console.log(`ERROR POST`, e.toJSON());
+                reject(e.code);
+            })
+        })
+    };
+    async testAxiosPostGetProto() {
+        const req = new ProtoPayload.Request();
+        req.setId(100);
+        req.setIval(200);
+        req.setSval('hello');
+        const innerPayload = new ProtoPayload.Request.InnerPayload();
+        innerPayload.setId(101);
+        innerPayload.setKey('k1');
+        innerPayload.setVal('v1');
+        req.setInnerPayload(innerPayload);
+        let serializedData = req.serializeBinary();
+        try {
+            const url = `http://localhost:${PORT}/proto`;
+            const headers = {
+                'Content-Type': 'application/octet-stream',
+                'Accept': 'application/octet-stream'
+            };
+            let rsp = await this.post(url, serializedData, {
+                method: 'POST',
+                headers: headers,
+                responseType: 'arraybuffer'     // this is important!
+            });
+            /*
+            let rsp = await axios.post(url, serializedData, {
+                method: 'POST',
+                headers: headers,
+                responseType: 'blob'
+            },
+            {timeout: this.timeoutms})
+            .then(r => r)
+            .catch(e => {
+                console.log('ERROR POST:', e.toJSON());
+                reject(e.code);
+            });
+            */
+           if(rsp.status !== 200) {
+               throw `rsp not ok ${rsp.status}`;
+           }
+           const body = await rsp;
+           const buffer = Buffer.from(body);
+           const uint8Array = new Uint8Array(body);
+           console.log(buffer.join(','));
+           console.log(uint8Array.toString());
+           {
+               const response = ProtoPayload.Response.deserializeBinary(uint8Array);
+               const json = response.toObject();
+               console.log(json);
+           }
+           {
+               const response = new ProtoPayload.Response(buffer);
+               const json = response.toObject();
+               console.log(json);
+           }
+        } catch(e) {
+            console.log(`ERROR:`, e);
+        }
+        // this works, and is how to create new object
+        const t4 = message.Test1.deserializeBinary(serializedData);
+    }
+    async test() {
         /*
         this.testFetchJson();
         this.testFetchPostGetProto();
         this.testFetchJsonAbortController();
         this.testProto();
+        async(() => {
+            console.log(`-------------FETCH`);
+            await this.testFetchPostGetProto();
+            console.log(`-------------AXIOS`);
+            await this.testAxiosPostGetProto();
+        })();
         */
         this.testFetchPostGetProto();
     }

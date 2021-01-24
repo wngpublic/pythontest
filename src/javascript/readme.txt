@@ -33,3 +33,21 @@
   nodemon server.js port
 
 - protobuf with node
+
+
+- DOM notes
+  getElementById, getElementsByName, getElementsByTagName, querySelector (for CSS), 
+  document.querySelectorAll(s)
+  get parentNode, childNodes, siblings, firstChild, previousSibling, nextSibling, lastChild
+  createElement, appendChild, textContent, innerHHTML, append, prepend, replaceChild, removeChild
+  createTextNode
+  setAttribute, getAttribute, removeAttribute, hasAttribute
+  mouse events, scroll events, focus events, keyboard events, load event, dispatchEvent
+  
+  - DocumentType, DocumentFragement, ChildNode, Element, Event, ParentNode, HTMLCollection,
+    Node, NodeFilter, Range, Text, Window, Worker, URL, TreeWalker
+
+  - get first link in document:
+    document.body.getElementsByTagName("a")[0];
+  - get all links in document
+    document.body.getElementsByTagName("a")

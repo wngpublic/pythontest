@@ -322,6 +322,121 @@ class TestBasic {
         console.log('pass test_string');
     }
 
+    testRegex() {
+        /*
+        \bX         match X at beginning word boundary
+        X\b         match X at end word boundary
+        \BX         match X NOT at a word boundary
+        //g         global
+        //i         case insensitive
+        //m         multiline
+        //u         full unicode
+        .*          0 or more
+        .+          1 or more, greedy
+        .*?         0 or more lazy
+        .+?         1 or more lazy
+        \d{n,m}     a digit n-m long
+        \d{n,}      a digit at least m long
+        \d{,m}      a digit at most m long, or \d{0,m} 
+        \d{n}       a digit exactly n long
+        [^A|B]      not A not B
+        [A|B]       A or B
+                    what is not A but is B?
+                    what is A but not B?
+
+        X(?=Y)      positive lookahead, look for X but match only if followed by Y, doesnt signify group
+                    \d+(?=\s)(?=.*30)   digits followed by space followed by anything and a 30
+                    \d+(?=(X|Y))
+                    /A (?=B) C/.test('A C C') // false
+                    /A (?=B) C/.test('A B C') // true
+
+        X(?!Y)      negative look ahead, look for X but match only if not followed by Y, doesnt signify group
+                    /A (?!B) C/.test('A C C') // true
+                    /A (?!B) C/.test('A B C') // false
+
+        (?<=Y)X     positive lookbehind, look for X but match only if it Y precedes it, doesnt signify group
+                    /(?<=B) C/.test('A C C') // false
+                    /(?<=B) C/.test('A B C') // true
+
+        (?<!Y)X     negative look ahead, lool for X but match only if not preceded with Y, doesnt signify group
+                    /(?<!B) C/.test('A C C') // true
+                    /(?<!B) C/.test('A B C') // false
+
+        \N          backreference in group
+                    /(['"])(.*?)\1/g        \1 references result of group 1's (['""]) mirror
+        \k<name>    backreference in group by name, alterative to \N
+                    /(?<quote>['"])(.*?)\k<quote>/g     first group is named ?<quote>
+        $$          for inserting character $, it can be \$ or $$ during replace
+
+        (?:X)       non capturing group, where you need () for quantifier but do not capture the group.
+                    eg  (go)+ captures go
+                        (?:go)+ does not capture go
+
+        replacement in line
+        $2 $1       grouping usage
+                    str.replace(/(\w+)\s+(\w+)/, '$2 $1');
+        examples
+
+        /<(.*?)>/       find beginning tag and end tag
+        /a(z)?(c)?/     a followed by optional z followed by optional c, so "a" would match
+        /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/
+        s.replace(/(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/,'\k<day>-\k<month>-\k<year>')
+
+
+
+        */
+        let re2 = RegExp(/^(\w+)-(\d+\/\d+\.\d+)\s+.*/);
+        re2 = /^(\w+)-(\d+\/\d+\.\d+)\s+(AAA|BBB)\s+.*/;
+        let s = 'hello-123/456.222 AAA haskdhanmwqe';
+        if(re2.test(s)) {
+            console.log(`line match 2a`);
+        }
+        if(s.match(re2)) {
+            console.log(`line match 2b`);
+        }
+        {
+            let v = "<img tag=123 src=https://abc1.com>" + 
+                    "<img tag=123 src=\"https://abc2.com>\"" + 
+                    "<img tag=123 src=https://123abc234.com>";
+            // look for first " ending group
+            let group1 = v.match(/<img\s+.+\s+src="(http.+abc.+?)"/);
+            // look backward and exclude \" but include first "
+            let group2 = v.match(/<img\s+.+\s+src="(http.+abc.+?)(?<!\\")"/); 
+            // capture everything between [] lazy
+            // ? is optional (0 or 1, eg \d?) or lazy (repeat min number of times). in this context, it's lazy
+            let group3 = v.match(/"tag":(\[.+?\])/); 
+            let group4 = v.matchAll(/<img\s+.+\s+src="(http.+?)"/g);
+            if(group4 !== null) {
+                let arrayAll = Array.from(group4);
+                for(let v1 of arrayAll) {
+                    console.log(`group4: ${v1[1]}\n`);
+                }
+            }
+        }
+        {
+            let v = 'A B';
+            assert(/[^A]/.test('A B') === true);
+            assert(/[^A|B]/.test('A B') === true);
+            assert(/[^A|B]/.test('A') === false);
+            assert(/[^A|B]/.test('AB') === false);
+            assert(/[^A|^B]/.test('AB') === false);
+            assert(/[^A|^B]/.test('AC') === true);
+            assert(/[^A|^B]/.test('A B') === true); // because of space
+            assert(/[^A|B]/.test('ABC') === true);
+            assert(/[^A|B]/.test('A') === false);
+            assert(/[^A|B]/.test('B') === false);
+            assert(/[^B|A]/.test('B') === false);
+            assert(/[^A|B]/.test('A B C') === true);
+            assert(/[A|^B]/.test('A B C') === true);
+            assert(/[A|^B]/.test('A B') === true);
+            assert(/[A|^B]/.test('A C') === true);
+            assert(/[A|^B]/.test('A') === true);
+            assert(/[A|^B]/.test('B') === true);    // why is this A or NOT B?
+            assert(/[A|^B]/.test('C') === false);
+            assert(/[A|B]/.test('C') === false);
+        }
+    }
+
     test_array_map_set() {
         var a_exp = ['apple','banana','cranberry'];
         var a = [];
@@ -1765,8 +1880,9 @@ class TestBasic {
         this.testUint8Array();
         this.testByteBuffer();
         this.test_string();
-        */
         this.testDictRemoveInLoop();
+        */
+        this.testRegex();
         console.log('pass TestFunctions');
     }
 }

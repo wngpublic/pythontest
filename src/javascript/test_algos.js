@@ -309,6 +309,52 @@ class TestAlgos {
         // if use tc, cannot use this.log, so using bindedTC
 
     }
+    generateIntervals(min, max, minDuration, maxDuration, numEvents) {
+        let listIntervals = [];
+        for(let i = 0; i < numEvents; i++) {
+            let tStart = this.randInt(min, max);
+            let tDuration = this.randInt(minDuration, maxDuration);
+            let tEnd = tStart + tDuration;
+            if(tEnd > max) {
+                tEnd = (tEnd % max) + min;
+            }
+            listIntervals.push([tStart, tEnd]);
+        }
+        return listIntervals;
+    }
+    testMaxOverlap() {
+        /*
+        you have a list of times of when people are logged on a minute basis for 24 hours.
+        find the peak time(s) when the most people are logged in during that 24 hours.
+
+        this can be a range of minutes
+        this can be a single minute
+        this can be multiple, equal peaks
+        this can be multiple, equal peaks of multi minutes each peak
+        */
+    }
+    testIdsOverlap() {
+        /*
+        you are given a list of dates (yy-mm-dd hh-mm) when userIds log in and log out on a minute basis.
+        for an arbitrary date, return which userIds are active
+        */
+    }
+    testBinPackingWithCuts1() {
+        /*
+        given a set of packages of varying heights and fixed width, and a set of fixed length rods, cut the rods to fit
+        10 cut rods per package, and minimize wastage
+        */
+    }
+    testBinPackingWithCuts2() {
+        /*
+        given set of packages of varying heights and fixed width, and a set of varying length rods, cut the rods to fit
+        10 cut rods per package, and minimize wastage. the window of incoming rods is 10, which allows you to 
+        optimize selecting which rods to cut for which packages.
+        */
+    }
+    testBinPackingWithCuts3() {
+        
+    }
     test() {
         /*
         this.testRandom();

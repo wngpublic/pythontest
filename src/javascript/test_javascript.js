@@ -11,6 +11,9 @@ const zlib = require('zlib');
 const fs = require('fs');
 const stream = require('stream');
 const util = require('util');
+const jsdom = require('jsdom');
+const xml2js = require('xml2js');
+const axios = require('axios').default;
 
 const charslc = 'abcdefghijklmnopqrstuvwxyz';
 const charsuc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -370,6 +373,84 @@ class TestAsync {
         }
         if(s.match(re2)) {
             console.log(`line match 2b`);
+        }
+        {
+            let v = "";
+            // look for first " ending group
+            let group1 = v.match(/<img\s+.+\s+src="(http.+abc.+?)"/);
+            // look backward and exclude \" but include first "
+            let group2 = v.match(/<img\s+.+\s+src="(http.+abc.+?)(?<!\\")"/); 
+            // capture everything between [] lazy
+            let group3 = v.match(/"tag":(\[.+?\])/); 
+            let group4 = v.matchAll(/<img\s+.+\s+src="(http.+?)"/g);
+            if(group4 !== null) {
+                let arrayAll = Array.from(group4);
+                for(let v1 of arrayAll) {
+                    console.log(`group4: ${v1[1]}\n`);
+                }
+            }
+        }
+    }
+    async testAxiosFiles() {
+        let enable = false;
+        if(enable)
+        {
+            let filename = 'file.pdf';
+            axios({
+                method: 'get',
+                url: `https://www.website.com/${filename}`,
+                responseType: 'stream'
+            })
+            .then((r) => {
+                r.data.pipe(fs.createWriteStream(filename));
+            });
+        }
+        if(enable)
+        {
+            let p = new Promise((resolve, reject) => {
+                let filename = 'file.pdf';
+                const writer = createWriteStream(filename);
+                axios({
+                    method: 'get',
+                    url: `https://www.website.com/${filename}`,
+                    responseType: 'stream'
+                })
+                .then((r) => {
+                    return new Promise((resolve1,reject1) => {
+                        r.data.pipe(writer);
+                        let error = null;
+                        writer.on('error', (e) => {
+                            error = e;
+                            writer.close();
+                            reject(e);
+                        });
+                        writer.on('close', () => {
+                            if(error === null) {
+                                resolve();
+                            }
+                        });
+                    });
+                });
+            });
+            let result = await p;
+        }
+    }
+    async testJSDOM() {
+        let v = "";
+        let dom = new jsdom.JSDOM(v);
+        let collection = dom.window.document.getElementsByTagName('script');
+        for(let i = 0; i < 100; i++) {
+            let item = collection.item(i);
+            if(item === null) {
+                break;
+            }
+            let contents = item.text;
+            if(contents.match(/tag/)){
+                let group1 = contents.match(/"tag":(\[.+?\])/);
+                if(group1 !== null) {
+                    let list = JSON.parse(group1[1].trim().replace(/\n/,''));
+                }
+            }
         }
     }
     iSaidSomething1() {
@@ -1852,6 +1933,119 @@ class TestAsync {
             console.log('done');
         }
     }
+    testFiles() {
+        /*
+        test read file sync
+        test read file async
+        test write file sync
+        test write file async
+        test append file async
+        test read stream
+        test write stream
+        test read pipe to transform pipe to write pipe
+        test create directory
+        test delete file
+        test if file exists
+        test if directory exists
+        stat method for checking if is file or is directory
+        read directory filenames and directories
+        */
+        let enable = false;
+
+        if(enable)
+        {
+
+        }
+
+        {
+            let path = '';
+            fs.stat(path, (error, stats) => {
+                if(error) {
+                    throw error;
+                } else {
+                    if(stats.isFile()) {
+
+                    }
+                    else if(stats.isDirectory()) {
+
+                    }
+                }
+            });
+        }
+        {
+            let file = '';
+            let dst = '';
+            {
+                fs.createReadStream(file)
+                .pipe(zlib.createGzip())
+                .pipe(fs.createWriteStream(dst));
+            }
+            {
+                let readStream = fs.createReadStream(file);
+                let writeStream = fs.createWriteStream(dst);
+                readStream.pipe(writeStream);
+            }
+            {
+                // add events for writeStream drain and error detection
+            }
+            {
+                // add events
+                let readStream = fs.createReadStream(file);
+                readStream.on('error', (e) => {
+                    console.log(e);
+                })
+                readStream.on('end', () => {
+
+                });
+                readStream.on('close', () => {
+
+                })
+            }
+        }
+        {
+            let filei = '';
+            let fileo = '';
+            let buffer = [];
+            {
+                fs.readFile(filei, (error, data) => {
+                    if(error) {
+                        throw error;
+                    } else {
+                        buffer = data;
+                    }
+                });
+            }
+            {
+                try {
+                    buffer = fs.readFileSync(filei, 'utf8');
+                    let s = buffer.toString();
+                } catch(e) {
+                    console.log(e);
+                }
+                try {
+                    fs.writeFile(fileo, buffer, (err) => {
+                        if(err) {
+                            throw err;
+                        }
+                    });
+                } catch(e) {
+                    console.log(e);
+                }
+                try {
+                    fs.writeFileSync(fileo, buffer, { encoding: 'utf8' });
+                } catch(e) {
+                    console.log(e);
+                }
+            }
+        }
+    }
+
+    testCrypto() {
+        let v = null;
+        v = crypto.randomBytes(16).toString('hex');
+        v = crypto.randomBytes(16).toString('base64');
+    }
+
     test() {
         /*
         this.testMultipleSequentialPromises();
@@ -1870,7 +2064,9 @@ class TestAsync {
         this.testSetTimeout(5);
         */
 
-       this.testSetTimeoutCbArgs(5, this.testSetTimeoutCbArgsHelper2);
+        this.testAxiosFiles();
+        this.testFiles();
+        this.testSetTimeoutCbArgs(5, this.testSetTimeoutCbArgsHelper2);
 
     }
 }
