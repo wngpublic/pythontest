@@ -1850,6 +1850,57 @@ class TestBasic {
     testByteBuffer() {
         
     }
+    testInnerFunctions() {
+        class C {
+            ID = 0;
+            constructor(k,v1,v2) {
+                this.id = C.ID++;
+                this.k = k;
+                this.v1 = v1;
+                this.v2 = v2;
+            }
+        }
+        class C1 extends C {
+            constructor(k,v1,v2,v3) {
+                super(k,v1,v2);
+                this.v3 = v3;
+            }
+            add() {
+                return this.v1 + this.v1 + this.v2;
+            }
+        }
+        function iF1(cb) {
+            let c = new C('k1',10,20);
+            C.prototype.add = function() {
+                return this.v1 + this.v2;
+            };
+            C.prototype.mul = function() {
+                return this.v1 * this.v2;
+            };
+            let v = c.add();
+            assert(v === 30);
+            v = cb(v);
+            assert(v === 60);
+
+            let c1 = new C1('k1',10,20,30);
+            v = c1.add();
+            assert(v === 40);
+            C1.prototype.add = function() {
+                return this.v1 + this.v2;
+            };
+            v = c1.add();
+            assert(v === 30);
+            v = cb(v);
+            assert(v === 60);
+        }
+        function iF2(x) {
+            function iiF1(x) {
+                return x * 2;
+            }
+            return iiF1(x);
+        }
+        iF1(iF2);
+    }
     test() {
         /*
         this.test1();
@@ -1881,8 +1932,9 @@ class TestBasic {
         this.testByteBuffer();
         this.test_string();
         this.testDictRemoveInLoop();
-        */
         this.testRegex();
+        */
+        this.testInnerFunctions();
         console.log('pass TestFunctions');
     }
 }

@@ -434,6 +434,32 @@ class TestAsync {
             });
             let result = await p;
         }
+        {
+            function downloadFile(url,dst) {
+                const streamWrite = fs.createWriteStream(dst);
+                return axios({
+                    method: 'GET',
+                    url: url,
+                    responseType: 'stream'
+                })
+                .then((rsp) => {
+                    return new Promise((resolve1,reject1) => {
+                        r.data.pipe(writer);
+                        let error = null;
+                        writer.on('error', (e) => {
+                            error = e;
+                            writer.close();
+                            reject(e);
+                        });
+                        writer.on('close', () => {
+                            if(error === null) {
+                                resolve(true);
+                            }
+                        });
+                    });
+                });
+            }
+        }
     }
     async testJSDOM() {
         let v = "";
